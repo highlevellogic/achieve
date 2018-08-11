@@ -1,17 +1,5 @@
 # achieve
 Achieve is a modern HTTP server  that runs on Node.js and uses JavaScript Servlets to initiate back end processing.
-<html>
-<head>
- <title>Achieve Node.js Server with JavaScript Servlets</title>
- <meta charset="UTF-8" />
- <meta name="viewport" content="width=device-width, initial-scale=1.0" />
- <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACqklEQVQ4T32RW0hUURiF195zzoypo6Z5SY0uDF00rykp5aWHAvGtJCwhL9SURuqQjVCZQQ+JJGZqKt6iNNFJoR4sAiHyRSpRUxOihxJSqqGccWxu55zdi6eOU7be/rXW/8G/N8E6yj2dPqCJdIQwwtRqf4GoA4RZjTOgqv7s6KKyR9cDBKUvDXuF27ereNLWUT6R6pzfeMcmWkf0zQl1/wVc6k0NP9ce+5kyqmvTT2+N3B3aUzYY3ekbKrxrL5mKcpu1YwW3En5caDzk8xfA0H4gxmJdmfNZ1CU35k9eBQAb+ZhB1EIRgqzBANBd/dIkzeyJsy7bBtYAKroyNzt566jua3Zo3bWhBdmXmHRGZQusgpvfIXv37z2cBydpSlpSMn4D7PT7Jw18dMbqmw4oRCg7qA3i6wgvnlT6K8bObLvDUUMBwNCXmMMRL1N9wZhZWTIMxRQQghHLyhJjRDqszB4h3slRzQYOAECgb8h/dQQeYry7ki6EZRGtW2J+Zv9SU/QgUWGTczYis7XqORNdxMEBAFVhm+fyldo875/ipB8LMz+TONdO5qYut43ebimcHgVmAQBELYSsvgFb+xv9SfttUa9tTgtp5e1+e60z3iq4+QpeKybInVOXM7PUAY4PqycQuxIAib0nIhXu5s/ckK2y7pQR+FuM8uwbZTZSUdNFAYCqSIuhL6lJDgkvHWfL2mNKZkPh2JwkkF3yTFUkrSl//AEFAPWXiCGmtZ4v70z3BQCB2muJWnwKD7ks/BMAKO6Kf8HxtHhNaOxNyyszxQ0DQHlPcqrnsix9R1xf6UDsG3kmyvBi/74igXPUgLJxJtApiPyoe5n7xqgQTH1cuZSwo0TiKhtPvP1zLv6hst7EWIlzbgFIDKFSoCQSOxPJRHPe9cdADlN2fwG8FgTEn90+twAAAABJRU5ErkJggg==">
- <link href='http://fonts.googleapis.com/css?family=Merienda|Kalam' rel='stylesheet' type='text/css' />
- <link rel="stylesheet" type="text/css" href="achieve1.css">
-</head>
-<body>
-<header style="font-size:200%;"><img src="blank.gif"></img></header>
-<article>
 <h1>Achieve Node.js Server with JavaScript Servlets</h1>
 <p><span style="font-family:'Merienda';font-size:125%;font-weight:bold;color:rgb(46, 190, 43);">Achieve</span> is a modern HTTP server 
 that runs on Node.js and uses JavaScript Servlets to initiate back end processing.<p>
@@ -111,6 +99,3 @@ exports.servlet = function (context) {
   context.dirPath    // The current application path on your computer
   context.load       // The JavaScript Servlet load() method (see above)
 </code></pre>
-</article>
-</body>
-</html>
