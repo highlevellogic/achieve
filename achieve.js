@@ -1,5 +1,7 @@
-Copyright (c) 2018 Roger F. Gay   http://hll.nu
-MIT Open Source License
+/*
+ * Copyright (c) 2018 Roger F. Gay   http://hll.nu
+ * MIT Open Source License
+ */
 
 const http = require('http');
 global.fs = require('fs');
