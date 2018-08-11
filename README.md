@@ -1,8 +1,8 @@
 # achieve
-Achieve is a modern HTTP server  that runs on Node.js and uses JavaScript Servlets to initiate back end processing.
+Achieve is a modern HTTP server  that runs on Node.js and uses JavaScript Servlets to initiate back end processing. It is available via npm.
 <h1>Achieve Node.js Server with JavaScript Servlets</h1>
 <p><span style="font-family:'Merienda';font-size:125%;font-weight:bold;color:rgb(46, 190, 43);">Achieve</span> is a modern HTTP server 
-that runs on Node.js and uses JavaScript Servlets to initiate back end processing.<p>
+that runs on Node.js and uses JavaScript Servlets to initiate back end processing. It is available via npm.<p>
 <p>For a more detailed quick start tutorial, <a href="" target="http://hll.nu/achieve/">click here</a></p>
 <h2>Features Summary</h2>
 <h3>Regular HTTP features:</h3>
@@ -27,6 +27,7 @@ that runs on Node.js and uses JavaScript Servlets to initiate back end processin
 </ul>
 
 <h2>Quick Start</h2>
+<p>Install Node.js v8.1 or later. (Developed / tested with v8.9.4)</p>
 <h3>Running Achieve (simplest form):</h3>
 <pre><code>
 const server = require('achieve');
