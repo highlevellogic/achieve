@@ -1,0 +1,24 @@
+{
+ "name":"achieve",
+  "version": "1.0.2",
+  "description": "Achieve is a modern HTTP server that runs on Node.js and uses JavaScript Servlets to initiate back end processing.",
+  "main": "achieve.js",
+  "scripts": {
+    "achieve": "achieve --version"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rogerfgay/achieve.git"
+  },
+  "keywords": ["server","servlet","microservice"],
+  "author": "Roger F. Gay (HLL Project http://hll.nu)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rogerfgay/achieve/issues",
+    "email": "rogerfgay@yahoo.com"
+  },
+  "homepage": "https://github.com/rogerfgay/achieve#readme",
+  "engines": {
+    "node": ">= 8.2.0"
+  }
+}
