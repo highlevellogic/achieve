@@ -31,6 +31,7 @@ that runs on Node.js and uses JavaScript Servlets to initiate back end processin
 <h3>Running Achieve (simplest form):</h3>
 <pre><code>
 const server = require('achieve');
+server.setAppPath(__dirname);  // Sets the application root to wherever you run this code
 server.listen();  // defaults to port 80
 </code></pre>
 <h3>Running Achieve with options:</h3>
