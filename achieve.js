@@ -1,8 +1,3 @@
-/*
- * Copyright (c) 2018 Roger F. Gay   http://hll.nu
- * MIT Open Source License
- */
-
 const http = require('http');
 global.fs = require('fs');
 const path = require('path');
@@ -26,10 +21,14 @@ let reqCount = 0;
    let relRootPath="";
    let bCaching=false, bCachingCheck=false, rootDir=false, compress=false, showMimes=false;
    let corsdomains=[];
-   let version = "HLL Achieve vx.xx";
-   let shortVersion = "01";
+   let version = "HLL Achieve v1.0.10";
+   let shortVersion = "1";
    let etagString = nodeVersion() + shortVersion;
 
+// stop Achieve from prematurely ending connection when doing async operations
+exports.acync = function (allow) {
+  allowAsync = allow;
+}
 exports.showMimeTypes = function () {
   showMimes=true;
 }
@@ -257,6 +256,7 @@ function Context (req,res,parms,dirPath,load) {
   this.parms = parms;
   this.dirPath = dirPath;
   this.load = load;
+  this.allowAsync = false;
 }
 function PathInfo (filePath,reload,action,stats) {
   this.filePath = filePath;
@@ -530,7 +530,7 @@ function startObject (req,res,fileInfo) {
                 queryData = "";
               }
 			} catch (err) {
-		      console.log("-startObject data error: " + err.stack);
+		      console.log("Error processing data: " + err.stack);
 		    }
           });
           this.req.on('end', function() {
@@ -543,36 +543,32 @@ function startObject (req,res,fileInfo) {
           console.log("INFO: POST " + fileInfo.path + " Session ended by application.");
           return;
         }
-		    if (typeof content === "string") {
 			  	response.writeHead(200, {'Content-Type': fileInfo.contentType, 'server': version});
-			    response.write(content);
-			  }
+			    response.write(content.toString());
 		    } catch (err) {
 			    response.writeHead(500, {'Content-Type': 'text/plain'});
 	        response.write(rtErrorMsg(err,shortPath));
-			  console.log("-startObject end error: " + err.stack);
+			    console.log("Error running servlet: " + err.stack());
         } finally {
 		      response.end();
 			}
 	      });
         } else if (this.req.method == "GET") {
 		  try {
-            request.get =  querystring.parse(fileInfo.queryString);
-			let boundLoader = load.bind({request:request,response:response,dirPath:fileInfo.dirPath});
+        request.get =  querystring.parse(fileInfo.queryString);
+		  	let boundLoader = load.bind({request:request,response:response,dirPath:fileInfo.dirPath});
         // This is where the application code is "called"
         let content = myApp.servlet(new Context(request,response,request.get,fileInfo.dirPath,boundLoader));
-       if (response.finished) {
+        if (response.finished) {
           console.log("INFO: GET " + fileInfo.path + " session ended by application.");
           return;
-       }
-	    if (typeof content === "string") {
+        }
 			  response.writeHead(200, {'Content-Type': fileInfo.contentType, 'server': version});
-			  response.write(content);
-			}
+			  response.write(content.toString());
 		  } catch (err) {
 	  		response.writeHead(500, {'Content-Type': 'text/plain'});
 	      response.write(rtErrorMsg(err,shortPath));
-			console.log("-startObject GET error: " + err.stack);
+        console.log("Error running servlet: " + err.stack());
 		  } finally {
 		    response.end();
 		  }
@@ -588,13 +584,11 @@ function startObject (req,res,fileInfo) {
           response.end(this.req.method + "request method is not yet supported on the server: " + version);
         }
     } else if (goodPath) {
-	  response.write("No .servlet function in file: " + myAppPath);
-	  response.end();
-	//  delete require.cache[require.resolve(myAppPath)];
+	    response.write("No .servlet function in file: " + myAppPath);
+	    response.end();
     } else {
-	  response.write(myAppPath + " not found.");
-	  response.end();
-	//  delete require.cache[require.resolve(myAppPath)];
+	    response.write(myAppPath + " not found.");
+	    response.end();
     }
   };
 }
@@ -611,7 +605,7 @@ function rtErrorMsg (err,shortPath) {
   var part2 = err.stack.substring(stop1);
   part2 = part2.substring(0,part2.indexOf('\n')-1).replace(/\\/g,"/");
   var reason = "Runtime error: " + part2 + "\n  " + part1;
-  console.log("-startObject(end): " + reason);
+  console.log("Error running servlet: " + reason);
   return reason;
 }
 // 537().init() sets up event driven streaming file serves
