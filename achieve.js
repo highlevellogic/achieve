@@ -13,16 +13,15 @@ let moduleLoadTimes = {};
 let reqCount = 0;
 
    // basePath is the root directory for applications. (Like webapps on Tomcat or htdocs on Apache httpd.)
-   // You may set basePath to anywhere you wish.
-   // let basePath = path.normalize(__dirname); // To specify basePath as the path to this server app.
-   // let basePath = path.normalize("C:/something/something"); // To set basePath to somewhere else.
-   let basePath = path.normalize(__dirname);
+   // The default is the directory of the entry point or main module for the application.
+   // It can be reset by the app developer using .setAppPath(appDir);
+   let basePath = path.normalize(require.main.filename.substring(0,require.main.filename.lastIndexOf(path.sep)));
    let rootPath=basePath;
    let relRootPath="";
    let bCaching=false, bCachingCheck=false, rootDir=false, compress=false, showMimes=false;
    let corsdomains=[];
-   let version = "HLL Achieve v1.0.10";
-   let shortVersion = "1";
+   let shortVersion = require('achieve/package.json').version;
+   let version = "HLL Achieve v" + shortVersion;
    let etagString = nodeVersion() + shortVersion;
 
 // stop Achieve from prematurely ending connection when doing async operations

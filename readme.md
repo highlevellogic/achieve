@@ -33,14 +33,15 @@ that runs on Node.js and uses JavaScript Servlets to initiate back end processin
 <h3>Running Achieve (simplest form):</h3>
 <pre><code>
 const server = require('achieve');
-server.setAppPath(__dirname);  // Sets the application root to wherever you run this code
 server.listen();  // defaults to port 80
 </code></pre>
+<p>By default, the base application directory is the same as the file you create to start the server. 
+You can set the base application directory with the setAppPath option below.</p>
 <h3>Running Achieve with options:</h3>
 <pre><code>
 const server = require('achieve');
 
-server.setAppPath("c:/myachieve/myapps");                // set root directory for all applications
+server.setAppPath("c:/myachieve/myapps");                // set base directory for all applications
 server.setRootDir('root');                               // set a subdirectory under the root directory for THE ROOT application
 server.setCaching(true);                                 // turn browser caching support on
 server.setCompress(true);                                // compress static resources
