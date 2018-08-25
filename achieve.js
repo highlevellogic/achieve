@@ -23,6 +23,7 @@ let reqCount = 0;
    let shortVersion = require('achieve/package.json').version;
    let version = "HLL Achieve v" + shortVersion;
    let etagString = nodeVersion() + shortVersion;
+   let defaultCharSet="utf-8";
 
 // stop Achieve from prematurely ending connection when doing async operations
 exports.acync = function (allow) {
@@ -542,7 +543,7 @@ function startObject (req,res,fileInfo) {
           console.log("INFO: POST " + fileInfo.path + " Session ended by application.");
           return;
         }
-			  	response.writeHead(200, {'Content-Type': fileInfo.contentType, 'server': version});
+			  	response.writeHead(200, {'Content-Type': fileInfo.contentType+';charset='+defaultCharSet, 'server': version});
 			    response.write(content.toString());
 		    } catch (err) {
 			    response.writeHead(500, {'Content-Type': 'text/plain'});
@@ -562,7 +563,7 @@ function startObject (req,res,fileInfo) {
           console.log("INFO: GET " + fileInfo.path + " session ended by application.");
           return;
         }
-			  response.writeHead(200, {'Content-Type': fileInfo.contentType, 'server': version});
+			  response.writeHead(200, {'Content-Type': fileInfo.contentType+';charset='+defaultCharSet, 'server': version});
 			  response.write(content.toString());
 		  } catch (err) {
 	  		response.writeHead(500, {'Content-Type': 'text/plain'});

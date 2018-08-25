@@ -45,7 +45,7 @@ server.setAppPath("c:/myachieve/myapps");                // set base directory f
 server.setRootDir('root');                               // set a subdirectory under the root directory for THE ROOT application
 server.setCaching(true);                                 // turn browser caching support on
 server.setCompress(true);                                // compress static resources
-server..showMimeTypes();                                 // Show the current list of supported Mime Types
+server.showMimeTypes();                                  // Show the current list of supported Mime Types
 server.addMimeType("xsl", "application/vnd.ms-excel");   // add an unsupported mime type
 server.setNodeEnv("development");                        // set Node environment 
 
