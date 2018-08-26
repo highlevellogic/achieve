@@ -1,10 +1,12 @@
 # achieve
-Achieve is a modern HTTP server  that runs on Node.js and uses JavaScript Servlets to initiate back end processing. It is available via <a href="https://www.npmjs.com/package/achieve" target="_blank">npm</a>.
-<img src="http://hll.nu/achieve/skyhigh1.jpg">
+<section style="background-color:LightSkyBlue;">
+Achieve is a modern HTTP server  that runs on Node.js and uses JavaScript Servlets to initiate back end processing.
+<a href="https://hll.nu"><img src="https://hll.nu/achieve/skyhigh1.jpg"></a>
 <h1>Achieve Node.js Server with JavaScript Servlets</h1>
 <p><span style="font-family:'Merienda';font-size:125%;font-weight:bold;color:rgb(46, 190, 43);">Achieve</span> is a modern HTTP server 
 that runs on Node.js and uses JavaScript Servlets to initiate back end processing. It is available via npm.<p>
-<p>For a more detailed quick start tutorial, <a href="" target="http://hll.nu/achieve/">click here</a></p>
+<p>For a more detailed quick start tutorial, <a href="https://hll.nu/achieve/" target="_blank">click here</a></p>
+<p>Achieve is part of the <a href="https://hll.nu">High Level Logic Project</a>.
 <h2>Features Summary</h2>
 <h3>Regular HTTP features:</h3>
 <ul>
@@ -44,7 +46,7 @@ server.setAppPath("c:/myachieve/myapps");                // set base directory f
 server.setRootDir('root');                               // set a subdirectory under the root directory for THE ROOT application
 server.setCaching(true);                                 // turn browser caching support on
 server.setCompress(true);                                // compress static resources
-server.showMimeTypes();                                 // Show the current list of supported Mime Types
+server.showMimeTypes();                                  // Show the current list of supported Mime Types
 server.addMimeType("xsl", "application/vnd.ms-excel");   // add an unsupported mime type
 server.setNodeEnv("development");                        // set Node environment 
 
@@ -103,3 +105,4 @@ exports.servlet = function (context) {
   context.dirPath    // The current application path on your computer
   context.load       // The JavaScript Servlet load() method (see above)
 </code></pre>
+</section>
