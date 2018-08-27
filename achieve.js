@@ -22,7 +22,8 @@ let reqCount = 0;
    let corsdomains=[];
    let shortVersion = require('achieve/package.json').version;
    let version = "HLL Achieve v" + shortVersion;
-   let etagString = nodeVersion() + shortVersion;
+   let nv = nodeVersion();
+   let etagString = nv + shortVersion;
    let defaultCharSet="utf-8";
 
 // stop Achieve from prematurely ending connection when doing async operations
@@ -88,6 +89,11 @@ exports.allowAccess = function (ad) {
 }
 exports.listen = function (port) {
   try {
+  if(nv < 8100) {
+    console.log("You need to update Node.js to at least v8.1.0 in order to run this software.");
+    return;
+  }
+  
   if (port === undefined) {
     port=80;
   } else if (Number.isNaN(port)) {
@@ -218,8 +224,8 @@ let mimeList = {
   gif: "image/gif",
   json: "application/json",
   ico: "image/x-icon",
+  xsl: "application/xslt+xml",
   pdf: "application/pdf",
-//  pub: "application/x-mspublisher",
   txt: "text/plain",
   servlet: "text/plain"
 };
@@ -523,6 +529,7 @@ function startObject (req,res,fileInfo) {
 	  let queryData="";
     response.setHeader('server', version);
     response.setHeader('Content-Type','text/plain;charset=utf-8');
+
         if (this.req.method == "POST") {
 	      this.req.on('data', function(data) {
 			try {

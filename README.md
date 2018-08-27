@@ -1,4 +1,3 @@
-# achieve
 <section style="background-color:LightSkyBlue;">
 Achieve is a modern HTTP server  that runs on Node.js and uses JavaScript Servlets to initiate back end processing.
 <a href="https://hll.nu"><img src="https://hll.nu/achieve/skyhigh1.jpg"></a>
@@ -46,7 +45,7 @@ server.setAppPath("c:/myachieve/myapps");                // set base directory f
 server.setRootDir('root');                               // set a subdirectory under the root directory for THE ROOT application
 server.setCaching(true);                                 // turn browser caching support on
 server.setCompress(true);                                // compress static resources
-server.showMimeTypes();                                  // Show the current list of supported Mime Types
+server.showMimeTypes();                                  // Show the current list of supported MIME Types
 server.addMimeType("pub","application/x-mspublisher");   // add an unsupported MIME type
 server.setNodeEnv("development");                        // set Node environment 
 
