@@ -47,7 +47,7 @@ server.setRootDir('root');                               // set a subdirectory u
 server.setCaching(true);                                 // turn browser caching support on
 server.setCompress(true);                                // compress static resources
 server.showMimeTypes();                                  // Show the current list of supported Mime Types
-server.addMimeType("xsl", "application/vnd.ms-excel");   // add an unsupported mime type
+server.addMimeType("pub","application/x-mspublisher");   // add an unsupported MIME type
 server.setNodeEnv("development");                        // set Node environment 
 
 server.listen(8989);  // listens on port 8989
