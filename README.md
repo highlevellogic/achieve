@@ -103,6 +103,6 @@ exports.servlet = function (context) {
   context.parms      // Parameters sent with the request
   context.dirPath    // The current application path on your computer
   context.load       // The JavaScript Servlet load() method (see above)
-  context.allowAsync // Set to true if your servlet app is asynchronous and you handle the response.
+  context.allowAsync // Set to true if you handle the response in an asynchronous process.
 </code></pre>
 </section>
