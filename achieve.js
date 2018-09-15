@@ -264,6 +264,10 @@ function Context (req,res,parms,dirPath,load) {
   this.load = load;
   this.allowAsync = false;
 }
+function allowAsync (bool) {
+  if (bool === undefined) bool=true;
+  appWillEnd=bool;
+}
 function PathInfo (filePath,reload,action,stats) {
   this.filePath = filePath;
   this.reload = reload;
@@ -546,9 +550,10 @@ function startObject (req,res,fileInfo) {
         request.post = querystring.parse(queryData);
         let boundLoader = load.bind({request:request,response:response,dirPath:fileInfo.dirPath});
         // This is where the application code is "called"
-        let content = myApp.servlet(new Context(request,response,request.post,fileInfo.dirPath,boundLoader));
-        if (response.finished) {
-          console.log("INFO: POST " + fileInfo.path + " Session ended by application.");
+        let context = new Context(request,response,request.post,fileInfo.dirPath,boundLoader);
+        let content = myApp.servlet(context);
+        if (response.finished || context.allowAsync) {
+          console.log("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
           return;
         }
           response.statusCode=200;
@@ -558,7 +563,7 @@ function startObject (req,res,fileInfo) {
 	        response.write(rtErrorMsg(err,shortPath));
 			    console.log("Error running servlet: " + err.stack());
         } finally {
-		      response.end();
+		      if (!context.allowAsync) response.end();
 			}
 	      });
         } else if (this.req.method == "GET") {
@@ -566,9 +571,10 @@ function startObject (req,res,fileInfo) {
         request.get =  querystring.parse(fileInfo.queryString);
 		  	let boundLoader = load.bind({request:request,response:response,dirPath:fileInfo.dirPath});
         // This is where the application code is "called"
-        let content = myApp.servlet(new Context(request,response,request.get,fileInfo.dirPath,boundLoader));
-        if (response.finished) {
-          console.log("INFO: GET " + fileInfo.path + " session ended by application.");
+        let context = new Context(request,response,request.get,fileInfo.dirPath,boundLoader);
+        let content = myApp.servlet(context);
+        if (response.finished || context.allowAsync) {
+          console.log("INFO: GET " + fileInfo.path + " session ended or will end by application.");
           return;
         }
         response.statusCode=200;
@@ -578,7 +584,7 @@ function startObject (req,res,fileInfo) {
 	      response.write(rtErrorMsg(err,shortPath));
         console.log("Error running servlet: " + err.stack());
 		  } finally {
-		    response.end();
+		    if (!context.allowAsync) response.end();
 		  }
         } else if (this.req.method == "HEAD") {
           response.statusCode = 200;
