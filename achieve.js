@@ -26,10 +26,6 @@ let reqCount = 0;
    let etagString = nv + shortVersion;
    let defaultCharSet="utf-8";
 
-// stop Achieve from prematurely ending connection when doing async operations
-exports.acync = function (allow) {
-  allowAsync = allow;
-}
 exports.showMimeTypes = function () {
   showMimes=true;
 }
@@ -263,10 +259,6 @@ function Context (req,res,parms,dirPath,load) {
   this.dirPath = dirPath;
   this.load = load;
   this.allowAsync = false;
-}
-function allowAsync (bool) {
-  if (bool === undefined) bool=true;
-  appWillEnd=bool;
 }
 function PathInfo (filePath,reload,action,stats) {
   this.filePath = filePath;
@@ -558,13 +550,13 @@ function startObject (req,res,fileInfo) {
         }
           response.statusCode=200;
 			    response.write(content.toString());
+          response.end();
 		    } catch (err) {
           response.statusCode=500;
 	        response.write(rtErrorMsg(err,shortPath));
+          response.end();
 			    console.log("Error running servlet: " + err.stack());
-        } finally {
-		      if (!context.allowAsync) response.end();
-			}
+		  	}
 	      });
         } else if (this.req.method == "GET") {
 		  try {
@@ -579,12 +571,12 @@ function startObject (req,res,fileInfo) {
         }
         response.statusCode=200;
 			  response.write(content.toString());
+        response.end();
 		  } catch (err) {
         response.statusCode=500;
 	      response.write(rtErrorMsg(err,shortPath));
+        response.end();
         console.log("Error running servlet: " + err.stack());
-		  } finally {
-		    if (!context.allowAsync) response.end();
 		  }
         } else if (this.req.method == "HEAD") {
           response.statusCode = 200;
