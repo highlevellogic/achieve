@@ -555,7 +555,7 @@ function startObject (req,res,fileInfo) {
           response.statusCode=500;
 	        response.write(rtErrorMsg(err,shortPath));
           response.end();
-			    console.log("Error running servlet: " + err.stack());
+			    console.log("Error running servlet: " + err);
 		  	}
 	      });
         } else if (this.req.method == "GET") {
@@ -576,7 +576,7 @@ function startObject (req,res,fileInfo) {
         response.statusCode=500;
 	      response.write(rtErrorMsg(err,shortPath));
         response.end();
-        console.log("Error running servlet: " + err.stack());
+        console.log("Error running servlet: " + err);
 		  }
         } else if (this.req.method == "HEAD") {
           response.statusCode = 200;
@@ -609,7 +609,7 @@ function rtErrorMsg (err,shortPath) {
   var fileName = shortPath.substring(shortPath.lastIndexOf("\\")+1);
   var stop1 = err.stack.indexOf(shortPath);
   var part2 = err.stack.substring(stop1);
-  part2 = part2.substring(0,part2.indexOf('\n')-1).replace(/\\/g,"/");
+  part2 = part2.substring(0,part2.indexOf('\n')).replace(/\\/g,"/");
   var reason = "Runtime error: " + part2 + "\n  " + part1;
   console.log("Error running servlet: " + reason);
   return reason;

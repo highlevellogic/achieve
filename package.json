@@ -1,31 +1,30 @@
 {
-  "name": "servlets.js",
-  "version": "1.0.17",
-  "description": "JavaScript Servlets provide a fast and convenient way to create back end processes on Node.js.",
-  "main": "servlets",
+  "name": "achieve",
+  "version": "1.0.18",
+  "description": "Achieve is a modern HTTP server that runs on Node.js and uses JavaScript Servlets to initiate back end processing.",
+  "main": "achieve",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/highlevellogic/servlets.js.git"
+    "url": "https://github.com/highlevellogic/achieve.git"
   },
   "keywords": [
     "servlets",
-    "servlet",
     "server",
     "microservice",
+    "compression",
     "javascript servlets",
-    "servlets.js",
     "js servlets"
   ],
-  "author": "Roger F. Gay <highlevellogic@yahoo> (http://hll.nu)",
+  "author": "Roger F. Gay (HLL Project http://hll.nu)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/highlevellogic/servlets.js/issues",
+    "url": "https://github.com/highlevellogic/achieve/issues",
     "email": "highlevellogic@yahoo.com"
   },
-  "homepage": "https://github.com/highlevellogic/servlets.js#readme",
+  "homepage": "https://github.com/highlevellogic/achieve#readme",
   "engines": {
     "node": ">= 8.2.0"
   },
