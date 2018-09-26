@@ -547,6 +547,10 @@ function startObject (req,res,fileInfo) {
         if (response.finished || context.allowAsync) {
           console.log("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
           return;
+        } else if (typeof content !== String) {
+          console.log("INFO: POST " + fileInfo.path + " Return type from servlet is not String.");
+          response.end();
+          return;
         }
           response.statusCode=200;
 			    response.write(content);
@@ -555,7 +559,7 @@ function startObject (req,res,fileInfo) {
           response.statusCode=500;
 	        response.write(rtErrorMsg(err,shortPath));
           response.end();
-			    console.log("Error running servlet: " + err);
+			    console.log("Error running servlet: " + rtErrorMsg(err,shortPath));
 		  	}
 	      });
         } else if (this.req.method == "GET") {
@@ -567,6 +571,10 @@ function startObject (req,res,fileInfo) {
         let content = myApp.servlet(context);
         if (response.finished || context.allowAsync) {
           console.log("INFO: GET " + fileInfo.path + " session ended or will end by application.");
+          return;
+        } else if (typeof content !== String) {
+          console.log("INFO: GET " + fileInfo.path + " Return type from servlet is not String.");
+          response.end();
           return;
         }
         response.statusCode=200;
