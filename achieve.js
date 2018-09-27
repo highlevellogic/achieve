@@ -524,6 +524,7 @@ function startObject (req,res,fileInfo) {
 	  // Extract data sent from the browser for POST or GET
 	  let queryData="";
     let wmsg;
+    let content;
     response.setHeader('server', version);
     response.setHeader('Content-Type','text/plain;charset=utf-8');
 
@@ -544,26 +545,26 @@ function startObject (req,res,fileInfo) {
         let boundLoader = load.bind({request:request,response:response,dirPath:fileInfo.dirPath});
         // This is where the application code is "called"
         let context = new Context(request,response,request.post,fileInfo.dirPath,boundLoader);
-        let content = myApp.servlet(context);
+        content = myApp.servlet(context);
         if (response.finished || context.allowAsync) {
           console.log("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
           return;
-        } else if (typeof content !== String) {
-          wmsg="WARNING: " + fileInfo.path + " Return type from servlet is " + typeof content + ".";
-          console.log(wmsg);
+        } else if (content === undefined || content === null) {
+          wmsg="WARNING: Return value from servlet " + fileInfo.path + " is " + content + ".";
           response.statusCode=608;
 			    response.write(wmsg);
           response.end();
+          console.log(wmsg);
           return;
         }
           response.statusCode=200;
 			    response.write(content);
           response.end();
 		    } catch (err) {
-          response.statusCode=500;
-	        response.write(rtErrorMsg(err,shortPath));
           response.end();
-			    console.log("Error running servlet: " + rtErrorMsg(err,shortPath));
+          wmsg="WARNING: Return value from servlet " + fileInfo.path + " is " + content + ".";
+          console.log(wmsg);
+			    rtErrorMsg(err,shortPath);
 		  	}
 	      });
         } else if (this.req.method == "GET") {
@@ -576,22 +577,16 @@ function startObject (req,res,fileInfo) {
         if (response.finished || context.allowAsync) {
           console.log("INFO: GET " + fileInfo.path + " session ended or will end by application.");
           return;
-        } else if (typeof content !== String) {
-          wmsg="WARNING: " + fileInfo.path + " Return type from servlet is " + typeof content + ".";
-          console.log(wmsg);
-          response.statusCode=608;
-			    response.write(wmsg);
-          response.end();
-          return;
         }
         response.statusCode=200;
 			  response.write(content);
         response.end();
 		  } catch (err) {
-        response.statusCode=500;
-	      response.write(rtErrorMsg(err,shortPath));
+        wmsg="WARNING: " + fileInfo.path + " Return type from servlet is " + typeof content + ".";
+        response.statusCode=608;
+			  response.write(wmsg);
         response.end();
-        console.log("Error running servlet: " + err);
+        console.log(wmsg);
 		  }
         } else if (this.req.method == "HEAD") {
           response.statusCode = 200;
