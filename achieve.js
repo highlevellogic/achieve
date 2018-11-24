@@ -84,6 +84,7 @@ exports.allowAccess = function (ad) {
   }
 }
 exports.listen = function (port) {
+  let server;
   try {
   if(nv < 8100) {
     console.log("You need to update Node.js to at least v8.1.0 in order to run this software.");
@@ -105,7 +106,7 @@ exports.listen = function (port) {
   }
   if (!bCachingCheck) exports.setCaching(bCaching);
   
-let server = http.createServer(function (req, res) {
+server = http.createServer(function (req, res) {
    // Get information about the requested file or application.
    let fileInfo = setFileInfo(req,res,basePath);
  // display(fileInfo);
@@ -160,6 +161,7 @@ let server = http.createServer(function (req, res) {
     }
   }
   console.log("\n");
+  return server;
 }
 
 /* A way to check for websocket connection request
