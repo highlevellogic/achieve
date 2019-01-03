@@ -135,7 +135,6 @@ server = http.createServer(function (req, res) {
 	 }
    } else if (fileInfo.audioVisual) {
      stream(req,res,fileInfo);
-     console.log("using stream");
    // If file does not exist, return 404 File not found error.
    } else if (fileInfo.noSuchFile) {
 	   reportError(res,fileInfo.fullPath,404,"File not found: " + fileInfo.fullPath);
@@ -405,11 +404,9 @@ console.log("req.url: " + req.url);
      } else {
        audioVisual=true;
        serveFile=false;
-       console.log("audioVisual");
      }
    }
    if (serveFile) {
-     console.log("serveFile");
      // For browser caching support
      if (bCaching) {
        var rawVal = parseInt(Math.floor(checkedPath.stats.mtimeMs) + etagString);
@@ -836,7 +833,6 @@ Base64 = {
   }
 }
 let stream = function(req, res, fileInfo) {
- console.log("streaming");
   var fileName = fileInfo.fullPath;
   if(!fileName)
     return res.status(404).send();
@@ -855,20 +851,15 @@ let stream = function(req, res, fileInfo) {
     var contentLength = 0;
  
     var range = req.headers.range;
-    console.log("range: " + range);
     if (range)
     {
       var positions = range.replace(/bytes=/, "").split("-");
-      console.log("pos: " + positions);
       start = parseInt(positions[0], 10);
-      console.log("start: " + start);
       total = stats.size;
       end = positions[1] ? parseInt(positions[1], 10) : total - 1;
-      console.log("end: " + end);
       var chunksize = (end - start) + 1;
       contentRange = true;
       contentLength = chunksize;
-      console.log("csize: " + chunksize);
     }
     else
     {
@@ -892,7 +883,6 @@ let stream = function(req, res, fileInfo) {
         responseHeader["Content-Range"] = "bytes " + start + "-" + end + "/" + total;
       }
       res.writeHead(responseCode, responseHeader);
- console.log(start + " : " + end);
       var stream = fs.createReadStream(fileName, { start: start, end: end })
         .on("readable", function() {
           var chunk;
