@@ -15,6 +15,7 @@ that runs on Node.js and uses JavaScript Servlets to initiate back end processin
 <li>Supports defaults index.html, index.htm, index.js</li>
 <li>Supports browser caching. (ETag)</li>
 <li>Supports compression with ss caching. (gzip,deflate)</li>
+<li>Streaming audio/video files.</li>
 </ul>
 <h3>Special Features:</h3>
 <ul>
@@ -47,6 +48,7 @@ server.setCaching(true);                                 // turn browser caching
 server.setCompress(true);                                // compress static resources
 server.showMimeTypes();                                  // Show the current list of supported MIME Types
 server.addMimeType("pub","application/x-mspublisher");   // add an unsupported MIME type
+server.addAVMimeType("wav","audio/wav");                 // add an unsupported AV MIME type
 server.setNodeEnv("development");                        // set Node environment 
 
 server.listen(8989);  // listens on port 8989

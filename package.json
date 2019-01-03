@@ -1,6 +1,6 @@
 {
   "name": "achieve",
-  "version": "1.0.24",
+  "version": "1.0.25",
   "description": "Achieve is a modern HTTP server that runs on Node.js and uses JavaScript Servlets to initiate back end processing.",
   "main": "achieve",
   "scripts": {
@@ -16,7 +16,8 @@
     "microservice",
     "compression",
     "javascript servlets",
-    "js servlets"
+    "js servlets",
+    "streaming video"
   ],
   "author": "Roger F. Gay (HLL Project http://hll.nu)",
   "license": "MIT",

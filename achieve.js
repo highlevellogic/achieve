@@ -4,6 +4,7 @@ const path = require('path');
 const url = require('url');
 const querystring = require('querystring');
 const zlib = require('zlib');
+// const avmine = require("./avmine");
 // const dt = require('./datetime');
 
 if (process.env.NODE_ENV === undefined) process.env.NODE_ENV = 'production';
@@ -132,6 +133,9 @@ server = http.createServer(function (req, res) {
 	 } catch (err) {
 		reportError(res,fileInfo.fullPath,500,"Error attempting to serve " + fileInfo.fullPath);
 	 }
+   } else if (fileInfo.audioVisual) {
+     stream(req,res,fileInfo);
+     console.log("using stream");
    // If file does not exist, return 404 File not found error.
    } else if (fileInfo.noSuchFile) {
 	   reportError(res,fileInfo.fullPath,404,"File not found: " + fileInfo.fullPath);
@@ -155,9 +159,13 @@ server = http.createServer(function (req, res) {
   console.log("Browser caching: " + (bCaching ? "on" : "off"));
   console.log("Static compression: " + (compress ? "on" : "off"));
   if (showMimes) {
-    console.log("Mime Types:");
+    console.log("\nMIME Types:");
     for (var type in mimeList) {
         console.log(" " + type + ": " + mimeList[type]);
+    }
+    console.log("\nAudioVisual MIME Types:");
+    for (var atype in avMimeList) {
+        console.log(" " + atype + ": " + avMimeList[atype]);
     }
   }
   console.log("\n");
@@ -202,8 +210,25 @@ exports.addMimeType = function (ext, mime) {
   if (extType && mimeType && extForm && mimeForm) {
     mimeList[ext]=mime;
   } else {
-    if (!extType || !extForm) console.log("addMime(extension,mime) error: First argument must be a file suffix string such as 'html'");
-    if (!mimeType || !mimeForm) console.log("addMime(extension,mime) error: Second argument must be a MIME type string such as 'text/html'");
+    if (!extType || !extForm) console.log("addMimeType(extension,mime) error: First argument must be a file suffix string such as 'html'");
+    if (!mimeType || !mimeForm) console.log("addMimeType(extension,mime) error: Second argument must be a MIME type string such as 'text/html'");
+  }
+  } catch (err) {console.log(err);}
+}
+exports.addAVMimeType = function (ext, mime) {
+  try {
+  ext=ext.trim(); mime=mime.trim();
+  var extType=true, mimeType=true, extForm=true, mimeForm=true;
+  if (typeof ext != "string") extType=false;
+  if (typeof mime != "string") mimeType=false;
+  if (extType && ext.indexOf('.') == 0) ext = ext.substring(1);
+  if (extType && ext.indexOf('/') > -1) extForm=false;
+  if (mimeType && mime.indexOf('/') < 1) mimeForm=false;
+  if (extType && mimeType && extForm && mimeForm) {
+    avMimeList[ext]=mime;
+  } else {
+    if (!extType || !extForm) console.log("addAVMimeType(extension,mime) error: First argument must be a file suffix string such as 'html'");
+    if (!mimeType || !mimeForm) console.log("addAVMimeType(extension,mime) error: Second argument must be a MIME type string such as 'text/html'");
   }
   } catch (err) {console.log(err);}
 }
@@ -227,6 +252,14 @@ let mimeList = {
   txt: "text/plain",
   servlet: "text/plain"
 };
+let avMimeList = {
+  mp4: "video/mp4",
+  m2v: "video/mpeg",
+  ogv: "video/ogg",
+  m2a: "audio/mpeg",
+  mp3: "audio/mpeg3",
+  oga: "audio/ogg"
+};
 function reportError (res,account,statusCode,reason) {
   if (statusCode === undefined) statusCode = 500;
   try {
@@ -239,7 +272,7 @@ function reportError (res,account,statusCode,reason) {
     res.end(reason);
   }
 }
-function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag) {
+function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag,audioVisual) {
   this.basePath = basePath;
   this.path = path;
   this.fullPath = fullPath;
@@ -253,6 +286,7 @@ function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,que
   this.noSuchFile = noSuchFile;
   this.reload = reload;
   this.etag = etag;
+  this.audioVisual = audioVisual;
 }
 function Context (req,res,parms,dirPath,load) {
   this.request = req;
@@ -359,14 +393,23 @@ console.log("req.url: " + req.url);
      }
    }
    // Get MIME type.
+   let audioVisual=false;
    contentType = mimeList[suffix];
    // 415 Unsupported Media type is supported above.
    // Remove or conditionalize the following undefined check to make it work
    // This is here because it feels less confusing (new students) - but I want to rethink that
    if (contentType === undefined) {
-     contentType = "text/plain";
+     contentType = avMimeList[suffix];
+     if (contentType === undefined) {
+       contentType = "text/plain";
+     } else {
+       audioVisual=true;
+       serveFile=false;
+       console.log("audioVisual");
+     }
    }
    if (serveFile) {
+     console.log("serveFile");
      // For browser caching support
      if (bCaching) {
        var rawVal = parseInt(Math.floor(checkedPath.stats.mtimeMs) + etagString);
@@ -384,7 +427,7 @@ console.log("req.url: " + req.url);
        }
      }
    }
-   return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag);
+   return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual);
 }
 function checkCPath (path,ext,oAge) {
   try {
@@ -792,3 +835,79 @@ Base64 = {
     return result;
   }
 }
+let stream = function(req, res, fileInfo) {
+ console.log("streaming");
+  var fileName = fileInfo.fullPath;
+  if(!fileName)
+    return res.status(404).send();
+ 
+  fs.stat(fileName, function(err, stats) {
+    if (err) {
+      if (err.code === 'ENOENT') {
+        return res.status(404).send();
+      }
+    }
+ 
+    var start;
+    var end;
+    var total = 0;
+    var contentRange = false;
+    var contentLength = 0;
+ 
+    var range = req.headers.range;
+    console.log("range: " + range);
+    if (range)
+    {
+      var positions = range.replace(/bytes=/, "").split("-");
+      console.log("pos: " + positions);
+      start = parseInt(positions[0], 10);
+      console.log("start: " + start);
+      total = stats.size;
+      end = positions[1] ? parseInt(positions[1], 10) : total - 1;
+      console.log("end: " + end);
+      var chunksize = (end - start) + 1;
+      contentRange = true;
+      contentLength = chunksize;
+      console.log("csize: " + chunksize);
+    }
+    else
+    {
+      start = 0;
+      end = stats.size;
+      contentLength = stats.size;
+    }
+ 
+    if(start<=end)
+    {
+      var responseCode = 200;
+      var responseHeader =
+      {
+        "Accept-Ranges": "bytes",
+        "Content-Length": contentLength,
+        "Content-Type": fileInfo.contentType
+      };
+      if(contentRange)
+      {
+        responseCode = 206;
+        responseHeader["Content-Range"] = "bytes " + start + "-" + end + "/" + total;
+      }
+      res.writeHead(responseCode, responseHeader);
+ console.log(start + " : " + end);
+      var stream = fs.createReadStream(fileName, { start: start, end: end })
+        .on("readable", function() {
+          var chunk;
+          while (null !== (chunk = stream.read(1024))) {
+            res.write(chunk);
+          }
+          }).on("error", function(err) {
+          res.end(err);
+        }).on("end", function(err) {
+          res.end();
+        });
+    }
+    else
+    {
+      return res.status(403).send();
+    }
+  });
+};
