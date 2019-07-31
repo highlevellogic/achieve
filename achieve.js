@@ -1,9 +1,12 @@
-const http = require('http');
+// Essential modules. Always load. 
 global.fs = require('fs');
 const path = require('path');
 const url = require('url');
 const querystring = require('querystring');
-const zlib = require('zlib');
+// Optional modules. Load only when used.
+let http;
+let https;
+let zlib;
 // const avmine = require("./avmine");
 // const dt = require('./datetime');
 
@@ -33,6 +36,7 @@ exports.showMimeTypes = function () {
 exports.setCompress = function (on) {
   if (typeof on == "boolean") {
     compress=on;
+    if (compress) zlib = require('zlib');
   } else {
     console.log("ERROR: setCompress(true) requires a boolean argument. (default: false)");
   }
@@ -84,30 +88,7 @@ exports.allowAccess = function (ad) {
     return;
   }
 }
-exports.listen = function (port) {
-  let server;
-  try {
-  if(nv < 8100) {
-    console.log("You need to update Node.js to at least v8.1.0 in order to run this software.");
-    return;
-  }
-  
-  if (port === undefined) {
-    port=80;
-  } else if (Number.isNaN(port)) {
-    console.log(port + " is not a number. Setting port to default.");
-    port=80;
-  } else if (port<1024 || port>49151) {
-    console.log("Port " + port + " is outside acceptable range. (1024-49151) Setting port to default.");
-    port=80;
-  }
-  } catch (err) {
-    console.log("Error setting port in listen(). Setting port to default.")
-    port=80;
-  }
-  if (!bCachingCheck) exports.setCaching(bCaching);
-  
-server = http.createServer(function (req, res) {
+var achieveApp = function (req, res) {
    // Get information about the requested file or application.
    let fileInfo = setFileInfo(req,res,basePath);
  // display(fileInfo);
@@ -151,12 +132,90 @@ server = http.createServer(function (req, res) {
 	     reportError(res,accountInfo.account,accountInfo.code,accountInfo.reason);
 	   }
    }
-}).listen(port);
-  console.log("\n" + version + " is running on port " + port + ". (Node.js version " + process.version + ")");
+}
+exports.slisten = function (ioptions) {
+  https = require('https');
+  
+  let server;
+  let tlsOptions;
+  let sport;
+   
+  if(nv < 8100) {
+    console.log("You need to update Node.js to at least v8.1.0 in order to run this software.");
+    return;
+  }
+  try {
+  if (typeof ioptions !== "object") {
+    console.log("FATAL ERROR: slisten() requires an options object as argument.");
+    return;
+  }
+  if (ioptions.ca === undefined || ioptions.key === undefined || ioptions.cert === undefined) {
+    console.log("FATAL ERROR: Security certification list is insufficient.");
+    return;
+  }
+  sport = ioptions.httpsPort;
+  if (sport === undefined) {
+    sport=443;
+  } else if (Number.isNaN(sport)) {
+    console.log("https port " + sport + " is not a number. Setting port to default.");
+    sport=443;
+  } else if (sport<1024 || sport>49151) {
+    console.log("https port " + sport + " is outside acceptable range. (1024-49151) Setting port to default.");
+    sport=443;
+  }
+  } catch (err) {
+    console.log("Error setting port in slisten(). Setting port to default.")
+    sport=443;
+  }
+  if (!bCachingCheck) exports.setCaching(bCaching);
+  
+  server = https.createServer(ioptions, achieveApp).listen(sport);
+
+  console.log("\n" + version + " HTTPS is running on port " + sport + ". (Node.js version " + process.version + ")");
   console.log("Path to application base: " + basePath);
   console.log("Path to root application: " + rootPath);
   console.log("Browser caching: " + (bCaching ? "on" : "off"));
   console.log("Static compression: " + (compress ? "on" : "off"));
+  
+  console.log("\n");
+  return server;
+  
+}
+exports.listen = function (port) {
+  http = require('http');
+    
+  let server;
+  
+  if(nv < 8100) {
+    console.log("You need to update Node.js to at least v8.1.0 in order to run this software.");
+    return;
+  }
+  
+  try {
+  
+  if (port === undefined) {
+    port=80;
+  } else if (Number.isNaN(port)) {
+    console.log(port + " is not a number. Setting port to default.");
+    port=80;
+  } else if (port<1024 || port>49151) {
+    console.log("Port " + port + " is outside acceptable range. (1024-49151) Setting port to default.");
+    port=80;
+  }
+  } catch (err) {
+    console.log("Error setting port in listen(). Setting port to default.")
+    port=80;
+  }
+  if (!bCachingCheck) exports.setCaching(bCaching);
+  
+  server = http.createServer(achieveApp).listen(port);
+
+  console.log("\n" + version + " HTTP is running on port " + port + ". (Node.js version " + process.version + ")");
+  console.log("Path to application base: " + basePath);
+  console.log("Path to root application: " + rootPath);
+  console.log("Browser caching: " + (bCaching ? "on" : "off"));
+  console.log("Static compression: " + (compress ? "on" : "off"));
+  
   if (showMimes) {
     console.log("\nMIME Types:");
     for (var type in mimeList) {
