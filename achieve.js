@@ -149,7 +149,7 @@ exports.listen2 = function (ioptions) {
   }
   try {
   if (typeof ioptions === "object") {
-    if (ioptions.ca === undefined || ioptions.key === undefined || ioptions.cert === undefined) {
+    if (ioptions.key === undefined || ioptions.cert === undefined) {
       console.log("FATAL ERROR: Security certification list is insufficient for SSL.");
       return;
     }
@@ -208,7 +208,7 @@ exports.slisten = function (ioptions) {
     console.log("FATAL ERROR: slisten() requires an options object as argument.");
     return;
   }
-  if (ioptions.ca === undefined || ioptions.key === undefined || ioptions.cert === undefined) {
+  if (ioptions.key === undefined || ioptions.cert === undefined) {
     console.log("FATAL ERROR: Security certification list is insufficient.");
     return;
   }
