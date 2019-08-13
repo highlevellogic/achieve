@@ -1,15 +1,15 @@
 <section style="background-color:LightSkyBlue;">
-Achieve is a modern HTTP/S server  that runs on Node.js and uses JavaScript Servlets to initiate back end processing.
+Achieve is a modern (http, https, http2) web server that runs on Node.js and uses JavaScript Servlets to initiate back end processing.
 <a href="https://hll.nu"><img src="https://hll.nu/achieve/skyhigh1.jpg"></a>
 <h1>Achieve Node.js Server with JavaScript Servlets</h1>
-<p><span style="font-family:'Merienda';font-size:125%;font-weight:bold;color:rgb(46, 190, 43);">Achieve</span> is a modern HTTP/S server 
+<p><span style="font-family:'Merienda';font-size:125%;font-weight:bold;color:rgb(46, 190, 43);">Achieve</span> is a modern (http, https, http2) web server 
 that runs on Node.js and uses JavaScript Servlets to initiate back end processing. It is available via npm.<p>
 <p>This is a quick-start guide. If you need more help getting started, from using localhost and local IP addresses to 
 obtaining security certificates 
 and forwarding ports, <a href="https://hll.nu/achieve/contents.htm" target="_blank">click here</a>.</p>
-<p>Achieve is part of the <a href="https://hll.nu">High Level Logic Project</a>.
+<p>Achieve is part of the <a href="https://hll.nu">High Level Logic Project</a>.</p>
 <h2>Features Summary</h2>
-<h3>Regular HTTP/S features:</h3>
+<h3>Regular HTTP features:</h3>
 <ul>
 <li>Delivers static content.</li>
 <li>Unlimited MIME support.</li>
@@ -33,7 +33,7 @@ and forwarding ports, <a href="https://hll.nu/achieve/contents.htm" target="_bla
 
 <h2>Quick Start</h2>
 <p>Install Node.js v8.1 or later. (Developed / tested with v8.9.4)</p>
-<h3>Achieve HTTPS:</h3>
+<h3>Achieve HTTP:</h3>
 <h3>Running Achieve HTTP (simplest form):</h3>
 <pre><code>
 const server = require('achieve');
@@ -117,24 +117,32 @@ Achieve HTTPS has its own, called slisten(). slisten() requires a JSObject as in
 Security certificates, and how to obtain them (cost free) is explained below.</p>
 <h3>Running Achieve HTTPS (simplest form):</h3>
 <pre><code>
-const server = require('achieve');
-const fs = require('fs');
+  const server = require('achieve');
+  const fs = require('fs');
 
-const options = {  // An easy way to acquire free certificates is explained below.
-  key: fs.readFileSync('C:/certs/private.key'),   // For certificate files that have been placed in C:/certs/
-  ca: fs.readFileSync('C:/certs/ca_bundle.crt'),
-  cert: fs.readFileSync('C:/certs/certificate.crt')
-};
-server.slisten(options);
+  const options = {  // An easy way to acquire free certificates is explained below.
+    key: fs.readFileSync('C:/certs/private.key'),   // For certificate files that have been placed in C:/certs/
+    ca: fs.readFileSync('C:/certs/ca_bundle.crt'),
+    cert: fs.readFileSync('C:/certs/certificate.crt')
+  };
+  server.slisten(options);
 </code></pre>
-Port 443 is the default port for HTTPS. If you need to use a different port, add the port number
-to the options object.
+<p>Port 443 is the default port for HTTPS. If you need to use a different port, add the port number
+to the options object.</p>
 <pre><code>
-const options = {
-  key: fs.readFileSync('C:/certs/private.key'),
-  ca: fs.readFileSync('C:/certs/ca_bundle.crt'),
-  cert: fs.readFileSync('C:/certs/certificate.crt'),
-  httpsPort: 7777
-};
+  const options = {
+    key: fs.readFileSync('C:/certs/private.key'),
+    ca: fs.readFileSync('C:/certs/ca_bundle.crt'),
+    cert: fs.readFileSync('C:/certs/certificate.crt'),
+    httpsPort: 7777
+  };
 </code></pre>
+<h3>Achieve HTTP2:</h3>
+<p>Install Node.js v10.16.0 or later.</p>
+<p><b>Using HTTP2 on Achieve</b> is also easy. It shares configuration set-ups with 
+Achieve HTTP/S. It also has its own listen method - listen2(). You may use HTTP2 without encryption and without 
+security certificates. Simply follow instructions for HTTP above, but using .listen2() rather than .listen(). Note however 
+that browsers are not accepting unencrypted traffic on HTTP2. If your target client is a web browser, or if you need secure 
+connections with other clients, follow the instructions for HTTPS above (using .listen2()), but with the <u><i><b>port property 
+name http2Port</b></i></u>. Achieve HTTP2 requires Node.js v10.16.0 or higher.</p>
 </section>

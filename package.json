@@ -1,7 +1,7 @@
 {
   "name": "achieve",
-  "version": "1.2.0",
-  "description": "Achieve is a modern HTTP/S server that runs on Node.js and uses JavaScript Servlets to initiate back end processing.",
+  "version": "1.3.1",
+  "description": "Achieve is a modern (http, https, http2) web server that runs on Node.js and uses JavaScript Servlets to initiate back end processing.",
   "main": "achieve",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,12 +11,12 @@
     "url": "https://github.com/highlevellogic/achieve.git"
   },
   "keywords": [
-    "servlets",
     "server",
-    "microservice",
-    "compression",
-    "javascript servlets",
-    "js servlets",
+    "http",
+    "https",
+    "http2",
+    "servlets",
+    "microservices",
     "streaming video"
   ],
   "author": "Roger F. Gay (HLL Project http://hll.nu)",

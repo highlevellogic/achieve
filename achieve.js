@@ -90,6 +90,9 @@ exports.allowAccess = function (ad) {
 }
 var achieveApp = function (req, res) {
    // Get information about the requested file or application.
+ //  let urlParsed = url.parse(req.headers.referer, true);
+   console.log("url: " + req.url + ", protocol: " + this.protocol);
+   req.protocol = this.protocol;
    let fileInfo = setFileInfo(req,res,basePath);
  // display(fileInfo);
    // If request is a directory, it must have a trailing slash (otherwise resources such as css and js won't be loaded).
@@ -133,6 +136,62 @@ var achieveApp = function (req, res) {
 	   }
    }
 }
+exports.listen2 = function (ioptions) {
+  http2 = require('http2');
+  
+  let server;
+  let ssl = false;
+  let sport, portDefault;
+
+  if(nv < 10160) {
+    console.log("You need to update Node.js to at least v10.16.0 to run HTTP2.");
+    return;
+  }
+  try {
+  if (typeof ioptions === "object") {
+    if (ioptions.ca === undefined || ioptions.key === undefined || ioptions.cert === undefined) {
+      console.log("FATAL ERROR: Security certification list is insufficient for SSL.");
+      return;
+    }
+    ssl = true;
+    portDefault = 443;
+    sport = ioptions.http2Port;
+  } else {
+    portDefault = 80;
+    sport = ioptions;
+  }
+
+  if (sport === undefined) {
+    sport=portDefault;
+  } else if (Number.isNaN(sport)) {
+    console.log("http2 port " + sport + " is not a number. Setting port to default: " + portDefault + ".");
+    sport=portDefault;
+  } else if (sport<1024 || sport>49151) {
+    console.log("http2 port " + sport + " is outside acceptable range. (1024-49151) Setting port to default: " + portDefault + ".");
+    sport=portDefault;
+  }
+  } catch (err) {
+    console.log("Error setting port in slisten(). Setting port to default.")
+    sport=portDefault;
+  }
+  if (!bCachingCheck) exports.setCaching(bCaching);
+
+  if (ssl) {
+    server = http2.createSecureServer(ioptions, achieveApp.bind({protocol:"http2.https"})).listen(sport);
+  } else {
+    server = http2.createServer(achieveApp.bind({protocol:"http2.http"})).listen(sport);
+  }
+
+  console.log("\n" + version + " HTTP2 " + (ssl ? "(secure)" : "(insecure)") + " is running on port " + sport + ". (Node.js version " + process.version + ")");
+  console.log("Path to application base: " + basePath);
+  console.log("Path to root application: " + rootPath);
+  console.log("Browser caching: " + (bCaching ? "on" : "off"));
+  console.log("Static compression: " + (compress ? "on" : "off"));
+  
+  console.log("\n");
+  return server;
+  
+}
 exports.slisten = function (ioptions) {
   https = require('https');
   
@@ -169,7 +228,7 @@ exports.slisten = function (ioptions) {
   }
   if (!bCachingCheck) exports.setCaching(bCaching);
   
-  server = https.createServer(ioptions, achieveApp).listen(sport);
+  server = https.createServer(ioptions, achieveApp.bind({protocol:"https"})).listen(sport);
 
   console.log("\n" + version + " HTTPS is running on port " + sport + ". (Node.js version " + process.version + ")");
   console.log("Path to application base: " + basePath);
@@ -208,7 +267,7 @@ exports.listen = function (port) {
   }
   if (!bCachingCheck) exports.setCaching(bCaching);
   
-  server = http.createServer(achieveApp).listen(port);
+  server = http.createServer(achieveApp.bind({protocol:"http"})).listen(port);
 
   console.log("\n" + version + " HTTP is running on port " + port + ". (Node.js version " + process.version + ")");
   console.log("Path to application base: " + basePath);
