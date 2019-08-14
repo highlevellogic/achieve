@@ -119,7 +119,7 @@ Security certificates, and how to obtain them (cost free) is explained below.</p
 <pre><code>
   const server = require('achieve');
   const fs = require('fs');
-
+  
   const options = {  // An easy way to acquire free certificates is explained below.
     key: fs.readFileSync('C:/certs/private.key'),   // For certificate files that have been placed in C:/certs/
     ca: fs.readFileSync('C:/certs/bundle.crt'),     // optional, provides "full chain" of certificates
