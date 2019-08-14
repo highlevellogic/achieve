@@ -122,6 +122,7 @@ Security certificates, and how to obtain them (cost free) is explained below.</p
 
   const options = {  // An easy way to acquire free certificates is explained below.
     key: fs.readFileSync('C:/certs/private.key'),   // For certificate files that have been placed in C:/certs/
+    ca: fs.readFileSync('C:/certs/bundle.crt'),     // optional, provides "full chain" of certificates
     cert: fs.readFileSync('C:/certs/certificate.crt')
   };
   server.slisten(options);
@@ -131,6 +132,7 @@ to the options object.</p>
 <pre><code>
   const options = {
     key: fs.readFileSync('C:/certs/private.key'),
+    ca: fs.readFileSync('C:/certs/bundle.crt'),  // optional
     cert: fs.readFileSync('C:/certs/certificate.crt'),
     httpsPort: 7777
   };
