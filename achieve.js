@@ -97,7 +97,9 @@ var achieveApp = function (req, res) {
  // display(fileInfo);
    // If request is a directory, it must have a trailing slash (otherwise resources such as css and js won't be loaded).
    if (fileInfo.redirect) {
-	 var newUrl = path.join(req.url, "/");
+     var qString = req.url.split("?");
+	   var newUrl = path.join(qString[0], "/");
+     if (qString.length == 2) newUrl = newUrl+"?"+qString[1];
      res.statusCode = 301;
      res.setHeader('Content-Type', 'text/plain');
      res.setHeader('Location', newUrl);
@@ -118,7 +120,12 @@ var achieveApp = function (req, res) {
 		reportError(res,fileInfo.fullPath,500,"Error attempting to serve " + fileInfo.fullPath);
 	 }
    } else if (fileInfo.audioVisual) {
-     stream(req,res,fileInfo);
+     // Bugs related to streaming video over http2.
+     if (this.protocol == "http2.https") {
+       reportError(res,fileInfo.fullPath,500,"Video streaming not supported on HTTP2.");
+     } else {
+       stream(req,res,fileInfo);
+     }
    // If file does not exist, return 404 File not found error.
    } else if (fileInfo.noSuchFile) {
 	   reportError(res,fileInfo.fullPath,404,"File not found: " + fileInfo.fullPath);
