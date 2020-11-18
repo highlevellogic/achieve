@@ -806,30 +806,20 @@ function ServeFile (req,res,fileInfo) {
   let ext="";
 
   if(bCaching && validCached(fileInfo,response)) return;
-
-    let readStream = fs.createReadStream(filePath);
-	readStream.on('open', function () {
-    res.setHeader('content-type', fileInfo.contentType);
-    res.setHeader('server', version);
-    if (bCaching) res.setHeader('etag', fileInfo.etag);
-    res.statusCode = 200;
-    readStream.pipe(response);
-    });
-    readStream.on('error', function(err) {
-      try {
-        console.log("err" + err.toString());
-        response.end(err.toString());
-	  } catch (cerr) {
-		// To ensure against crash.
-	  }
-    });
-	readStream.on('end', function () {
-   	  try {
-        response.end();
-	  } catch (cerr) {
-      console.log("end error, file: " + filePath + "\n" + cerr);
-	  }
-    });
+   
+   res.setHeader('content-type', fileInfo.contentType);
+   res.setHeader('server', version);
+   if (bCaching) res.setHeader('etag', fileInfo.etag);
+   res.statusCode = 200;
+   
+   let readStream = fs.createReadStream(filePath)
+   .on ('error', function (err) {
+     console.log(err.message);
+     res.setHeader('content-type', 'text/plain');
+     res.statusCode = 500;
+     res.end(err.message);
+   });
+  readStream.pipe(res);
   };
 }
 // Not implemented - input object to be sent to JavaScript application
