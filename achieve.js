@@ -121,7 +121,7 @@ var achieveApp = function (req, res) {
 	 }
    } else if (fileInfo.audioVisual) {
      // Bugs related to streaming video over http2.
-     if (this.protocol == "http2.https") {
+     if (false /*this.protocol == "http2.https" */) {
        reportError(res,fileInfo.fullPath,500,"Video streaming not supported on HTTP2.");
      } else {
        stream(req,res,fileInfo);
@@ -725,8 +725,8 @@ function startObject (req,res,fileInfo) {
           return;
         }
           response.statusCode=200;
-			    response.write(content);
-          response.end();
+			    response.write(content,'binary');
+          response.end(null,'binary');
 		    } catch (err) {
           response.end();
           wmsg="WARNING: Return value from servlet " + fileInfo.path + " is " + content + ".";
@@ -999,16 +999,12 @@ let stream = function(req, res, fileInfo) {
       }
       res.writeHead(responseCode, responseHeader);
       var stream = fs.createReadStream(fileName, { start: start, end: end })
-        .on("readable", function() {
-          var chunk;
-          while (null !== (chunk = stream.read(1024))) {
-            res.write(chunk);
-          }
-          }).on("error", function(err) {
+       .on("error", function(err) {
           res.end(err);
         }).on("end", function(err) {
           res.end();
         });
+      stream.pipe(res);
     }
     else
     {

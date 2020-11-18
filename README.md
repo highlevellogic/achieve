@@ -17,7 +17,7 @@ and forwarding ports, <a href="https://hll.nu/achieve/contents.htm" target="_bla
 <li>Supports defaults index.html, index.htm, index.js</li>
 <li>Supports browser caching. (ETag)</li>
 <li>Supports compression with ss caching. (gzip,deflate)</li>
-<li>Streaming audio/video files. (http and https)</li>
+<li>Streaming audio/video files.</li>
 </ul>
 <h3>Special Features:</h3>
 <ul>
