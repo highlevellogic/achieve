@@ -29,6 +29,7 @@ let reqCount = 0;
    let nv = nodeVersion();
    let etagString = nv + shortVersion;
    let defaultCharSet="utf-8";
+   let proxies={};
 
 exports.showMimeTypes = function () {
   showMimes=true;

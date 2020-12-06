@@ -1,6 +1,6 @@
 {
   "name": "achieve",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Achieve is a modern (http, https, http2) web server that runs on Node.js and uses JavaScript Servlets to initiate back end processing.",
   "main": "achieve",
   "scripts": {
@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/highlevellogic/achieve#readme",
   "engines": {
-    "node": ">= 8.2.0"
+    "node": ">= 12.8.1"
   },
   "dependencies": {}
 }
