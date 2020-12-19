@@ -26,7 +26,7 @@ and forwarding ports, <a href="https://hll.nu/achieve/contents.htm" target="_bla
 <li>Servlets handle HTTP/S Response. App just uses return statement.</li>
 <li>Useful app error reports can be displayed in browser console.</li>
 <li>Automatic reload of modified files.</li>
-<li>Servlet Context Object allows developer to take complete control.</li>
+<li>Servlet Session Object allows developer to take complete control.</li>
 <li>Node.js environment configuration. (development,production)</li>
 <li>Configurable apps folder path and path to the ROOT application.</li>
 </ul>
@@ -59,7 +59,7 @@ server.listen(8989);  // listens on port 8989
 <h3>Hello World Servlet:</h3>
 <pre><code>
 // Save this code in file index.js in the apps directory ("application base" - directory where you are running the server)<br>
-exports.servlet = function (context)  {
+exports.servlet = function (session)  {
   return "Hello World!";  // Achieve handles the response.
 }
 </code></pre>
@@ -74,13 +74,13 @@ HTML file and save it to your apps directory as index.htm. Open the inspector in
 reload http://localhost:8989 On the browser side, the trick is in the callback() function.</p>
 <h3>Access parameter values that were sent with the request:</h3>
 <pre><code>
-    var myParm = context.parms.myParm;  // or
-    var myParm = context.parms['myParm'];
+    var myParm = session.parms.myParm;  // or
+    var myParm = session.parms['myParm'];
 </code></pre>
 
 <h3>Servlets can use other functions:</h3>
 <pre><code>
-exports.servlet = function (context)  {
+exports.servlet = function (session)  {
   return hello();
 }
 function hello ()  {
@@ -95,20 +95,20 @@ exports.hello () {
 }
 
 // in myservlet.js
-exports.servlet = function (context) {
-  var other = context.load("otherfile.js");  // Extends servlet features to otherfile; reloads if cache is stale.
+exports.servlet = function (session) {
+  var other = session.load("otherfile.js");  // Extends servlet features to otherfile; reloads if cache is stale.
   return other.hello();
 }
 </code></pre>
-<h3>The Servlet Context</h3>
-<p style="margin-bottom:0px;">You can use the Servlet Context to take control of your back end process. The Servlet Context contains:</p>
+<h3>The Servlet Session</h3>
+<p style="margin-bottom:0px;">You can use the Servlet Session to take control of your back end process. The Servlet Session contains:</p>
 <pre><code>
-  context.request    // The session request object.
-  context.response   // The session response object.
-  context.parms      // Parameters sent with the request
-  context.dirPath    // The current application path on your computer
-  context.load       // The JavaScript Servlet load() method (see above)
-  context.allowAsync // Set to true if you handle the response in an asynchronous process.
+  session.request    // The session request object.
+  session.response   // The session response object.
+  session.parms      // Parameters sent with the request
+  session.dirPath    // The current application path on your computer
+  session.load       // The JavaScript Servlet load() method (see above)
+  session.allowAsync // Set to true if you handle the response in an asynchronous process.
 </code></pre>
 <h3>Achieve HTTPS:</h3>
 <p><b>Using HTTPS on Achieve</b> is actually quite simple. It shares configuration set-ups with 
@@ -145,4 +145,6 @@ security certificates. Simply follow instructions for HTTP above, but using .lis
 that browsers are not accepting unencrypted traffic on HTTP2. If your target client is a web browser, or if you need secure 
 connections with other clients, follow the instructions for HTTPS above (using .listen2()), but with the <u><i><b>port property 
 name http2Port</b></i></u>. Achieve HTTP2 requires Node.js v10.16.0 or higher.</p>
+<h3>Copyright and License</h3>
+<p>copyright © 2020, Roger F. Gay, may be freely distributed with the MIT license</p>
 </section>
