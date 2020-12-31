@@ -1,6 +1,7 @@
 <section style="background-color:LightSkyBlue;">
 Achieve is a modern (http, https, http2) web server that runs on Node.js and uses JavaScript Servlets to initiate back end processing.
 <a href="https://hll.nu"><img src="https://hll.nu/achieve/skyhigh1.jpg"></a>
+<h3><i>NEWS:</i> Proxy capability added: see <a href="https://www.npmjs.com/package/achieve-proxy" target="_blank">achieve-proxy</a>.</h3>
 <h1>Achieve Node.js Server with JavaScript Servlets</h1>
 <p><span style="font-family:'Merienda';font-size:125%;font-weight:bold;color:rgb(46, 190, 43);">Achieve</span> is a modern (http, https, http2) web server 
 that runs on Node.js and uses JavaScript Servlets to initiate back end processing. It is available via npm.<p>
@@ -32,7 +33,7 @@ and forwarding ports, <a href="https://hll.nu/achieve/contents.htm" target="_bla
 </ul>
 
 <h2>Quick Start</h2>
-<p>Install Node.js v8.1 or later. (Developed / tested with v8.9.4)</p>
+<p>Install Node.js</p>
 <h3>Achieve HTTP:</h3>
 <h3>Running Achieve HTTP (simplest form):</h3>
 <pre><code>

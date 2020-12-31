@@ -4,22 +4,25 @@ const path = require('path');
 const url = require('url');
 const querystring = require('querystring');
 // Optional modules. Load only when used.
+
 let http;
 let https;
 let zlib;
 // const avmine = require("./avmine");
 // const dt = require('./datetime');
+// let flatted = require('flatted');
 
 if (process.env.NODE_ENV === undefined) process.env.NODE_ENV = 'production';
 
 let moduleLoadTimes = {};
 
 let reqCount = 0;
-
+let connectionArray;
    // basePath is the root directory for applications. (Like webapps on Tomcat or htdocs on Apache httpd.)
    // The default is the directory of the entry point or main module for the application.
    // It can be reset by the app developer using .setAppPath(appDir);
-   let basePath = path.normalize(require.main.filename.substring(0,require.main.filename.lastIndexOf(path.sep)));
+ //  let basePath = path.normalize(require.main.filename.substring(0,require.main.filename.lastIndexOf(path.sep)));
+   let basePath = require.main.path;
    let rootPath=basePath;
    let relRootPath="";
    let bCaching=false, bCachingCheck=false, rootDir=false, compress=false, showMimes=false;
@@ -29,8 +32,18 @@ let reqCount = 0;
    let nv = nodeVersion();
    let etagString = nv + shortVersion;
    let defaultCharSet="utf-8";
-   let proxies={};
+   let proxies=false;
+   let achieve_proxy=false;
+   let _this = this;
 
+exports.setProxy = function (prox) {
+  if (!proxies) proxies = {};
+  try {
+    for (var key in prox) proxies[key.replace(/\\/g,"/")] = prox[key];
+  } catch (e) {
+    console.log("error: problem with proxy object: " + e.message);
+  }
+}
 exports.showMimeTypes = function () {
   showMimes=true;
 }
@@ -93,6 +106,17 @@ var achieveApp = function (req, res) {
    // Get information about the requested file or application.
  //  let urlParsed = url.parse(req.headers.referer, true);
    console.log("url: " + req.url + ", protocol: " + this.protocol);
+   
+/* local and remote differ when outside the lan
+   console.log("localAddress: " + req.socket.localAddress);
+   console.log("remoteAddress: " + req.socket.remoteAddress);
+   console.log("remoteAddress: " + req.connection.remoteAddress);
+*/
+   
+   
+ //  res.setHeader('Access-Control-Allow-Headers', '*');
+  // res.setHeader('Access-Control-Allow-Origin', '*');
+  // res.ok = 1;
    req.protocol = this.protocol;
    let fileInfo = setFileInfo(req,res,basePath);
  // display(fileInfo);
@@ -179,7 +203,7 @@ exports.listen2 = function (ioptions) {
     sport=portDefault;
   }
   } catch (err) {
-    console.log("Error setting port in slisten(). Setting port to default.")
+    console.log("Error setting port in listen2(). Setting port to default.")
     sport=portDefault;
   }
   if (!bCachingCheck) exports.setCaching(bCaching);
@@ -237,6 +261,12 @@ exports.slisten = function (ioptions) {
   if (!bCachingCheck) exports.setCaching(bCaching);
   
   server = https.createServer(ioptions, achieveApp.bind({protocol:"https"})).listen(sport);
+/*
+  server.on('connection', function (socket) {
+    console.log("*********** CONNECTION : " + JSON.stringify(socket));
+    connectionArray = socket;
+  });
+*/
 
   console.log("\n" + version + " HTTPS is running on port " + sport + ". (Node.js version " + process.version + ")");
   console.log("Path to application base: " + basePath);
@@ -397,7 +427,7 @@ function reportError (res,account,statusCode,reason) {
     res.end(reason);
   }
 }
-function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag,audioVisual) {
+function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag,audioVisual,proxyOptions) {
   this.basePath = basePath;
   this.path = path;
   this.fullPath = fullPath;
@@ -412,13 +442,19 @@ function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,que
   this.reload = reload;
   this.etag = etag;
   this.audioVisual = audioVisual;
+  this.proxyOptions = proxyOptions;
 }
-function Context (req,res,parms,dirPath,load) {
+function Context (req,res,parms,dirPath,load,proxyOptions=false,proxies=false,proxy) {
   this.request = req;
   this.response = res;
-  this.parms = parms;
+  this.parms = parms; // deprecate
+  this.params = parms;
   this.dirPath = dirPath;
   this.load = load;
+  this.proxy = proxy;
+  this.proxyOptions = proxyOptions;
+  this.proxies = proxies;
+  this.rtErrorMsg = rtErrorMsg;
   this.allowAsync = false;
 }
 function PathInfo (filePath,reload,action,stats) {
@@ -480,6 +516,20 @@ let defaultFiles = [
   "index.htm",
   "index.js"
 ];
+function checkProxies (reqPath) {
+  let proxyRequest = false;
+  Object.keys(proxies).forEach(proxy => {
+    if (reqPath.startsWith(proxy)) {
+      proxyRequest = {};
+      proxyRequest.options = {};
+      proxyRequest.url = proxy;
+      Object.assign(proxyRequest.options, proxies[proxy]);
+      proxyRequest.options.path = reqPath.substring(proxy.length);
+      return proxyRequest;
+    }
+  });
+  return proxyRequest;
+}
 function setFileInfo (req, res, basePath) {
    let serveFile=true;
    let headers=req.headers;
@@ -487,18 +537,31 @@ function setFileInfo (req, res, basePath) {
    if (!headers['accept-encoding']) headers['accept-encoding'] = '';  // gzip, etc. 
    let reload=false;
    let thisBasePath=basePath;
+   let proxyOptions="";
+   let audioVisual = false;
 console.log("req.url: " + req.url);
+   if (proxies) {
+     let proxyRequest = checkProxies(req.url);
+     if (proxyRequest) {
+       proxyOptions = proxyRequest.options;
+       proxyOptions.url = req.url = proxyRequest.url;
+       proxyOptions.connectionArray = connectionArray;
+       achieve_proxy = _this.loadModule('achieve-proxy');
+     } else {
+       // console.log("proxyRequest not true: " + proxyRequest);
+     }
+   }
    let pathObj = url.parse(req.url,true);
    let uncheckedPath = pathObj.pathname;
    // If undefined, noSuchFile in FileInfo object is set to true.
-   if (uncheckedPath === undefined) return new FileInfo(thisBasePath,req.url,fullPath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag);
+   if (uncheckedPath === undefined) return new FileInfo(thisBasePath,req.url,fullPath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
    // Check to see if the ROOT directory is used, and if so; whether it still exists
  //  if (rootDir && uncheckedPath.lastIndexOf("/") == 0) thisBasePath = rootPath;
    // checkPath returns path request after performing various checks, (See checkPath() for details.)
    let checkedPath = checkPath(thisBasePath,uncheckedPath);
-   if (checkedPath.action == "noSuchFile") return new FileInfo(thisBasePath,req.url,checkedPath.filePath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag);
+   if (checkedPath.action == "noSuchFile") return new FileInfo(thisBasePath,req.url,checkedPath.filePath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
    // If null, redirect in FileInfo object is set to true. (Needs redirect to add trailing slash.)
-   if (checkedPath.action == "redirect") return new FileInfo(thisBasePath,req.url,fullPath,dirPath,suffix,headers,contentType,queryString,false,true,false,reload,etag);
+   if (checkedPath.action == "redirect") return new FileInfo(thisBasePath,req.url,fullPath,dirPath,suffix,headers,contentType,queryString,false,true,false,reload,etag,audioVisual,proxyOptions);
    let urlArray = req.url.split("?");
    let currentPath = checkedPath.filePath;
    queryString = urlArray[1] || ""; // without '?'
@@ -518,7 +581,6 @@ console.log("req.url: " + req.url);
      }
    }
    // Get MIME type.
-   let audioVisual=false;
    contentType = mimeList[suffix];
    // 415 Unsupported Media type is supported above.
    // Remove or conditionalize the following undefined check to make it work
@@ -550,7 +612,7 @@ console.log("req.url: " + req.url);
        }
      }
    }
-   return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual);
+   return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual,proxyOptions);
 }
 function checkCPath (path,ext,oAge) {
   try {
@@ -648,11 +710,8 @@ function getAccount (res,fileInfo) {
       delete require.cache[require.resolve(startPage)];
 	  }
 	} catch (err) {
-	   var stop1 = err.stack.indexOf(err.message);
-	   var stop = err.stack.substring(0,stop1).lastIndexOf('\n');
-	   var errDescription = err.stack.substring(fileInfo.basePath.length,stop).replace(/\\/g,"/");
      code = 500;
-	   reason = "Failed to load module: " + err.message + " \nreason: " + errDescription;
+	   reason = "Failed to load module: " + rtErrorMsg(err);
 	   accountRoot = null;
 	}
   accountInfo = new Account(accountRoot,startPage,code,reason);
@@ -682,7 +741,7 @@ function startObject (req,res,fileInfo) {
   if (fs.existsSync(myAppPath)) {
 	  if (reload) {
 		  delete require.cache[require.resolve(myAppPath)];
-		  moduleLoadTimes[myAppPath] = new Date().getTime();
+		  moduleLoadTimes[myAppPath] = fs.statSync(myAppPath).mtimeMs; // new Date().getTime();
 	  }
     myApp = require(myAppPath);
 	  goodPath = true;
@@ -694,7 +753,7 @@ function startObject (req,res,fileInfo) {
     let wmsg;
     let content;
     response.setHeader('server', version);
-    response.setHeader('Content-Type','text/plain;charset=utf-8');
+    response.setHeader('Content-Type','text/plain');
 
         if (this.req.method == "POST") {
 	      this.req.on('data', function(data) {
@@ -712,14 +771,14 @@ function startObject (req,res,fileInfo) {
         request.post = querystring.parse(queryData);
         let boundLoader = load.bind({request:request,response:response,dirPath:fileInfo.dirPath});
         // This is where the application code is "called"
-        let context = new Context(request,response,request.post,fileInfo.dirPath,boundLoader);
-        content = myApp.servlet(context);
+        context = new Context(request,response,request.post,fileInfo.dirPath,boundLoader,fileInfo.proxyOptions,proxies,achieve_proxy);
+        let content = myApp.servlet(context);
         if (response.finished || context.allowAsync) {
           console.log("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
           return;
         } else if (content === undefined || content === null) {
           wmsg="WARNING: Return value from servlet " + fileInfo.path + " is " + content + ".";
-          response.statusCode=608;
+          response.statusCode=500;
 			    response.write(wmsg);
           response.end();
           console.log(wmsg);
@@ -729,18 +788,26 @@ function startObject (req,res,fileInfo) {
 			    response.write(content,'binary');
           response.end(null,'binary');
 		    } catch (err) {
-          response.end();
-          wmsg="WARNING: Return value from servlet " + fileInfo.path + " is " + content + ".";
+          if (response.finished || context.allowAsync) {
+          console.log("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
+          return;
+          }
+          wmsg="WARNING: Return value from servlet " + fileInfo.path + " is " + content + ". " + rtErrorMsg(err);
           console.log(wmsg);
-			    rtErrorMsg(err,shortPath);
+          wmsg="post Return type from servlet is " + typeof content + ". " + rtErrorMsg(err);
+          response.statusCode=500;
+			    response.write(wmsg);
+          response.end();
+          console.log(wmsg);
 		  	}
 	      });
         } else if (this.req.method == "GET") {
+          let context;
 		  try {
         request.get =  querystring.parse(fileInfo.queryString);
 		  	let boundLoader = load.bind({request:request,response:response,dirPath:fileInfo.dirPath});
         // This is where the application code is "called"
-        let context = new Context(request,response,request.get,fileInfo.dirPath,boundLoader);
+        context = new Context(request,response,request.get,fileInfo.dirPath,boundLoader,fileInfo.proxyOptions,proxies,achieve_proxy);
         let content = myApp.servlet(context);
         if (response.finished || context.allowAsync) {
           console.log("INFO: GET " + fileInfo.path + " session ended or will end by application.");
@@ -750,10 +817,13 @@ function startObject (req,res,fileInfo) {
 			  response.write(content);
         response.end();
 		  } catch (err) {
-        wmsg="WARNING: " + fileInfo.path + " Return type from servlet is " + typeof content + ".";
-        response.statusCode=608;
-			  response.write(wmsg);
-        response.end();
+        if (response.finished || context.allowAsync) {
+          console.log("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
+          return;
+        }
+        wmsg="get Return type from servlet is " + typeof content + ". " + rtErrorMsg(err);
+        response.statusCode=500;
+        response.end(wmsg);
         console.log(wmsg);
 		  }
         } else if (this.req.method == "HEAD") {
@@ -761,11 +831,21 @@ function startObject (req,res,fileInfo) {
           response.setHeader('server',version);
           if (bCaching) response.setHeader('etag',fileInfo.etag);
           response.setHeader('content-type', fileInfo.contentType);
-          response.setHeader('transfer-encoding','chunked');
+          response.end();
+        } else if (this.req.method == "OPTIONS") {
+          console.log("OPTIONS REQUEST: " + this.req);
+          response.statusCode = 204;
+          response.setHeader('access-control-allow-headers', '*');
+          response.setHeader('access-control-allow-origin', "*");
+          response.setHeader('access-control-max-age', 86400);
+          response.setHeader('date', new Date());
+          response.setHeader('allow', "GET, HEAD, POST, OPTIONS");
+          response.setHeader('server', version);
           response.end();
         } else {
           response.statusCode = 501;
-          response.end(this.req.method + "request method is not yet supported on the server: " + version);
+          console.log(this.req.method + " request method is not yet supported on the server: " + version);
+          response.end(this.req.method + " request method is not yet supported on the server: " + version);
         }
     } else if (goodPath) {
 	    response.write("No .servlet function in file: " + myAppPath);
@@ -782,13 +862,13 @@ function startObject (req,res,fileInfo) {
 // returned so that it can be be sent to browser and displayed in its console.
 // (Display in browser console requires cooperating AJAX handling in the browser
 //    when http response status code != 200; console.error(..responseText))
-function rtErrorMsg (err,shortPath) {
+function rtErrorMsg (err,shortPath="",code=500) {
+  err.stack = err.stack.replace(/\\/g,"/");
   var part1 = err.stack.substring(0,err.stack.indexOf('\n'));
-  var fileName = shortPath.substring(shortPath.lastIndexOf("\\")+1);
-  var stop1 = err.stack.indexOf(shortPath);
-  var part2 = err.stack.substring(stop1);
-  part2 = part2.substring(0,part2.indexOf('\n')).replace(/\\/g,"/");
-  var reason = "Runtime error: " + part2 + "\n  " + part1;
+  var part2 = err.stack.substring(part1.length);
+  part2 = part2.substring(0,part2.indexOf(')'));
+  part2 = part2.substring(part2.lastIndexOf('/')+1);
+  var reason = "Runtime error: " + part1 + " " + part2;
   console.log("Error running servlet: " + reason);
   return reason;
 }
@@ -839,6 +919,23 @@ function output (response,ext,charset,mimeType) {
   this.charset = charset;
   this.mimeType = mimeType;
 }
+// To provide servlet characteristics to locally installed node modules
+// including achieve itself
+exports.loadModule = function (moduleName) {
+  let fullPath;
+  let localModulePath = require.main.paths[0];
+  try {
+    fullPath = path.normalize(localModulePath +'/'+moduleName+'/'+moduleName+'.js');
+    stats = fs.statSync(fullPath);
+	  if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
+	    delete require.cache[require.resolve(fullPath)];
+      moduleLoadTimes[fullPath] = stats.mtimeMs; // new Date().getTime();
+	  }
+    return require(moduleName);
+  } catch (err) {
+    console.log("loadModule: " + rtErrorMsg(err));
+  }
+}
 let load = function (filePath) {
   let dirname=this.dirPath;
   let fullPath = path.join(dirname,filePath+".js");
@@ -846,15 +943,12 @@ let load = function (filePath) {
     stats = fs.statSync(fullPath);
 	  if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
 	    delete require.cache[require.resolve(fullPath)];
+      moduleLoadTimes[fullPath] = stats.mtimeMs;
 	  }
     return require(fullPath);
   } catch (err) {
-    this.response.setHeader('Transfer-Encoding', 'chunked');
-    this.response.writeHead(500, {'Content-Type': 'text/plain'});
-    var stop1 = err.stack.indexOf(err.message);
-	  var stop = err.stack.substring(0,stop1).lastIndexOf('\n');
-	  var errDescription = err.stack.substring(basePath.length,stop).replace(/\\/g,"/");
-	  reason = "Failed to load module: " + err.message + " \nreason: " + errDescription;
+    this.response.writeHead(500, {'Content-Type': 'text/plain;'});
+    reason = "load: " + rtErrorMsg(err);
 	  console.log(reason);
   	this.response.write(reason);
   } 
