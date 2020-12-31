@@ -1,6 +1,6 @@
 {
   "name": "achieve",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Achieve is a modern (http, https, http2) web server that runs on Node.js and uses JavaScript Servlets to initiate back end processing.",
   "main": "achieve",
   "scripts": {

@@ -544,8 +544,10 @@ console.log("req.url: " + req.url);
      let proxyRequest = checkProxies(req.url);
      if (proxyRequest) {
        proxyOptions = proxyRequest.options;
-       proxyOptions.url = req.url = proxyRequest.url;
-       proxyOptions.connectionArray = connectionArray;
+       if (proxyRequest.hasOwnProperty('url') {
+         proxyOptions.url = req.url = proxyRequest.url;
+       }
+     //  proxyOptions.connectionArray = connectionArray;
        achieve_proxy = _this.loadModule('achieve-proxy');
      } else {
        // console.log("proxyRequest not true: " + proxyRequest);
