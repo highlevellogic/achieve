@@ -75,10 +75,10 @@ HTML file and save it to your apps directory as index.htm. Open the inspector in
 reload http://localhost:8989 On the browser side, the trick is in the callback() function.</p>
 <h3>Access parameter values that were sent with the request:</h3>
 <pre><code>
-    var myParm = session.parms.myParm;  // or
-    var myParm = session.parms['myParm'];
+    var myParm = session.params.myParm;  // or
+    var myParm = session.params['myParm'];
 </code></pre>
-
+session.request.get and session.request.post are also supported.
 <h3>Servlets can use other functions:</h3>
 <pre><code>
 exports.servlet = function (session)  {
@@ -106,7 +106,7 @@ exports.servlet = function (session) {
 <pre><code>
   session.request    // The session request object.
   session.response   // The session response object.
-  session.parms      // Parameters sent with the request
+  session.params      // Parameters sent with the request
   session.dirPath    // The current application path on your computer
   session.load       // The JavaScript Servlet load() method (see above)
   session.allowAsync // Set to true if you handle the response in an asynchronous process.
