@@ -105,7 +105,15 @@ exports.allowAccess = function (ad) {
 var achieveApp = function (req, res) {
    // Get information about the requested file or application.
  //  let urlParsed = url.parse(req.headers.referer, true);
-   console.log("url: " + req.url + ", protocol: " + this.protocol);
+   if (req.url.charAt(0) == '/') {
+     console.log("url: " + req.url + ", protocol: " + this.protocol);
+   } else {
+     console.log("url: " + req.url + ", protocol: " + this.protocol);
+     res.statusCode=400;
+     res.setHeader('Content-Type','text/plain;charset=utf-8');
+     res.end("Bad Request");
+     return;
+   }
    
 /* local and remote differ when outside the lan
    console.log("localAddress: " + req.socket.localAddress);
