@@ -1,5 +1,5 @@
 <section style="background-color:LightSkyBlue;">
-Achieve is a modern (http, https, http2) web server that runs on Node.js and uses JavaScript Servlets to initiate back end processing.
+Achieve is a modern (http, https, http2) high-performance web server that runs on Node.js and uses JavaScript Servlets to initiate back end processing.
 <a href="https://hll.nu"><img src="https://hll.nu/achieve/skyhigh1.jpg"></a>
 <h3><i>NEWS:</i> Proxy capability added: see <a href="https://www.npmjs.com/package/achieve-proxy" target="_blank">achieve-proxy</a>.</h3>
 <h1>Achieve Node.js Server with JavaScript Servlets</h1>
