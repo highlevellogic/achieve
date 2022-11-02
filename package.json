@@ -1,7 +1,7 @@
 {
   "name": "achieve",
-  "version": "2.0.7",
-  "description": "Achieve is a modern (http, https, http2) web server that runs on Node.js and uses JavaScript Servlets to initiate back end processing.",
+  "version": "2.0.11",
+  "description": "A modern high-performance, developer-friendly web server.",
   "main": "achieve",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

@@ -103,12 +103,13 @@ exports.allowAccess = function (ad) {
   }
 }
 var achieveApp = function (req, res) {
+ try {
    // Get information about the requested file or application.
  //  let urlParsed = url.parse(req.headers.referer, true);
    if (req.url.charAt(0) == '/') {
-     console.log("url: " + req.url + ", protocol: " + this.protocol);
+     console.log("url: " + req.url + ", origin: " + req.connection.remoteAddress || req.headers['x-forwarded-for'] || request.socket.remoteAddress || req.connection.socket.remoteAddress);
    } else {
-     console.log("url: " + req.url + ", protocol: " + this.protocol);
+     console.log("url: " + req.url + ", origin: " + req.connection.remoteAddress || req.headers['x-forwarded-for'] || request.socket.remoteAddress || req.connection.socket.remoteAddress);
      res.statusCode=400;
      res.setHeader('Content-Type','text/plain;charset=utf-8');
      res.end("Bad Request");
@@ -175,6 +176,9 @@ var achieveApp = function (req, res) {
 	     reportError(res,accountInfo.account,accountInfo.code,accountInfo.reason);
 	   }
    }
+ } catch (e) {
+   console.log("Catchall error, achieveApp: " + e.stack);
+ }
 }
 exports.listen2 = function (ioptions) {
   http2 = require('http2');
