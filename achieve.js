@@ -187,10 +187,6 @@ exports.listen2 = function (ioptions) {
   let ssl = false;
   let sport, portDefault;
 
-  if(nv < 10160) {
-    console.log("You need to update Node.js to at least v10.16.0 to run HTTP2.");
-    return;
-  }
   try {
   if (typeof ioptions === "object") {
     if (ioptions.key === undefined || ioptions.cert === undefined) {
@@ -242,11 +238,7 @@ exports.slisten = function (ioptions) {
   let server;
   let tlsOptions;
   let sport;
-   
-  if(nv < 8100) {
-    console.log("You need to update Node.js to at least v8.1.0 in order to run this software.");
-    return;
-  }
+
   try {
   if (typeof ioptions !== "object") {
     console.log("FATAL ERROR: slisten() requires an options object as argument.");
@@ -294,12 +286,12 @@ exports.listen = function (port) {
   http = require('http');
     
   let server;
-  
+/*
   if(nv < 8100) {
     console.log("You need to update Node.js to at least v8.1.0 in order to run this software.");
     return;
   }
-  
+*/
   try {
   
   if (port === undefined) {
@@ -673,12 +665,8 @@ function getEncoding (req) {
 }
 function nodeVersion () {
   var result="";
-  var temp;
-  var v = process.version;
-  for (var i=0; i<v.length; i++) {
-    temp = v.charAt(i);
-    if (!isNaN(parseInt(temp))) result += temp;
-  }
+  var temp = process.versions.node.split('.');
+  for (var i=0; i<temp.length; i++) result += temp[i];
   return result;
 }
 function display (fi) {
