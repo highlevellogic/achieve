@@ -70,24 +70,24 @@ exports.setRootDir = function (root) {
 }
 exports.setAppPath = function (bp) {
   try {
-  let newPath = path.normalize(bp);
-  if (!fs.existsSync(newPath)) {
-    console.log("\nWARNING: App. Path: " + newPath + " does not exist.");
-  } else {
-    basePath = newPath;
-    rootPath = basePath;
-  }
+    let newPath = path.normalize(bp);
+    if (!fs.existsSync(newPath)) {
+      console.log("\nWARNING: App. Path: " + newPath + " does not exist.");
+    } else {
+      basePath = newPath;
+      rootPath = basePath;
+    }
   } catch (err) {console.log(err);}
 }
 exports.setCaching = function (b) {
   try {
-  if (b && fs.statSync(basePath).mtimeMs === undefined) {
-    bCaching=false;
-    console.log("\nFAILURE to set browser caching support.\nNode version must be v8 or higher.");
-  } else {
-    bCaching=b; // boolean
-  }
-  bCachingCheck=true;
+    if (b && fs.statSync(basePath).mtimeMs === undefined) {
+      bCaching=false;
+      console.log("\nFAILURE to set browser caching support.\nNode version must be v8 or higher.");
+    } else {
+      bCaching=b; // boolean
+    }
+    bCachingCheck=true;
   } catch (err) {
     console.log("ERROR setCaching: " + err);
   }
@@ -103,6 +103,7 @@ exports.allowAccess = function (ad) {
   }
 }
 var achieveApp = function (req, res) {
+  console.log(req.method);
  try {
    // Get information about the requested file or application.
  //  let urlParsed = url.parse(req.headers.referer, true);
@@ -206,7 +207,7 @@ exports.listen2 = function (ioptions) {
   } else if (Number.isNaN(sport)) {
     console.log("http2 port " + sport + " is not a number. Setting port to default: " + portDefault + ".");
     sport=portDefault;
-  } else if (sport<1024 || sport>49151) {
+  } else if ((sport<1024 && sport != portDefault) || sport>49151) {
     console.log("http2 port " + sport + " is outside acceptable range. (1024-49151) Setting port to default: " + portDefault + ".");
     sport=portDefault;
   }
@@ -254,7 +255,7 @@ exports.slisten = function (ioptions) {
   } else if (Number.isNaN(sport)) {
     console.log("https port " + sport + " is not a number. Setting port to default.");
     sport=443;
-  } else if (sport<1024 || sport>49151) {
+  } else if ((sport<1024 && sport!=443) || sport>49151) {
     console.log("https port " + sport + " is outside acceptable range. (1024-49151) Setting port to default.");
     sport=443;
   }
@@ -286,12 +287,7 @@ exports.listen = function (port) {
   http = require('http');
     
   let server;
-/*
-  if(nv < 8100) {
-    console.log("You need to update Node.js to at least v8.1.0 in order to run this software.");
-    return;
-  }
-*/
+
   try {
   
   if (port === undefined) {
@@ -299,7 +295,7 @@ exports.listen = function (port) {
   } else if (Number.isNaN(port)) {
     console.log(port + " is not a number. Setting port to default.");
     port=80;
-  } else if (port<1024 || port>49151) {
+  } else if ((port<1024 && port != 80) || port>49151) {
     console.log("Port " + port + " is outside acceptable range. (1024-49151) Setting port to default.");
     port=80;
   }
@@ -330,17 +326,6 @@ exports.listen = function (port) {
   console.log("\n");
   return server;
 }
-
-/* A way to check for websocket connection request
-server.on("upgrade",function(req,socket,head){
-console.log("upgrade: " + req.headers['upgrade'] + " " + typeof socket);
-socket.write("hello");
-socket.on('data', function(message) {
-  console.log(message);
-});
-});
-*/
-
 // extension offers a way to add functionality to the server, which will be available via the context object.
 // NOT YET IMPLEMENTED
 exports.extension = {};
@@ -756,6 +741,7 @@ function startObject (req,res,fileInfo) {
     response.setHeader('Content-Type','text/plain');
 
         if (this.req.method == "POST") {
+          console.log("using POST");
 	      this.req.on('data', function(data) {
 			try {
               queryData += data;
@@ -802,6 +788,7 @@ function startObject (req,res,fileInfo) {
 		  	}
 	      });
         } else if (this.req.method == "GET") {
+          console.log("using GET");
           let context;
 		  try {
         request.get =  querystring.parse(fileInfo.queryString);
@@ -827,6 +814,7 @@ function startObject (req,res,fileInfo) {
         console.log(wmsg);
 		  }
         } else if (this.req.method == "HEAD") {
+          console.log("using HEAD");
           response.statusCode = 200;
           response.setHeader('server',version);
           if (bCaching) response.setHeader('etag',fileInfo.etag);
