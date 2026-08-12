@@ -1,10 +1,10 @@
 {
   "name": "achieve",
-  "version": "2.2.0",
+  "version": "3.0.0-dev.0",
   "description": "A modern high-performance, developer-friendly web server.",
   "main": "achieve",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "check": "node --check achieve.js"
   },
   "repository": {
     "type": "git",

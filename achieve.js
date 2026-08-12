@@ -27,7 +27,7 @@ let connectionArray;
    let relRootPath="";
    let bCaching=false, bCachingCheck=false, rootDir=false, compress=false, showMimes=false;
    let corsdomains=[];
-   let shortVersion = require('achieve/package.json').version;
+   let shortVersion = require('./package.json').version;
    let version = "HLL Achieve v" + shortVersion;
    let nv = nodeVersion();
    let etagString = nv + shortVersion;
@@ -102,15 +102,223 @@ exports.allowAccess = function (ad) {
     return;
   }
 }
+function methodNotSupported(req, res) {
+    let message =
+        req.method +
+        " request method is not yet supported on the server: " +
+        version;
+
+    res.statusCode = 501;
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    console.log(message);
+    res.end(message);
+}
+
+function handleResolvedResource(req, res, fileInfo, sendBody = true) {
+ // display(fileInfo);
+   // If request is a directory, it must have a trailing slash (otherwise resources such as css and js won't be loaded).
+   if (fileInfo.redirect) {
+     var qString = fileInfo.path.split("?");
+	   var newUrl = path.posix.join(qString[0].replace(/\\/g,"/"), "/");
+     if (qString.length == 2) newUrl = newUrl+"?"+qString[1];
+     res.statusCode = 301;
+     res.setHeader('Content-Type', 'text/plain');
+     res.setHeader('Location', newUrl);
+     if (sendBody) {
+       res.end('Redirecting to ' + newUrl);
+     } else {
+       res.end();
+     }
+   } else if (fileInfo.contentType === undefined) {
+     res.statusCode = 415;
+     res.setHeader('Content-Type', 'text/plain');
+     if (sendBody) {
+       res.end('Media type is not supported. Use server.addMimeType() in your application.'); // currently, defaults to text/plain
+     } else {
+       res.end();
+     }
+   // Files are served using the serveFile object in this application.
+   } else if (fileInfo.serveFile) {
+     try {
+	   if (fs.existsSync(fileInfo.fullPath)) {
+		 new ServeFile(req,res,fileInfo,sendBody).init();
+	   } else {
+		 reportError(res,fileInfo.fullPath,404,"File not found: " + safeSourceIdentity(fileInfo.fullPath),sendBody);
+	   }
+	 } catch (err) {
+		reportError(res,fileInfo.fullPath,500,"Error attempting to serve " + safeSourceIdentity(fileInfo.fullPath),sendBody);
+	 }
+   } else if (fileInfo.audioVisual) {
+     // Bugs related to streaming video over http2.
+     if (false /*this.protocol == "http2.https" */) {
+       reportError(res,fileInfo.fullPath,500,"Video streaming not supported on HTTP2.",sendBody);
+     } else {
+       stream(req,res,fileInfo,sendBody);
+     }
+   // If file does not exist, return 404 File not found error.
+   } else if (fileInfo.noSuchFile) {
+	   reportError(res,fileInfo.fullPath,404,"File not found: " + fileInfo.fullPath,sendBody);
+   // Otherwise, a JavaScript file should be loaded.
+   } else {
+	   // Checks and adds JavaScript file.
+	   let accountInfo = getAccount(res,fileInfo);
+     if (accountInfo.code == 200) {
+	     try {
+		     // Executes the JavaScript.
+		     new startObject(req,res,fileInfo,accountInfo.account,sendBody).init();
+	     } catch (err) {}
+	   } else {
+	     reportError(res,accountInfo.account,accountInfo.code,accountInfo.reason,sendBody);
+	   }
+   }
+}
+
+function handleGet(req, res, basePath, resourceTarget) {
+    let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
+    return handleResolvedResource(req, res, fileInfo);
+}
+
+function handlePost(req, res, basePath, resourceTarget) {
+    let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
+    return handleResolvedResource(req, res, fileInfo);
+}
+
+function handleHead(req, res, basePath, resourceTarget) {
+    let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
+    return handleResolvedResource(req, res, fileInfo, false);
+}
+
+function dispatchMethod(req, res, basePath, resourceTarget) {
+    switch (req.method) {
+        case "GET":
+            return handleGet(req, res, basePath, resourceTarget);
+
+        case "POST":
+            return handlePost(req, res, basePath, resourceTarget);
+
+        case "HEAD":
+            return handleHead(req, res, basePath, resourceTarget);
+
+        case "PUT":
+        case "DELETE":
+        case "CONNECT":
+        case "OPTIONS":
+        case "TRACE":
+        case "PATCH":
+        default:
+            return methodNotSupported(req, res);
+    }
+}
+
+function validAuthorityTarget(target) {
+  try {
+    let authority = url.parse("http://" + target);
+    let port = authority.port;
+    return (
+      authority.hostname &&
+      port &&
+      /^\d+$/.test(port) &&
+      Number(port) <= 65535 &&
+      authority.auth === null &&
+      authority.pathname === "/" &&
+      authority.search === null &&
+      authority.hash === null
+    );
+  } catch (err) {
+    return false;
+  }
+}
+
+function requestTarget(req) {
+  let rawTarget = req.url;
+
+  if (rawTarget.charAt(0) === "/") {
+    if (req.method === "CONNECT") return false;
+    return {form:"origin",resourceTarget:rawTarget};
+  }
+
+  if (rawTarget === "*") {
+    if (req.method !== "OPTIONS") return false;
+    return {form:"asterisk"};
+  }
+
+  if (req.method === "CONNECT") {
+    if (!validAuthorityTarget(rawTarget)) return false;
+    return {form:"authority",authority:rawTarget};
+  }
+
+  let absoluteTarget;
+  try {
+    absoluteTarget = url.parse(rawTarget);
+  } catch (err) {
+    return false;
+  }
+  if (
+    (absoluteTarget.protocol !== "http:" && absoluteTarget.protocol !== "https:") ||
+    !absoluteTarget.slashes ||
+    !absoluteTarget.host ||
+    absoluteTarget.hash
+  ) {
+    return false;
+  }
+
+  return {
+    form:"absolute",
+    authority:absoluteTarget.host,
+    resourceTarget:
+      (absoluteTarget.pathname || "/") +
+      (absoluteTarget.search || "")
+  };
+}
+
+function validHostValue(hostValue) {
+  if (typeof hostValue !== "string") return false;
+
+  let bracketedHost = hostValue.match(/^\[([^\]]+)\](?::([0-9]*))?$/);
+  if (bracketedHost) {
+    let address = bracketedHost[1];
+    return (
+      require("net").isIP(address) === 6 ||
+      /^v[0-9A-F]+\.[A-Za-z0-9._~!$&'()*+,;=:-]+$/i.test(address)
+    );
+  }
+
+  return /^(?:[A-Za-z0-9._~!$&'()*+,;=-]|%[0-9A-F]{2})*(?::[0-9]*)?$/i
+    .test(hostValue);
+}
+
+function validHttp11Host(req) {
+  if (req.httpVersion !== "1.1") return true;
+
+  let hostCount = 0;
+  let hostValue;
+  for (let i = 0; i < req.rawHeaders.length; i += 2) {
+    if (req.rawHeaders[i].toLowerCase() === "host") {
+      hostCount++;
+      if (hostCount > 1) return false;
+      hostValue = req.rawHeaders[i+1];
+    }
+  }
+
+  return hostCount === 1 && validHostValue(hostValue);
+}
+
+function handleConnectRequests(server,protocol) {
+  server.on('connect',function(req,socket) {
+    let response = new (require('http').ServerResponse)(req);
+    response.assignSocket(socket);
+    achieveApp.call({protocol:protocol},req,response);
+  });
+}
+
 var achieveApp = function (req, res) {
   console.log(req.method);
  try {
    // Get information about the requested file or application.
  //  let urlParsed = url.parse(req.headers.referer, true);
-   if (req.url.charAt(0) == '/') {
-     console.log("url: " + req.url + ", origin: " + req.connection.remoteAddress || req.headers['x-forwarded-for'] || request.socket.remoteAddress || req.connection.socket.remoteAddress);
-   } else {
-     console.log("url: " + req.url + ", origin: " + req.connection.remoteAddress || req.headers['x-forwarded-for'] || request.socket.remoteAddress || req.connection.socket.remoteAddress);
+   console.log("url: " + req.url + ", origin: " + req.connection.remoteAddress || req.headers['x-forwarded-for'] || request.socket.remoteAddress || req.connection.socket.remoteAddress);
+   let targetInfo = requestTarget(req);
+   if (!targetInfo || !validHttp11Host(req)) {
      res.statusCode=400;
      res.setHeader('Content-Type','text/plain;charset=utf-8');
      res.end("Bad Request");
@@ -126,57 +334,9 @@ var achieveApp = function (req, res) {
    
  //  res.setHeader('Access-Control-Allow-Headers', '*');
   // res.setHeader('Access-Control-Allow-Origin', '*');
-  // res.ok = 1;
+   // res.ok = 1;
    req.protocol = this.protocol;
-   let fileInfo = setFileInfo(req,res,basePath);
- // display(fileInfo);
-   // If request is a directory, it must have a trailing slash (otherwise resources such as css and js won't be loaded).
-   if (fileInfo.redirect) {
-     var qString = req.url.split("?");
-	   var newUrl = path.join(qString[0], "/");
-     if (qString.length == 2) newUrl = newUrl+"?"+qString[1];
-     res.statusCode = 301;
-     res.setHeader('Content-Type', 'text/plain');
-     res.setHeader('Location', newUrl);
-     res.end('Redirecting to ' + newUrl);
-   } else if (fileInfo.contentType === undefined) {
-     res.statusCode = 415;
-     res.setHeader('Content-Type', 'text/plain');
-     res.end('Media type is not supported. Use server.addMimeType() in your application.'); // currently, defaults to text/plain
-   // Files are served using the serveFile object in this application.
-   } else if (fileInfo.serveFile) {
-     try {
-	   if (fs.existsSync(fileInfo.fullPath)) {
-		 new ServeFile(req,res,fileInfo).init();
-	   } else {
-		 reportError(res,fileInfo.fullPath,404,"File not found: " + fileInfo.fullPath);
-	   }
-	 } catch (err) {
-		reportError(res,fileInfo.fullPath,500,"Error attempting to serve " + fileInfo.fullPath);
-	 }
-   } else if (fileInfo.audioVisual) {
-     // Bugs related to streaming video over http2.
-     if (false /*this.protocol == "http2.https" */) {
-       reportError(res,fileInfo.fullPath,500,"Video streaming not supported on HTTP2.");
-     } else {
-       stream(req,res,fileInfo);
-     }
-   // If file does not exist, return 404 File not found error.
-   } else if (fileInfo.noSuchFile) {
-	   reportError(res,fileInfo.fullPath,404,"File not found: " + fileInfo.fullPath);
-   // Otherwise, a JavaScript file should be loaded. 
-   } else {
-	   // Checks and adds JavaScript file.
-	   let accountInfo = getAccount(res,fileInfo);
-     if (accountInfo.code == 200) {
-	     try {
-		     // Executes the JavaScript.
-		     new startObject(req,res,fileInfo).init();
-	     } catch (err) {}
-	   } else {
-	     reportError(res,accountInfo.account,accountInfo.code,accountInfo.reason);
-	   }
-   }
+   return dispatchMethod(req, res, basePath, targetInfo.resourceTarget);
  } catch (e) {
    console.log("Catchall error, achieveApp: " + e.stack);
  }
@@ -265,7 +425,9 @@ exports.slisten = function (ioptions) {
   }
   if (!bCachingCheck) exports.setCaching(bCaching);
   
-  server = https.createServer(ioptions, achieveApp.bind({protocol:"https"})).listen(sport);
+  server = https.createServer(ioptions, achieveApp.bind({protocol:"https"}));
+  handleConnectRequests(server,"https");
+  server.listen(sport);
 /*
   server.on('connection', function (socket) {
     console.log("*********** CONNECTION : " + JSON.stringify(socket));
@@ -305,7 +467,9 @@ exports.listen = function (port) {
   }
   if (!bCachingCheck) exports.setCaching(bCaching);
   
-  server = http.createServer(achieveApp.bind({protocol:"http"})).listen(port);
+  server = http.createServer(achieveApp.bind({protocol:"http"}));
+  handleConnectRequests(server,"http");
+  server.listen(port);
 
   console.log("\n" + version + " HTTP is running on port " + port + ". (Node.js version " + process.version + ")");
   console.log("Path to application base: " + basePath);
@@ -404,7 +568,7 @@ let avMimeList = {
   mp3: "audio/mpeg3",
   oga: "audio/ogg"
 };
-function reportError (res,account,statusCode,reason) {
+function reportError (res,account,statusCode,reason,sendBody = true) {
   if (statusCode === undefined) statusCode = 500;
   try {
     delete require.cache[require.resolve(account)];
@@ -413,7 +577,11 @@ function reportError (res,account,statusCode,reason) {
 	  console.log(statusCode + ": " + reason);
     res.statusCode=statusCode;
     res.setHeader('Content-Type','text/plain;charset=utf-8');
-    res.end(reason);
+    if (sendBody) {
+      res.end(reason);
+    } else {
+      res.end();
+    }
   }
 }
 function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag,audioVisual,proxyOptions) {
@@ -452,15 +620,47 @@ function PathInfo (filePath,reload,action,stats) {
   this.action = action;
   this.stats = stats;
 }
+function containedRequestPath (boundaryPath,requestPath) {
+  let boundary = path.resolve(boundaryPath);
+  let relativeRequestPath = requestPath.replace(/^[/\\]+/, "");
+  let candidate = path.resolve(boundary,relativeRequestPath);
+  let relativeCandidate = path.relative(boundary,candidate);
+
+  if (
+    relativeCandidate === ".." ||
+    relativeCandidate.startsWith(".." + path.sep) ||
+    path.isAbsolute(relativeCandidate)
+  ) {
+    return false;
+  }
+
+  if (
+    /[/\\]$/.test(requestPath) &&
+    candidate.charAt(candidate.length-1) != path.sep
+  ) {
+    candidate += path.sep;
+  }
+
+  return candidate;
+}
 function checkPath (basePath,relativePath) {
   // Build full path.
   let action="";
   if (relativePath.length == 0) relativePath="/";
-  let fullPath = path.join(basePath,relativePath);
+  let fullPath = containedRequestPath(basePath,relativePath);
   let stats, checkPath;
   let reload=false;
-  if (rootDir && (fs.existsSync(rootPath+relativePath) || fs.existsSync(rootPath+relativePath+".js"))) {
-    fullPath = path.join(rootPath,relativePath);
+
+  if (!fullPath) {
+    return new PathInfo(relativePath,false,"noSuchFile",stats);
+  }
+
+  let rootFullPath;
+  if (rootDir) {
+    rootFullPath = containedRequestPath(rootPath,relativePath);
+  }
+  if (rootFullPath && (fs.existsSync(rootFullPath) || fs.existsSync(rootFullPath+".jss") || fs.existsSync(rootFullPath+".js"))) {
+    fullPath = rootFullPath;
     relativePath = path.join(relRootPath,relativePath);
   }
     try {
@@ -468,15 +668,26 @@ function checkPath (basePath,relativePath) {
 	    stats = fs.statSync(fullPath); 
     } catch (err) {
           
+    if (fs.existsSync(fullPath+".jss")) {
+	    stats = fs.statSync(fullPath+".jss");
+	    if (moduleLoadTimes[fullPath+".jss"] === undefined || moduleLoadTimes[fullPath+".jss"] < stats.mtimeMs) reload = true;
+	    return new PathInfo(path.normalize(relativePath+".jss"),reload,"servlet",stats);
+	  }
     if (fs.existsSync(fullPath+".js")) {
 	    stats = fs.statSync(fullPath+".js");
 	    if (moduleLoadTimes[fullPath+".js"] === undefined || moduleLoadTimes[fullPath+".js"] < stats.mtimeMs) reload = true;
-	    return new PathInfo(path.normalize(relativePath),reload,"servlet",stats);
-	  } 
+	    return new PathInfo(path.normalize(relativePath+".js"),reload,"servlet",stats);
+	  }
     return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
     }
   // If fullPath points to a file, return the relative path.
-  if (stats.isFile()) return new PathInfo(path.normalize(relativePath),true,"serveFile",stats);
+  if (stats.isFile()) {
+    if (path.extname(fullPath).toLowerCase() == ".jss") {
+      if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) reload = true;
+      return new PathInfo(path.normalize(relativePath),reload,"servlet",stats);
+    }
+    return new PathInfo(path.normalize(relativePath),true,"serveFile",stats);
+  }
   // If fullPath points to a directory:
   if (stats.isDirectory()) {
 	// directory requests without trailing '/' are redirected with '/' added
@@ -485,10 +696,9 @@ function checkPath (basePath,relativePath) {
 	  for (let df of defaultFiles) {
       checkPath = path.join(fullPath,df);
 	    if (fs.existsSync(checkPath)) {
-		    if (df == "index.js") {
+		    if (df == "index.jss" || df == "index.js") {
 		  	  stats = fs.statSync(checkPath);
 			    if (moduleLoadTimes[checkPath] === undefined || moduleLoadTimes[checkPath] < stats.mtimeMs) reload = true;
-			    df = "index";
           action = "servlet";
 		    } else {
           stats = fs.statSync(checkPath);
@@ -503,6 +713,7 @@ function checkPath (basePath,relativePath) {
 let defaultFiles = [
   "index.html",
   "index.htm",
+  "index.jss",
   "index.js"
 ];
 function checkProxies (reqPath) {
@@ -519,7 +730,7 @@ function checkProxies (reqPath) {
   });
   return proxyRequest;
 }
-function setFileInfo (req, res, basePath) {
+function setFileInfo (req, res, basePath, requestUrl) {
    let serveFile=true;
    let headers=req.headers;
    let fullPath="", suffix="", queryString="", contentType="",dirPath="",etag="";
@@ -530,44 +741,39 @@ function setFileInfo (req, res, basePath) {
    let audioVisual = false;
 console.log("req.url: " + req.url);
    if (proxies) {
-     let proxyRequest = checkProxies(req.url);
+     let proxyRequest = checkProxies(requestUrl);
      if (proxyRequest) {
        proxyOptions = proxyRequest.options;
-       proxyOptions.url = req.url = proxyRequest.url;
+       proxyOptions.url = requestUrl = proxyRequest.url;
      //  proxyOptions.connectionArray = connectionArray;
        achieve_proxy = _this.loadModule('achieve-proxy');
      } else {
        // console.log("proxyRequest not true: " + proxyRequest);
      }
    }
-   let pathObj = url.parse(req.url,true);
+   let pathObj = url.parse(requestUrl,true);
    let uncheckedPath = pathObj.pathname;
    // If undefined, noSuchFile in FileInfo object is set to true.
-   if (uncheckedPath === undefined) return new FileInfo(thisBasePath,req.url,fullPath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
+   if (uncheckedPath === undefined) return new FileInfo(thisBasePath,requestUrl,fullPath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
    // Check to see if the ROOT directory is used, and if so; whether it still exists
  //  if (rootDir && uncheckedPath.lastIndexOf("/") == 0) thisBasePath = rootPath;
    // checkPath returns path request after performing various checks, (See checkPath() for details.)
    let checkedPath = checkPath(thisBasePath,uncheckedPath);
-   if (checkedPath.action == "noSuchFile") return new FileInfo(thisBasePath,req.url,checkedPath.filePath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
+   if (checkedPath.action == "noSuchFile") return new FileInfo(thisBasePath,requestUrl,checkedPath.filePath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
    // If null, redirect in FileInfo object is set to true. (Needs redirect to add trailing slash.)
-   if (checkedPath.action == "redirect") return new FileInfo(thisBasePath,req.url,fullPath,dirPath,suffix,headers,contentType,queryString,false,true,false,reload,etag,audioVisual,proxyOptions);
-   let urlArray = req.url.split("?");
+   if (checkedPath.action == "redirect") return new FileInfo(thisBasePath,requestUrl,fullPath,dirPath,suffix,headers,contentType,queryString,false,true,false,reload,etag,audioVisual,proxyOptions);
+   let urlArray = requestUrl.split("?");
    let currentPath = checkedPath.filePath;
    queryString = urlArray[1] || ""; // without '?'
    suffix = path.extname(currentPath).substring(1) || "";
    fullPath = path.join(thisBasePath,currentPath);
    dirPath = path.dirname(fullPath);
-   if (suffix.length == 0) {
-	 // Requests for JavaScript files without .js suffix are executed rather than served.
-	 if (fs.existsSync(fullPath+".js")) {
-	   suffix = "servlet"; // This special app suffix does not indicate MIME type.
-	   currentPath += ".js";
-	   fullPath += ".js";
-	   serveFile=false;
-     } else {
+   if (checkedPath.action === "servlet") {
+	 suffix = "servlet"; // This special app suffix does not indicate MIME type.
+	 serveFile=false;
+   } else if (suffix.length == 0) {
 	   // If file exists with no suffix, attempt to serve it as text.
 	   suffix = "txt";
-     }
    }
    // Get MIME type.
    contentType = mimeList[suffix];
@@ -596,8 +802,10 @@ console.log("req.url: " + req.url);
        let enc = getEncoding(req);
        if (enc.check) {
          let ccPath = checkCPath(fullPath,enc.ext,checkedPath.stats.mtimeMs);
-         currentPath += enc.ext;
-         res.setHeader("Content-Encoding",enc.contentEncoding);
+         if (ccPath !== false) {
+           currentPath += enc.ext;
+           res.setHeader("Content-Encoding",enc.contentEncoding);
+         }
        }
      }
    }
@@ -676,24 +884,30 @@ function getAccount (res,fileInfo) {
 	let accountInfo; // for the new Account object
 	let code = 200;  // default
 	let reason;  // reason for error
+	let loadedMtime;
 	// Redundant check. Was also checked in setFileInfo()
 	if (!fs.existsSync(startPage)) {
 	  code = 404;
-	  reason = startPage + " not found.";
+	  reason = safeSourceIdentity(startPage) + " not found.";
 	  accountInfo = new Account(null,startPage,code,reason);
 	  return accountInfo;
     }
 	try {
 	  // Load the page and get its handle.
-    if (fileInfo.reload) delete require.cache[require.resolve(startPage)];
+    if (fileInfo.reload) {
+      loadedMtime = fs.statSync(startPage).mtimeMs;
+      delete require.cache[require.resolve(startPage)];
+    }
 	  accountRoot = require(startPage);
 	  // Make sure that the required servlet(context) function exists in the loaded file.
 	  // This is how this system automatically runs code in the newly loaded file. 
 	  if (typeof accountRoot.servlet !== 'function') {
 		  code = 500;
-		  reason = startPage + " does not have a valid servlet() function.";
+		  reason = safeSourceIdentity(startPage) + " does not have a valid servlet() function.";
       delete require.cache[require.resolve(startPage)];
-	  }
+	  } else if (fileInfo.reload) {
+      moduleLoadTimes[startPage] = loadedMtime;
+    }
 	} catch (err) {
      code = 500;
 	   reason = "Failed to load module: " + rtErrorMsg(err);
@@ -704,35 +918,25 @@ function getAccount (res,fileInfo) {
 }
 // startObject's init() method runs the code that was loaded by getAccount()
 // It will get parameter values from the request and call the loaded application's init() method.
-function startObject (req,res,fileInfo) {
+function startObject (req,res,fileInfo,myApp,sendBody = true) {
   this.req = req;
   this.res = res;
   this.fileInfo = fileInfo;
+  this.myApp = myApp;
+  this.sendBody = sendBody;
   this.load = load;
   // this.init() is called to extract data from request, run the application, and send response
   this.init = function () {
 	let request = this.req;
 	let response = this.res;
-  let goodPath = false;
 	let fsapp = this.fsapp;
   let fileInfo = this.fileInfo;
-  let myAppPath = this.fileInfo.fullPath;
 	let shortPath = this.fileInfo.path;
-	let reload = this.fileInfo.reload;
   let load = this.load;
 	let contentType = this.fileInfo.contentType;
-    let myApp;
-	// Load the application file if it exists.
-  if (fs.existsSync(myAppPath)) {
-	  if (reload) {
-		  delete require.cache[require.resolve(myAppPath)];
-		  moduleLoadTimes[myAppPath] = fs.statSync(myAppPath).mtimeMs; // new Date().getTime();
-	  }
-    myApp = require(myAppPath);
-	  goodPath = true;
-  }
+    let myApp = this.myApp;
+    let sendBody = this.sendBody;
 	// This service loads the application file and calls exports.servlet(context)
-    if (goodPath && typeof myApp.servlet == 'function') {
 	  // Extract data sent from the browser for POST or GET
 	  let queryData="";
     let wmsg;
@@ -753,6 +957,7 @@ function startObject (req,res,fileInfo) {
 		    }
           });
           this.req.on('end', function() {
+			let context;
 			try {
         request.post = querystring.parse(queryData);
         let boundLoader = load.bind({request:request,response:response,dirPath:fileInfo.dirPath});
@@ -773,21 +978,30 @@ function startObject (req,res,fileInfo) {
           response.statusCode=200;
 			    response.write(content,'binary');
           response.end(null,'binary');
-		    } catch (err) {
-          if (response.finished || context.allowAsync) {
+		  } catch (err) {
+          if (response.headersSent) {
+            wmsg=rtErrorMsg(err);
+            console.log(wmsg);
+            if (!response.writableEnded && !response.destroyed) {
+              response.destroy();
+            }
+            return;
+          }
+          if (response.finished || (context && context.allowAsync)) {
           console.log("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
           return;
           }
-          wmsg="WARNING: Return value from servlet " + fileInfo.path + " is " + content + ". " + rtErrorMsg(err);
-          console.log(wmsg);
-          wmsg="post Return type from servlet is " + typeof content + ". " + rtErrorMsg(err);
+          wmsg=rtErrorMsg(err);
           response.statusCode=500;
 			    response.write(wmsg);
           response.end();
           console.log(wmsg);
 		  	}
 	      });
-        } else if (this.req.method == "GET") {
+        } else if (
+          this.req.method == "GET" ||
+          this.req.method == "HEAD"
+        ) {
           console.log("using GET");
           let context;
 		  try {
@@ -801,25 +1015,28 @@ function startObject (req,res,fileInfo) {
           return;
         }
         response.statusCode=200;
-			  response.write(content);
+			  if (sendBody) {
+          response.write(content);
+        }
         response.end();
 		  } catch (err) {
-        if (response.finished || context.allowAsync) {
+        if (response.headersSent) {
+          wmsg=rtErrorMsg(err);
+          console.log(wmsg);
+          if (!response.writableEnded && !response.destroyed) {
+            response.destroy();
+          }
+          return;
+        }
+        if (response.finished || (context && context.allowAsync)) {
           console.log("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
           return;
         }
-        wmsg="get Return type from servlet is " + typeof content + ". " + rtErrorMsg(err);
+        wmsg=rtErrorMsg(err);
         response.statusCode=500;
         response.end(wmsg);
         console.log(wmsg);
 		  }
-        } else if (this.req.method == "HEAD") {
-          console.log("using HEAD");
-          response.statusCode = 200;
-          response.setHeader('server',version);
-          if (bCaching) response.setHeader('etag',fileInfo.etag);
-          response.setHeader('content-type', fileInfo.contentType);
-          response.end();
         } else if (this.req.method == "OPTIONS") {
           console.log("OPTIONS REQUEST: " + this.req);
           response.statusCode = 204;
@@ -835,13 +1052,6 @@ function startObject (req,res,fileInfo) {
           console.log(this.req.method + " request method is not yet supported on the server: " + version);
           response.end(this.req.method + " request method is not yet supported on the server: " + version);
         }
-    } else if (goodPath) {
-	    response.write("No .servlet function in file: " + myAppPath);
-	    response.end();
-    } else {
-	    response.write(myAppPath + " not found.");
-	    response.end();
-    }
   };
 }
 // rtErrorMsg() extracts useful information from the error stack
@@ -850,27 +1060,230 @@ function startObject (req,res,fileInfo) {
 // returned so that it can be be sent to browser and displayed in its console.
 // (Display in browser console requires cooperating AJAX handling in the browser
 //    when http response status code != 200; console.error(..responseText))
+function safeSourceIdentity (sourcePath) {
+  var source = sourcePath;
+  if (source.toLowerCase().indexOf("file:///") === 0) {
+    source = source.substring(7);
+    try {
+      source = decodeURIComponent(source);
+    } catch (decodeError) {
+    }
+    if (/^\/[A-Za-z]:\//.test(source)) source = source.substring(1);
+  }
+
+  source = source.replace(/\\/g,"/");
+  var location = "";
+  var locationMatch = source.match(/(:\d+(?::\d+)?)$/);
+  if (locationMatch) {
+    location = locationMatch[1];
+    source = source.substring(0,source.length-location.length);
+  }
+
+  var approvedRoots = [basePath];
+  if (rootDir && rootPath !== basePath) approvedRoots.push(rootPath);
+  for (var root of approvedRoots) {
+    if (typeof root !== "string" || root.length === 0) continue;
+    var normalizedRoot = root.replace(/\\/g,"/").replace(/\/$/,"");
+    var compareSource = source;
+    var compareRoot = normalizedRoot;
+    if (/^[A-Za-z]:\//.test(source) || source.indexOf("//") === 0) {
+      compareSource = source.toLowerCase();
+      compareRoot = normalizedRoot.toLowerCase();
+    }
+    if (
+      compareSource === compareRoot ||
+      compareSource.indexOf(compareRoot + "/") === 0
+    ) {
+      var relativeSource = source.substring(normalizedRoot.length).replace(/^\/+/,"");
+      if (
+        relativeSource.length > 0 &&
+        relativeSource.split("/").indexOf("..") === -1
+      ) {
+        return relativeSource + location;
+      }
+    }
+  }
+
+  var pathParts = source.split("/");
+  var basename = pathParts[pathParts.length-1];
+  if (!basename || basename === "." || basename === "..") return "[path]";
+  return basename + location;
+}
+
+function replaceAbsoluteSourcePaths (message) {
+  var result = message;
+  result = result.replace(/file:\/\/\/[^'")\r\n]+/gi,function(sourcePath) {
+    return safeSourceIdentity(sourcePath);
+  });
+  result = result.replace(/[A-Za-z]:[\\\/][^'")\r\n]+/g,function(sourcePath) {
+    return safeSourceIdentity(sourcePath);
+  });
+  result = result.replace(/(?:\\\\|\/\/)[^'")\r\n]+/g,function(sourcePath) {
+    return safeSourceIdentity(sourcePath);
+  });
+  result = result.replace(/(^|[\s'("=,:])(\/[^\/'")\r\n][^'")\r\n]*)/g,function(match,prefix,sourcePath) {
+    return prefix + safeSourceIdentity(sourcePath);
+  });
+  return result;
+}
+
+function sanitizeDeveloperErrorText (message) {
+  var result = replaceAbsoluteSourcePaths(message);
+  result = result.replace(/\b(?:node:)?internal\/[^\s)]+/g,"");
+  result = result.replace(/\b(?:loader|vm):\d+:\d+\b/g,"");
+  result = result.replace(/\bachieve\.js:\d+(?::\d+)?\b/gi,"");
+  result = replaceAbsoluteSourcePaths(result);
+  return result.trim();
+}
+
+function runtimeFunctionName (functionName) {
+  var name = functionName.trim();
+  if (name.indexOf("Object.") === 0) name = name.substring(7);
+  if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name)) return "";
+  return name;
+}
+
+function isInternalRuntimeSource (sourcePath) {
+  var source = sourcePath.replace(/\\/g,"/").toLowerCase();
+  return (
+    source.indexOf("node:internal/") === 0 ||
+    source.indexOf("internal/") === 0 ||
+    source.indexOf("loader:") === 0 ||
+    source.indexOf("vm:") === 0 ||
+    source === "native" ||
+    /(^|\/)achieve\.js:\d+:\d+$/.test(source)
+  );
+}
+
+function runtimeStackFrame (stackLine) {
+  var line = stackLine.trim();
+  if (line.indexOf("at ") !== 0) return "";
+
+  var frame = line.substring(3).trim();
+  var functionName = "";
+  var sourcePath = frame;
+  var frameMatch = frame.match(/^([^()]+) \(([^()]+)\)$/);
+  if (frameMatch) {
+    functionName = runtimeFunctionName(frameMatch[1]);
+    sourcePath = frameMatch[2];
+  }
+
+  if (!/[^\s]:\d+:\d+$/.test(sourcePath)) return "";
+  if (isInternalRuntimeSource(sourcePath)) return "";
+
+  var sourceIdentity = safeSourceIdentity(sourcePath);
+  if (sourceIdentity === "[path]") return "";
+  return sourceIdentity;
+}
+
+function syntaxStackReason (stack) {
+  var stackLines = stack.split('\n');
+  var sourcePath = stackLines[0].trim();
+  if (!/:\d+(?::\d+)?$/.test(sourcePath)) return "";
+
+  var lowerSourcePath = sourcePath.toLowerCase();
+  if (
+    lowerSourcePath.indexOf("node:internal/") === 0 ||
+    lowerSourcePath.indexOf("internal/") === 0 ||
+    lowerSourcePath.indexOf("loader:") === 0 ||
+    lowerSourcePath.indexOf("vm:") === 0 ||
+    /(^|[\\/])achieve\.js:\d+(?::\d+)?$/.test(lowerSourcePath)
+  ) return "";
+
+  var headline = "";
+  for (var stackLine of stackLines) {
+    var candidate = stackLine.trim();
+    if (/^SyntaxError(?:\s*:|$)/.test(candidate)) {
+      headline = sanitizeDeveloperErrorText(candidate);
+      break;
+    }
+  }
+  if (!headline) return "";
+
+  var sourceIdentity = safeSourceIdentity(sourcePath);
+  if (sourceIdentity === "[path]") return headline;
+  return headline + " " + sourceIdentity;
+}
+
 function rtErrorMsg (err,shortPath="",code=500) {
-  err.stack = err.stack.replace(/\\/g,"/");
-  var part1 = err.stack.substring(0,err.stack.indexOf('\n'));
-  var part2 = err.stack.substring(part1.length);
-  part2 = part2.substring(0,part2.indexOf(')'));
-  part2 = part2.substring(part2.lastIndexOf('/')+1);
-  var reason = "Runtime error: " + part1 + " " + part2;
-  console.log("Error running servlet: " + reason);
-  return reason;
+  var stack;
+  if (err !== null && (typeof err === "object" || typeof err === "function")) {
+    try {
+      if (typeof err.stack === "string") stack = err.stack;
+    } catch (stackError) {
+    }
+  }
+
+  if (stack !== undefined) {
+    var normalizedStack = stack.replace(/\\/g,"/");
+    var syntaxReason = syntaxStackReason(normalizedStack);
+    if (syntaxReason) return syntaxReason;
+
+    var firstLineEnd = normalizedStack.indexOf('\n');
+    if (firstLineEnd === -1) return sanitizeDeveloperErrorText(normalizedStack);
+
+    var part1 = normalizedStack.substring(0,firstLineEnd);
+    if (/^[A-Za-z_$][A-Za-z0-9_$]*Error:/.test(part1) || /^Error:/.test(part1)) {
+      var headline = sanitizeDeveloperErrorText(part1);
+      var stackLines = normalizedStack.substring(firstLineEnd+1).split('\n');
+      for (var stackLine of stackLines) {
+        var usefulFrame = runtimeStackFrame(stackLine);
+        if (usefulFrame) return headline + " " + usefulFrame;
+      }
+      if (headline.length > 0) return headline;
+    }
+
+    var part2 = normalizedStack.substring(part1.length);
+    var closingParenthesis = part2.indexOf(')');
+    if (closingParenthesis !== -1) {
+      part2 = part2.substring(0,closingParenthesis);
+      var openingParenthesis = part2.lastIndexOf('(');
+      if (openingParenthesis !== -1) {
+        part2 = safeSourceIdentity(part2.substring(openingParenthesis+1));
+      } else {
+        part2 = part2.substring(part2.lastIndexOf('/')+1);
+      }
+    } else {
+      part2 = "";
+    }
+    var reason = sanitizeDeveloperErrorText((part1 + " " + part2).trim());
+    if (reason.length > 0) return reason;
+  }
+
+  if (err !== null && (typeof err === "object" || typeof err === "function")) {
+    try {
+      var errorName = typeof err.name === "string" ? err.name : "";
+      var errorMessage = typeof err.message === "string" ? err.message : "";
+      if (errorName && errorMessage) return sanitizeDeveloperErrorText(errorName + ": " + errorMessage);
+      if (errorName) return sanitizeDeveloperErrorText(errorName);
+      if (errorMessage) return sanitizeDeveloperErrorText(errorMessage);
+    } catch (errorPropertyError) {
+    }
+  }
+
+  if (err === null) return "Thrown value: null";
+  if (err === undefined) return "Thrown value: undefined";
+  if (typeof err === "object") return "Thrown value: [object Object]";
+  if (typeof err === "function") return "Thrown value: [function]";
+  try {
+    return sanitizeDeveloperErrorText("Thrown value: " + String(err));
+  } catch (stringError) {
+    return "Thrown value: [unprintable]";
+  }
 }
 // 537().init() sets up event driven streaming file serves
 // The final event also deletes the loaded file reference from the Node.js cache
-function ServeFile (req,res,fileInfo) {
+function ServeFile (req,res,fileInfo,sendBody = true) {
   this.res = res;
   this.req = req;
   this.fp = fileInfo.basePath+fileInfo.path;
   this.contentType = fileInfo.contentType;
+  this.sendBody = sendBody;
   this.init = function () {
 	let response = this.res;
 	let filePath = this.fp;
   let request = this.req;
+  let sendBody = this.sendBody;
   
   let ext="";
 
@@ -880,15 +1293,46 @@ function ServeFile (req,res,fileInfo) {
    res.setHeader('server', version);
    if (bCaching) res.setHeader('etag', fileInfo.etag);
    res.statusCode = 200;
-   
-   let readStream = fs.createReadStream(filePath)
-   .on ('error', function (err) {
+   if (!sendBody) {
+     response.end();
+     return;
+   }
+
+   let readStream;
+   function streamError (err) {
      console.log(err.message);
-     res.setHeader('content-type', 'text/plain');
-     res.statusCode = 500;
-     res.end(err.message);
+     if (response.destroyed || response.writableEnded) {
+       return;
+     }
+     if (!response.headersSent) {
+       response.setHeader('content-type', 'text/plain;charset=utf-8');
+       response.statusCode = 500;
+       response.end("Error attempting to serve " + safeSourceIdentity(filePath));
+     } else {
+       response.destroy();
+     }
+   }
+
+   try {
+     readStream = fs.createReadStream(filePath);
+   } catch (err) {
+     streamError(err);
+     return;
+   }
+
+   readStream.on('error',streamError);
+   readStream.on('open',function () {
+     if (response.destroyed || response.writableEnded) {
+       readStream.destroy();
+       return;
+     }
+     readStream.pipe(response);
    });
-  readStream.pipe(res);
+   response.on('close',function () {
+     if (!response.writableEnded) {
+       readStream.destroy();
+     }
+   });
   };
 }
 // Not implemented - input object to be sent to JavaScript application
@@ -927,19 +1371,15 @@ exports.loadModule = function (moduleName) {
 let load = function (filePath) {
   let dirname=this.dirPath;
   let fullPath = path.join(dirname,filePath+".js");
-  try {
-    stats = fs.statSync(fullPath);
-	  if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
-	    delete require.cache[require.resolve(fullPath)];
-      moduleLoadTimes[fullPath] = stats.mtimeMs;
-	  }
-    return require(fullPath);
-  } catch (err) {
-    this.response.writeHead(500, {'Content-Type': 'text/plain;'});
-    reason = "load: " + rtErrorMsg(err);
-	  console.log(reason);
-  	this.response.write(reason);
-  } 
+  let loadedMtime;
+  stats = fs.statSync(fullPath);
+	if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
+    loadedMtime = stats.mtimeMs;
+	  delete require.cache[require.resolve(fullPath)];
+	}
+  let loadedModule = require(fullPath);
+  if (loadedMtime !== undefined) moduleLoadTimes[fullPath] = loadedMtime;
+  return loadedModule;
 }
 /* Modify this to collect a list of files to preload (JSO) - do preloads when server starts
 exports.preload1 = function (loadList) {
@@ -1030,68 +1470,218 @@ Base64 = {
     return result;
   }
 }
-let stream = function(req, res, fileInfo) {
+function parseSingleByteRange(rangeHeader, fileSize) {
+  if (rangeHeader === undefined) {
+    return { classification: "full" };
+  }
+
+  var range = rangeHeader.trim();
+  var separator = range.indexOf("=");
+  if (separator === -1) {
+    return { classification: "malformed" };
+  }
+
+  var unit = range.substring(0, separator);
+  if (unit.toLowerCase() !== "bytes") {
+    return { classification: "unknown-unit" };
+  }
+
+  var rangeValue = range.substring(separator + 1);
+  if (rangeValue.indexOf(",") !== -1) {
+    return { classification: "multiple-ranges" };
+  }
+
+  var match = /^(\d*)-(\d*)$/.exec(rangeValue);
+  if (!match || (!match[1] && !match[2])) {
+    return { classification: "malformed" };
+  }
+
+  if (!match[1]) {
+    var suffixLength = Number(match[2]);
+    if (!Number.isSafeInteger(suffixLength)) {
+      return { classification: "malformed" };
+    }
+    if (suffixLength === 0 || fileSize === 0) {
+      return { classification: "unsatisfiable" };
+    }
+
+    var suffixStart = Math.max(fileSize - suffixLength, 0);
+    return {
+      classification: "partial",
+      start: suffixStart,
+      end: fileSize - 1,
+      contentLength: fileSize - suffixStart
+    };
+  }
+
+  var start = Number(match[1]);
+  if (!Number.isSafeInteger(start)) {
+    return { classification: "malformed" };
+  }
+  if (start >= fileSize) {
+    return { classification: "unsatisfiable" };
+  }
+
+  var end = fileSize - 1;
+  if (match[2]) {
+    end = Number(match[2]);
+    if (!Number.isSafeInteger(end)) {
+      return { classification: "malformed" };
+    }
+    if (end < start) {
+      return { classification: "unsatisfiable" };
+    }
+    end = Math.min(end, fileSize - 1);
+  }
+
+  return {
+    classification: "partial",
+    start: start,
+    end: end,
+    contentLength: (end - start) + 1
+  };
+}
+let stream = function(req, res, fileInfo, sendBody = true) {
   var fileName = fileInfo.fullPath;
-  if(!fileName)
-    return res.status(404).send();
- 
+  var displayedFileName = fileName ? safeSourceIdentity(fileName) : fileName;
+  if(!fileName) {
+    reportError(res, fileName, 404, "File not found: " + displayedFileName, sendBody);
+    return;
+  }
+
   fs.stat(fileName, function(err, stats) {
     if (err) {
       if (err.code === 'ENOENT') {
-        return res.status(404).send();
+        reportError(res, fileName, 404, "File not found: " + displayedFileName, sendBody);
+        return;
       }
+      reportError(
+        res,
+        fileName,
+        500,
+        "Error attempting to stream " + displayedFileName + ": " + rtErrorMsg(err),
+        sendBody
+      );
+      return;
     }
- 
+
+    if (!err && !sendBody) {
+      res.writeHead(200, {
+        "Accept-Ranges": "bytes",
+        "Content-Length": stats.size,
+        "Content-Type": fileInfo.contentType
+      });
+      res.end();
+      return;
+    }
+
+    var rangeInfo = parseSingleByteRange(req.headers.range, stats.size);
+    if (rangeInfo.classification === "malformed") {
+      var message = "Malformed byte Range request.";
+      res.writeHead(400, {
+        "Content-Type": "text/plain;charset=utf-8",
+        "Content-Length": Buffer.byteLength(message, "utf8")
+      });
+      res.end(message);
+      return;
+    }
+    if (
+      rangeInfo.classification === "unsatisfiable" ||
+      rangeInfo.classification === "multiple-ranges"
+    ) {
+      var rangeErrorMessage = rangeInfo.classification === "multiple-ranges"
+        ? "Multiple byte ranges are not supported."
+        : "Requested byte range is not satisfiable.";
+      res.writeHead(416, {
+        "Accept-Ranges": "bytes",
+        "Content-Range": "bytes */" + stats.size,
+        "Content-Type": "text/plain;charset=utf-8",
+        "Content-Length": Buffer.byteLength(rangeErrorMessage, "utf8")
+      });
+      res.end(rangeErrorMessage);
+      return;
+    }
+
     var start;
     var end;
     var total = 0;
     var contentRange = false;
     var contentLength = 0;
- 
-    var range = req.headers.range;
-    if (range)
+
+    if (rangeInfo.classification === "partial")
     {
-      var positions = range.replace(/bytes=/, "").split("-");
-      start = parseInt(positions[0], 10);
+      start = rangeInfo.start;
       total = stats.size;
-      end = positions[1] ? parseInt(positions[1], 10) : total - 1;
-      var chunksize = (end - start) + 1;
+      end = rangeInfo.end;
       contentRange = true;
-      contentLength = chunksize;
+      contentLength = rangeInfo.contentLength;
     }
     else
     {
-      start = 0;
-      end = stats.size;
       contentLength = stats.size;
     }
- 
-    if(start<=end)
+
+    var responseCode = 200;
+    var responseHeader =
     {
-      var responseCode = 200;
-      var responseHeader =
-      {
-        "Accept-Ranges": "bytes",
-        "Content-Length": contentLength,
-        "Content-Type": fileInfo.contentType
-      };
-      if(contentRange)
-      {
-        responseCode = 206;
-        responseHeader["Content-Range"] = "bytes " + start + "-" + end + "/" + total;
+      "Accept-Ranges": "bytes",
+      "Content-Length": contentLength,
+      "Content-Type": fileInfo.contentType
+    };
+    if(contentRange)
+    {
+      responseCode = 206;
+      responseHeader["Content-Range"] = "bytes " + start + "-" + end + "/" + total;
+    }
+    if (!contentRange && stats.size === 0) {
+      res.writeHead(responseCode, responseHeader);
+      res.end();
+      return;
+    }
+
+    var stream;
+    try {
+      if (contentRange) {
+        stream = fs.createReadStream(fileName, { start: start, end: end });
+      } else {
+        stream = fs.createReadStream(fileName);
+      }
+    } catch (err) {
+      var statusCode = err.code === "ENOENT" ? 404 : 500;
+      var reason = statusCode === 404
+        ? "File not found: " + displayedFileName
+        : "Error attempting to stream " + displayedFileName + ": " + rtErrorMsg(err);
+      reportError(res, fileName, statusCode, reason, sendBody);
+      return;
+    }
+
+    stream.on("error", function(err) {
+      if (res.destroyed) {
+        return;
+      }
+      if (!res.headersSent) {
+        var statusCode = err.code === "ENOENT" ? 404 : 500;
+        var reason = statusCode === 404
+          ? "File not found: " + displayedFileName
+          : "Error attempting to stream " + displayedFileName + ": " + rtErrorMsg(err);
+        reportError(res, fileName, statusCode, reason, sendBody);
+      } else {
+        console.log("Error streaming " + fileName + ": " + rtErrorMsg(err));
+        res.destroy();
+      }
+    });
+    stream.on("open", function() {
+      if (res.destroyed) {
+        stream.destroy();
+        return;
       }
       res.writeHead(responseCode, responseHeader);
-      var stream = fs.createReadStream(fileName, { start: start, end: end })
-       .on("error", function(err) {
-          res.end(err);
-        }).on("end", function(err) {
-          res.end();
-        });
       stream.pipe(res);
-    }
-    else
-    {
-      return res.status(403).send();
-    }
+    });
+    res.on("close", function() {
+      if (!res.writableEnded) {
+        stream.destroy();
+      }
+    });
   });
 };

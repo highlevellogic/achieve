@@ -1,0 +1,75 @@
+ACHIEVE 3.0 DEVELOPMENT INSTRUCTIONS
+
+This repository contains the active Achieve 3.0 development version,
+3.0.0-dev.0. It is not yet the stable npm release.
+
+REQUIREMENTS
+
+Install Node.js 12.8.1 or newer. Achieve has no runtime dependencies.
+
+STARTING THE DEVELOPMENT SERVER
+
+From the repository directory, run:
+
+    node start.js
+
+start.js configures tests/ as the application directory and starts HTTP on
+port 8989. It uses paths relative to the repository and contains no
+machine-specific application path.
+
+Thin convenience launchers are also available:
+
+    runw.bat       Windows
+    sh runl.sh     Unix-like systems
+
+Then open:
+
+    http://localhost:8989/
+
+The root page links to the principal browser-oriented tests. A basic first
+confirmation is:
+
+    http://localhost:8989/confirm/
+
+APPLICATIONS AND SERVLETS
+
+Achieve resolves requests within the configured application directory.
+Static HTML, CSS, browser JavaScript, images, and other resources are served
+normally.
+
+The preferred server-side servlet suffix is .jss. Servlet source is executed
+on the server and must not be served as static content. Extensionless
+requests remain compatible with legacy .js servlets. An explicit request for
+a .js resource remains a static JavaScript request.
+
+TESTS
+
+The tests/ directory contains small development applications and regression
+fixtures. Most tests are manual and browser-oriented rather than a fully
+automated test suite. Open the relevant index.htm to see its requests and
+PASS/FAIL output, and use browser developer tools when response headers or
+body suppression need inspection.
+
+Representative areas include:
+
+    confirm/       basic static, compression, and servlet confirmation
+    get/           GET servlet processing
+    head/          HEAD across static, servlet, redirect, error, and media
+    post/          POST body parsing and servlet processing
+    cache/         ETag/cache validation
+    redirect/      directory redirects
+    media/         full and single-range media responses
+    helper/        servlet helper loading and error propagation
+    jss/           .jss routing, reload, precedence, and source protection
+
+The .jss tree deliberately contains invalid or incomplete servlet modules for
+syntax-error, runtime-error, missing-export, reload-recovery, and
+source-protection checks. They are regression fixtures, not accidental broken
+files.
+
+The large video formerly used for full media/Range testing is local-only and
+is excluded from Git. Supply a local media file at the ignored path described
+in tests/README_TESTS.txt when that large-file regression is needed. No media
+download is required for the remaining repository tests.
+
+See tests/README_TESTS.txt for additional details.
