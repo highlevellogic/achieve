@@ -23,9 +23,9 @@ let connectionArray;
    // It can be reset by the app developer using .setAppPath(appDir);
  //  let basePath = path.normalize(require.main.filename.substring(0,require.main.filename.lastIndexOf(path.sep)));
    let basePath = require.main.path;
-   let rootPath=basePath;
-   let relRootPath="";
-   let bCaching=false, bCachingCheck=false, rootDir=false, compress=false, showMimes=false;
+   let applicationPath=basePath;
+   let useRootEnabled=false;
+   let bCaching=false, bCachingCheck=false, compress=false, showMimes=false;
    let corsdomains=[];
    let shortVersion = require('./package.json').version;
    let version = "HLL Achieve v" + shortVersion;
@@ -59,14 +59,11 @@ exports.setNodeEnv = function (env) {
   process.env.NODE_ENV=env;
   console.log("NODE_ENV set to " + env);
 }
-exports.setRootDir = function (root) {
-  var theRootPath = path.join(basePath,root);
-  if (!fs.existsSync(theRootPath)) fs.mkdirSync(theRootPath);
-  if (fs.statSync(theRootPath).isDirectory()) {
-    rootDir=true;
-    rootPath=theRootPath;
-    relRootPath=path.join("/",root);
+exports.useRoot = function (enabled) {
+  if (typeof enabled !== "boolean") {
+    throw new TypeError("useRoot() requires a boolean argument.");
   }
+  useRootEnabled=enabled;
 }
 exports.setAppPath = function (bp) {
   try {
@@ -75,7 +72,6 @@ exports.setAppPath = function (bp) {
       console.log("\nWARNING: App. Path: " + newPath + " does not exist.");
     } else {
       basePath = newPath;
-      rootPath = basePath;
     }
   } catch (err) {console.log(err);}
 }
@@ -313,6 +309,25 @@ function handleConnectRequests(server,protocol) {
   });
 }
 
+function configureApplicationPath() {
+  applicationPath=basePath;
+  if (!useRootEnabled) return true;
+
+  let rootApplicationPath=path.join(basePath,"ROOT");
+  try {
+    if (!fs.statSync(rootApplicationPath).isDirectory()) {
+      console.log("FATAL ERROR: useRoot(true) requires ROOT to be a directory under the application path.");
+      return false;
+    }
+  } catch (err) {
+    console.log("FATAL ERROR: useRoot(true) requires an existing ROOT directory under the application path.");
+    return false;
+  }
+
+  applicationPath=rootApplicationPath;
+  return true;
+}
+
 var achieveApp = function (req, res) {
   console.log(req.method);
  try {
@@ -377,6 +392,7 @@ exports.listen2 = function (ioptions) {
     console.log("Error setting port in listen2(). Setting port to default.")
     sport=portDefault;
   }
+  if (!configureApplicationPath()) return;
   if (!bCachingCheck) exports.setCaching(bCaching);
 
   if (ssl) {
@@ -387,7 +403,7 @@ exports.listen2 = function (ioptions) {
 
   console.log("\n" + version + " HTTP2 " + (ssl ? "(secure)" : "(insecure)") + " is running on port " + sport + ". (Node.js version " + process.version + ")");
   console.log("Path to application base: " + basePath);
-  console.log("Path to root application: " + rootPath);
+  console.log("Path to root application: " + applicationPath);
   console.log("Browser caching: " + (bCaching ? "on" : "off"));
   console.log("Static compression: " + (compress ? "on" : "off"));
   
@@ -425,6 +441,7 @@ exports.slisten = function (ioptions) {
     console.log("Error setting port in slisten(). Setting port to default.")
     sport=443;
   }
+  if (!configureApplicationPath()) return;
   if (!bCachingCheck) exports.setCaching(bCaching);
   
   server = https.createServer(ioptions, achieveApp.bind({protocol:"https"}));
@@ -439,7 +456,7 @@ exports.slisten = function (ioptions) {
 
   console.log("\n" + version + " HTTPS is running on port " + sport + ". (Node.js version " + process.version + ")");
   console.log("Path to application base: " + basePath);
-  console.log("Path to root application: " + rootPath);
+  console.log("Path to root application: " + applicationPath);
   console.log("Browser caching: " + (bCaching ? "on" : "off"));
   console.log("Static compression: " + (compress ? "on" : "off"));
   
@@ -467,6 +484,7 @@ exports.listen = function (port) {
     console.log("Error setting port in listen(). Setting port to default.")
     port=80;
   }
+  if (!configureApplicationPath()) return;
   if (!bCachingCheck) exports.setCaching(bCaching);
   
   server = http.createServer(achieveApp.bind({protocol:"http"}));
@@ -475,7 +493,7 @@ exports.listen = function (port) {
 
   console.log("\n" + version + " HTTP is running on port " + port + ". (Node.js version " + process.version + ")");
   console.log("Path to application base: " + basePath);
-  console.log("Path to root application: " + rootPath);
+  console.log("Path to root application: " + applicationPath);
   console.log("Browser caching: " + (bCaching ? "on" : "off"));
   console.log("Static compression: " + (compress ? "on" : "off"));
   
@@ -732,6 +750,31 @@ function containedRequestPath (boundaryPath,requestPath) {
 
   return candidate;
 }
+function selectApplication (basePath,requestPath) {
+  if (!useRootEnabled) {
+    return {basePath:basePath,requestPath:requestPath};
+  }
+
+  let relativeRequestPath=requestPath.replace(/^[/\\]+/,"");
+  let separator=relativeRequestPath.search(/[/\\]/);
+  let contextName=separator === -1
+    ? relativeRequestPath
+    : relativeRequestPath.substring(0,separator);
+
+  if (contextName && contextName !== "ROOT" && contextName !== "." && contextName !== "..") {
+    let contextPath=containedRequestPath(basePath,contextName);
+    try {
+      if (contextPath && fs.statSync(contextPath).isDirectory()) {
+        let applicationRequestPath=relativeRequestPath.substring(contextName.length);
+        if (applicationRequestPath.length === 0) applicationRequestPath=".";
+        return {basePath:contextPath,requestPath:applicationRequestPath};
+      }
+    } catch (err) {
+    }
+  }
+
+  return {basePath:applicationPath,requestPath:requestPath};
+}
 function checkPath (basePath,relativePath) {
   // Build full path.
   let action="";
@@ -744,14 +787,6 @@ function checkPath (basePath,relativePath) {
     return new PathInfo(relativePath,false,"noSuchFile",stats);
   }
 
-  let rootFullPath;
-  if (rootDir) {
-    rootFullPath = containedRequestPath(rootPath,relativePath);
-  }
-  if (rootFullPath && (fs.existsSync(rootFullPath) || fs.existsSync(rootFullPath+".jss") || fs.existsSync(rootFullPath+".js"))) {
-    fullPath = rootFullPath;
-    relativePath = path.join(relRootPath,relativePath);
-  }
     try {
       // Does fullPath exist?
 	    stats = fs.statSync(fullPath); 
@@ -841,12 +876,13 @@ console.log("req.url: " + req.url);
      }
    }
    let pathObj = url.parse(requestUrl,true);
-   let uncheckedPath = pathObj.pathname;
-   // If undefined, noSuchFile in FileInfo object is set to true.
-   if (uncheckedPath === undefined) return new FileInfo(thisBasePath,requestUrl,fullPath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
-   // Check to see if the ROOT directory is used, and if so; whether it still exists
- //  if (rootDir && uncheckedPath.lastIndexOf("/") == 0) thisBasePath = rootPath;
-   // checkPath returns path request after performing various checks, (See checkPath() for details.)
+    let uncheckedPath = pathObj.pathname;
+    // If undefined, noSuchFile in FileInfo object is set to true.
+    if (uncheckedPath === undefined) return new FileInfo(thisBasePath,requestUrl,fullPath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
+    let selectedApplication=selectApplication(thisBasePath,uncheckedPath);
+    thisBasePath=selectedApplication.basePath;
+    uncheckedPath=selectedApplication.requestPath;
+    // checkPath returns path request after performing various checks, (See checkPath() for details.)
    let checkedPath = checkPath(thisBasePath,uncheckedPath);
    if (checkedPath.action == "noSuchFile") return new FileInfo(thisBasePath,requestUrl,checkedPath.filePath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
    // If null, redirect in FileInfo object is set to true. (Needs redirect to add trailing slash.)
@@ -1167,8 +1203,8 @@ function safeSourceIdentity (sourcePath) {
     source = source.substring(0,source.length-location.length);
   }
 
-  var approvedRoots = [basePath];
-  if (rootDir && rootPath !== basePath) approvedRoots.push(rootPath);
+  var approvedRoots = [applicationPath];
+  if (applicationPath !== basePath) approvedRoots.push(basePath);
   for (var root of approvedRoots) {
     if (typeof root !== "string" || root.length === 0) continue;
     var normalizedRoot = root.replace(/\\/g,"/").replace(/\/$/,"");
@@ -1483,7 +1519,7 @@ exports.preload1 = function (loadList) {
     }
   }
 }
-// use checkPath() first to get complete file information, including the right baseDir or rootDir
+// use checkPath() first to get complete file information, including the right application directory
 let preload = function (filePath) {
   if (path.extname(filePath) != ".js") filePath = filePath+".js";
   let fullPath = path.join(basePath,filePath);

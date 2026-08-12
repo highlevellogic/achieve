@@ -83,7 +83,22 @@ The principal areas are:
 * media: full and single-byte-range media responses;
 * helper: helper-module loading, reload, and error propagation;
 * jss: .jss routing, defaults, precedence, live reload, legacy compatibility,
-  and source protection.
+  and source protection;
+* root_mode: optional ROOT and named application-context routing.
+
+# ROOT/APPLICATION-CONTEXT FIXTURES
+
+The root_mode directory is an application-space fixture for testing
+useRoot(true). Configure root_mode as the application path before starting a
+focused server. Its ROOT directory owns /, while accounting is a named sibling
+application at /accounting.
+
+The fixture verifies ROOT static and servlet routing, a legacy extensionless
+.js servlet, named-application precedence, and the rule that a missing resource
+in a selected named application does not fall back to ROOT.
+
+By default useRoot(false) remains in effect, so the normal repository launcher
+continues serving tests/ directly and does not require a ROOT directory.
 
 # SERVLET FIXTURES
 
