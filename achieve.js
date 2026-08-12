@@ -141,6 +141,7 @@ function handleResolvedResource(req, res, fileInfo, sendBody = true) {
    } else if (fileInfo.serveFile) {
      try {
 	   if (fs.existsSync(fileInfo.fullPath)) {
+		 if (evaluatePreconditions(req,res,true,fileInfo.etag)) return;
 		 new ServeFile(req,res,fileInfo,sendBody).init();
 	   } else {
 		 reportError(res,fileInfo.fullPath,404,"File not found: " + safeSourceIdentity(fileInfo.fullPath),sendBody);
@@ -163,6 +164,7 @@ function handleResolvedResource(req, res, fileInfo, sendBody = true) {
 	   // Checks and adds JavaScript file.
 	   let accountInfo = getAccount(res,fileInfo);
      if (accountInfo.code == 200) {
+	     if (evaluatePreconditions(req,res,true)) return;
 	     try {
 		     // Executes the JavaScript.
 		     new startObject(req,res,fileInfo,accountInfo.account,sendBody).init();
@@ -601,6 +603,93 @@ function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,que
   this.audioVisual = audioVisual;
   this.proxyOptions = proxyOptions;
 }
+function hasEntityTagPrecondition (req) {
+  return (
+    req.headers['if-match'] !== undefined ||
+    req.headers['if-none-match'] !== undefined
+  );
+}
+function representationETag (mtimeMs,coding) {
+  var rawVal = parseInt(Math.floor(mtimeMs) + etagString);
+  return '"' + Base64.fromNumber(rawVal) + '-' + coding + '"';
+}
+function entityTagList (fieldValue) {
+  let result=[];
+  let member="";
+  let quoted=false;
+  for (let character of fieldValue) {
+    if (character === '"') quoted=!quoted;
+    if (character === "," && !quoted) {
+      result.push(member.trim());
+      member="";
+    } else {
+      member+=character;
+    }
+  }
+  result.push(member.trim());
+  return result;
+}
+function entityTag (value) {
+  let tag=value;
+  let weak=false;
+  if (tag.indexOf("W/") === 0) {
+    weak=true;
+    tag=tag.substring(2);
+  }
+  if (
+    tag.length < 2 ||
+    tag.charAt(0) !== '"' ||
+    tag.charAt(tag.length-1) !== '"' ||
+    tag.substring(1,tag.length-1).indexOf('"') !== -1
+  ) return false;
+  return {weak:weak,tag:tag};
+}
+function entityTagFieldMatches (fieldValue,currentETag,weakComparison) {
+  if (currentETag === undefined || currentETag === "") return false;
+  let current=entityTag(currentETag);
+  if (!current) return false;
+  for (let member of entityTagList(fieldValue)) {
+    let candidate=entityTag(member);
+    if (!candidate) continue;
+    if (weakComparison) {
+      if (candidate.tag === current.tag) return true;
+    } else if (!candidate.weak && !current.weak && candidate.tag === current.tag) {
+      return true;
+    }
+  }
+  return false;
+}
+function evaluatePreconditions (req,res,exists,currentETag) {
+  let ifMatch=req.headers['if-match'];
+  if (ifMatch !== undefined) {
+    let ifMatchResult = ifMatch.trim() === "*"
+      ? exists
+      : entityTagFieldMatches(ifMatch,currentETag,false);
+    if (!ifMatchResult) {
+      res.statusCode=412;
+      res.end();
+      return true;
+    }
+  }
+
+  let ifNoneMatch=req.headers['if-none-match'];
+  if (ifNoneMatch !== undefined) {
+    let ifNoneMatchResult = ifNoneMatch.trim() === "*"
+      ? exists
+      : entityTagFieldMatches(ifNoneMatch,currentETag,true);
+    if (ifNoneMatchResult) {
+      if (req.method === "GET" || req.method === "HEAD") {
+        if (currentETag) res.setHeader("ETag",currentETag);
+        res.statusCode=304;
+      } else {
+        res.statusCode=412;
+      }
+      res.end();
+      return true;
+    }
+  }
+  return false;
+}
 function Context (req,res,parms,dirPath,load,proxyOptions=false,proxies=false,proxy) {
   this.request = req;
   this.response = res;
@@ -790,23 +879,22 @@ console.log("req.url: " + req.url);
      }
    }
    if (serveFile) {
-     // For browser caching support
-     if (bCaching) {
-       var rawVal = parseInt(Math.floor(checkedPath.stats.mtimeMs) + etagString);
-       etag = '"' + Base64.fromNumber(rawVal) + '"';
-     } else {
-       etag='';
-     }
+     let etagCoding="i";
      // For compression
      if (compress && (contentType.indexOf("text") == 0 || contentType.indexOf("application") == 0)) {
+       res.setHeader("Vary","Accept-Encoding");
        let enc = getEncoding(req);
        if (enc.check) {
          let ccPath = checkCPath(fullPath,enc.ext,checkedPath.stats.mtimeMs);
          if (ccPath !== false) {
            currentPath += enc.ext;
            res.setHeader("Content-Encoding",enc.contentEncoding);
+           etagCoding = enc.contentEncoding == "gzip" ? "g" : "d";
          }
        }
+     }
+     if (bCaching || hasEntityTagPrecondition(req)) {
+       etag = representationETag(checkedPath.stats.mtimeMs,etagCoding);
      }
    }
    return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual,proxyOptions);
@@ -1287,11 +1375,9 @@ function ServeFile (req,res,fileInfo,sendBody = true) {
   
   let ext="";
 
-  if(bCaching && validCached(fileInfo,response)) return;
-   
    res.setHeader('content-type', fileInfo.contentType);
    res.setHeader('server', version);
-   if (bCaching) res.setHeader('etag', fileInfo.etag);
+   if (fileInfo.etag) res.setHeader('etag', fileInfo.etag);
    res.statusCode = 200;
    if (!sendBody) {
      response.end();
@@ -1424,37 +1510,6 @@ let blank = {
   init: function () {return "";}
 }
 */
-function validCached (fileInfo,response) {
-  // Browser cache support - not yet implemented
-  // Modified for etag instead of last-modified ... UNTESTED!
-  // Version 26 has the old tested last-modified version of this function.
-  // Change was necessary because .lastModified no longer included in fileInfo.
-  
-  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
-  
-  /*
-    If-None-Match ... send 304 if value matches etag
-    If-Match .... send only if etag matches one of the values
-  */
-  /*
-  return values:
-     false: 304 has not been returned ... the server process is not completed
-     true: 304 has been returned ... the server process is complete
-  */
-  response.setHeader('etag', fileInfo.etag);
-  let inmsp = fileInfo.headers['if-none-match'];
-  if (inmsp === undefined) return false;
-  let inms = inmsp.split(",");
-
-  for (var i=0; i<inms.length; i++) {
-    if (inms == fileInfo.etag) {
-      response.statusCode = 304;
-      response.end();
-      return true;
-    }
-  }
-  return false;
-}
 Base64 = {
   _Rixits:"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/",
   fromNumber : function(residual) {
@@ -1565,6 +1620,22 @@ let stream = function(req, res, fileInfo, sendBody = true) {
       return;
     }
 
+    var mediaETag="";
+    var evaluateIfRange = (
+      req.method === "GET" &&
+      req.headers.range !== undefined &&
+      req.headers['if-range'] !== undefined
+    );
+    if (
+      bCaching ||
+      hasEntityTagPrecondition(req) ||
+      evaluateIfRange
+    ) {
+      mediaETag=representationETag(stats.mtimeMs,"i");
+      res.setHeader("ETag",mediaETag);
+    }
+    if (evaluatePreconditions(req,res,true,mediaETag)) return;
+
     if (!err && !sendBody) {
       res.writeHead(200, {
         "Accept-Ranges": "bytes",
@@ -1575,7 +1646,14 @@ let stream = function(req, res, fileInfo, sendBody = true) {
       return;
     }
 
-    var rangeInfo = parseSingleByteRange(req.headers.range, stats.size);
+    var rangeHeader = req.method === "GET" ? req.headers.range : undefined;
+    if (
+      evaluateIfRange &&
+      !entityTagFieldMatches(req.headers['if-range'],mediaETag,false)
+    ) {
+      rangeHeader=undefined;
+    }
+    var rangeInfo = parseSingleByteRange(rangeHeader, stats.size);
     if (rangeInfo.classification === "malformed") {
       var message = "Malformed byte Range request.";
       res.writeHead(400, {
