@@ -79,6 +79,7 @@ The principal areas are:
 * confirm: static delivery, compressed artifacts, and basic servlet execution;
 * get, head, and post: method-specific request and servlet behavior;
 * cache: ETag and cache validation;
+* conditional: exact conditional-request and representation validation;
 * redirect: directory redirects;
 * media: full and single-byte-range media responses;
 * helper: helper-module loading, reload, and error propagation;
@@ -99,6 +100,61 @@ in a selected named application does not fall back to ROOT.
 
 By default useRoot(false) remains in effect, so the normal repository launcher
 continues serving tests/ directly and does not require a ROOT directory.
+
+The setup page is available under the normal development server at:
+
+http://localhost:8989/root_mode/index.html
+
+Start the persistent ROOT-mode browser demonstration with:
+
+node tests/root_mode/server.js
+
+Then open:
+
+http://localhost:8990/
+
+Run the focused automated verification with:
+
+node tests/root_mode/verify.js
+
+The live ROOT page demonstrates root and named-application links. The verifier
+also proves simple mode, setter-order equivalence, startup rejection for a
+missing or non-directory ROOT, sibling precedence, no cross-application
+fallback, and GET/HEAD/POST behavior.
+
+# CONDITIONAL-REQUEST TESTS
+
+The existing cache/ page remains the simple browser-cache demonstration. The
+conditional/ test provides exact request-header and status verification for
+ETags and preconditions.
+
+Start its focused browser server with:
+
+node tests/conditional/server.js
+
+Then open:
+
+http://localhost:8991/
+
+The page displays status, ETag, Content-Encoding, Vary, and PASS/FAIL results
+for static If-None-Match and If-Match requests, their precedence, servlet
+wildcards, and failed-POST side-effect prevention.
+
+Run the complete native HTTP verification with:
+
+node tests/conditional/verify.js
+
+The verifier covers identity/gzip/deflate representation ETags, Vary,
+same- and cross-representation validation, lists, whitespace, wildcards, weak
+and strong comparisons, GET/HEAD/POST results, 304 metadata, servlet behavior
+without automatic response ETags, media ETags and If-Range, caching-disabled
+explicit preconditions, and temporary-copy source modification. It reuses the
+small tracked media fixture and removes all temporary application data.
+
+Achieve does not currently implement Last-Modified, If-Modified-Since,
+If-Unmodified-Since, or successful date-form If-Range validation. Date-form
+If-Range is tested only for the implemented behavior of ignoring Range and
+returning the full current representation.
 
 # SERVLET FIXTURES
 

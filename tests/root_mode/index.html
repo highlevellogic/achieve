@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Achieve ROOT/application mode setup</title>
+</head>
+<body>
+    <main>
+        <h1>ROOT/application mode setup</h1>
+        <p>This directory is a complete Achieve application space, not an application running beneath the normal <code>tests/</code> server.</p>
+        <p>From the repository directory, start the focused ROOT-mode demonstration server:</p>
+        <pre><code>node tests/root_mode/server.js</code></pre>
+        <p>Then open <a href="http://localhost:8990/"><code>http://localhost:8990/</code></a>. Its <code>ROOT/</code> application owns <code>/</code>, and the sibling <code>accounting/</code> application owns <code>/accounting</code>.</p>
+        <p>The links on the live ROOT page are not active through the normal simple-mode development server. The demonstration server keeps running for browser exploration; press <code>Ctrl+C</code> to stop it.</p>
+        <p>Separately, run <code>node tests/root_mode/verify.js</code> for automated configuration and routing checks. The verifier starts and stops its own servers.</p>
+    </main>
+</body>
+</html>

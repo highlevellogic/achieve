@@ -1,1 +1,20 @@
-accounting application
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Accounting application context</title>
+</head>
+<body>
+    <main>
+        <h1>Accounting application</h1>
+        <p>This sibling directory owns the named <code>/accounting</code> application context.</p>
+        <ul>
+            <li><a href="collision.txt">collision.txt</a> — expected: <code>accounting collision</code>.</li>
+            <li><a href="missing.txt">missing.txt</a> — expected: 404 with no fallback to ROOT.</li>
+            <li><a href="servlets/hello">servlets/hello</a> — accounting <code>.jss</code> servlet.</li>
+            <li><a href="/">Return to the ROOT application</a></li>
+        </ul>
+    </main>
+</body>
+</html>
