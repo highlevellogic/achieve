@@ -23,3 +23,11 @@ owns the fixed server/ and access/ structure beneath that root.
 
 Generated log files are operational data and should not be committed to the
 source repository.
+
+The repository launcher performs controlled shutdown for Ctrl-C and SIGTERM.
+Achieve stops its listeners before ending and draining healthy server and access
+log streams, so access records for completed in-flight requests are retained.
+On the supported Node.js 22+ baseline, normal listener shutdown closes idle HTTP
+connections. Active, stalled, or upgraded connections can still delay shutdown.
+Existing HTTP/2 sessions may remain active and continue opening streams until
+they close; Achieve 3.0 does not track or forcibly close HTTP/2 sessions.

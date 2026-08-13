@@ -7,7 +7,21 @@ Achieve development.
 Executable documentation for developers and students is under examples/.
 Start the ordinary examples with `node start.js`, then open:
 
-http://localhost:8989/
+    http://localhost:8989/
+
+LOGGING AND CONTROLLED SHUTDOWN
+
+Run the focused server/access logging regressions with:
+
+    node tests/logging/verify.js
+
+Run the controlled-shutdown regressions with:
+
+    node tests/logging/verify-shutdown.js
+
+The shutdown verifier covers HTTP, HTTPS, HTTP/2, multiple listeners,
+in-flight access records, repeated shutdown callbacks, SIGINT/SIGTERM launcher
+behavior, log draining, and independent logging-sink failures.
 
 # RUNNING THE TESTS
 

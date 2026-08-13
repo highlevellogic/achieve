@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/highlevellogic/achieve#readme",
   "engines": {
-    "node": ">= 12.8.1"
+    "node": ">=22"
   },
   "dependencies": {}
 }

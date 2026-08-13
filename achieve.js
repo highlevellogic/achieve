@@ -27,6 +27,11 @@ let serverInstallationPath = getServerInstallationPath();
 let logRoot = path.join(serverInstallationPath,"logs");
 let serverLogSink;
 let accessLogSink;
+let activeServers = new Set();
+let shutdownInProgress = false;
+let shutdownComplete = false;
+let shutdownError;
+let shutdownCallbacks = [];
 
 function getServerInstallationPath() {
   if (
@@ -124,8 +129,11 @@ function localTimestamp(date = new Date()) {
 
 function createLogSink(category) {
   let stream;
+  let streams = new Set();
   let dateKey;
   let failed = false;
+  let ended = false;
+  let failureError;
   let errorReported = false;
 
   function reportFailure(err) {
@@ -139,8 +147,11 @@ function createLogSink(category) {
 
   function disable(err) {
     failed = true;
+    if (!failureError) failureError = err;
     reportFailure(err);
-    if (stream && !stream.destroyed) stream.destroy();
+    for (let ownedStream of streams) {
+      if (!ownedStream.destroyed) ownedStream.destroy();
+    }
     stream = undefined;
     dateKey = undefined;
   }
@@ -161,6 +172,10 @@ function createLogSink(category) {
       fs.closeSync(fileDescriptor);
       throw err;
     }
+    streams.add(nextStream);
+    nextStream.once("close",function () {
+      streams.delete(nextStream);
+    });
     nextStream.on("error",function (err) {
       disable(err);
     });
@@ -168,7 +183,7 @@ function createLogSink(category) {
   }
 
   function initialize() {
-    if (failed) return false;
+    if (failed || ended) return false;
     if (stream) return true;
     try {
       dateKey = localDateKey();
@@ -181,7 +196,7 @@ function createLogSink(category) {
   }
 
   function write(record) {
-    if (failed) return false;
+    if (failed || ended) return false;
     if (!stream && !initialize()) return false;
     let now = new Date();
     let nextDateKey = localDateKey(now);
@@ -208,15 +223,57 @@ function createLogSink(category) {
   }
 
   function close() {
-    if (stream && !stream.destroyed) stream.destroy();
+    for (let ownedStream of streams) {
+      if (!ownedStream.destroyed) ownedStream.destroy();
+    }
     stream = undefined;
     dateKey = undefined;
+  }
+
+  function end(callback) {
+    callback = typeof callback === "function"
+      ? callback
+      : function () {};
+
+    if (failed || ended) {
+      process.nextTick(callback);
+      return;
+    }
+
+    ended = true;
+
+    let openStreams = Array.from(streams).filter(function (ownedStream) {
+      return !ownedStream.destroyed;
+    });
+
+    stream = undefined;
+    dateKey = undefined;
+
+    if (openStreams.length === 0) {
+      process.nextTick(callback);
+      return;
+    }
+
+    let remaining = openStreams.length;
+
+    function streamClosed() {
+      remaining--;
+      if (remaining === 0) {
+        callback(failed ? failureError : undefined);
+      }
+    }
+
+    for (let ownedStream of openStreams) {
+      ownedStream.once("close",streamClosed);
+      if (!ownedStream.writableEnded) ownedStream.end();
+    }
   }
 
   return {
     initialize:initialize,
     write:write,
     close:close,
+    end:end,
     hasFailed:function () { return failed; }
   };
 }
@@ -327,6 +384,149 @@ function initializeLogging() {
   }
 
   return true;
+}
+
+function registerListener(server) {
+  server.once("listening",function () {
+    activeServers.add(server);
+  });
+
+  server.once("close",function () {
+    activeServers.delete(server);
+  });
+}
+
+function canStartListener() {
+  if (shutdownInProgress || shutdownComplete) {
+    serverError("Achieve cannot start a listener after shutdown has begun.");
+    return false;
+  }
+
+  return true;
+}
+
+function firstShutdownError(err) {
+  if (err && !shutdownError) shutdownError = err;
+}
+
+function closeActiveServers(callback) {
+  let servers = Array.from(activeServers);
+
+  if (servers.length === 0) {
+    process.nextTick(callback);
+    return;
+  }
+
+  let remaining = servers.length;
+
+  function serverClosed(err) {
+    firstShutdownError(err);
+    remaining--;
+    if (remaining === 0) callback();
+  }
+
+  for (let server of servers) {
+    if (!server.listening) {
+      server.once("close",function () {
+        serverClosed();
+      });
+      continue;
+    }
+
+    try {
+      server.close(serverClosed);
+    } catch (err) {
+      serverClosed(err);
+    }
+  }
+}
+
+function endLogging(callback) {
+  let sinks = [];
+
+  if (serverLogSink && !serverLogSink.hasFailed()) {
+    sinks.push(serverLogSink);
+  }
+
+  if (accessLogSink && !accessLogSink.hasFailed()) {
+    sinks.push(accessLogSink);
+  }
+
+  if (sinks.length === 0) {
+    process.nextTick(callback);
+    return;
+  }
+
+  let remaining = sinks.length;
+
+  function sinkEnded(err) {
+    firstShutdownError(err);
+    remaining--;
+    if (remaining === 0) callback();
+  }
+
+  for (let sink of sinks) {
+    sink.end(sinkEnded);
+  }
+}
+
+function finishShutdown() {
+  shutdownComplete = true;
+  shutdownInProgress = false;
+
+  let callbacks = shutdownCallbacks;
+  shutdownCallbacks = [];
+
+  for (let callback of callbacks) {
+    process.nextTick(function () {
+      callback(shutdownError);
+    });
+  }
+}
+
+exports.shutdown = function (reason,callback) {
+  if (typeof reason === "function") {
+    callback = reason;
+    reason = "application";
+  } else if (reason === undefined) {
+    reason = "application";
+  }
+
+  if (callback !== undefined && typeof callback !== "function") {
+    throw new TypeError("shutdown() callback must be a function.");
+  }
+
+  if (callback) {
+    if (shutdownComplete) {
+      process.nextTick(function () {
+        callback(shutdownError);
+      });
+      return;
+    }
+
+    shutdownCallbacks.push(callback);
+  }
+
+  if (shutdownInProgress || shutdownComplete) return;
+
+  shutdownInProgress = true;
+
+  let safeReason =
+    typeof reason === "string" &&
+    /^[A-Za-z0-9._-]+$/.test(reason)
+      ? reason
+      : "application";
+
+  serverEvent("SHUTDOWN","requested reason=" + safeReason);
+
+  closeActiveServers(function () {
+    serverEvent("SHUTDOWN","listeners closed");
+    serverEvent("SHUTDOWN","completed");
+
+    endLogging(function () {
+      finishShutdown();
+    });
+  });
 }
 
 let reqCount = 0;
@@ -675,7 +875,7 @@ var achieveApp = function (req, res) {
  try {
    // Get information about the requested file or application.
  //  let urlParsed = url.parse(req.headers.referer, true);
-   developmentLog("url: " + req.url + ", origin: " + req.connection.remoteAddress || req.headers['x-forwarded-for'] || request.socket.remoteAddress || req.connection.socket.remoteAddress);
+   developmentLog("url: " + req.url + ", origin: " + req.socket.remoteAddress);
    let targetInfo = requestTarget(req);
    if (!targetInfo || !validHttp11Host(req)) {
      res.statusCode=400;
@@ -687,7 +887,7 @@ var achieveApp = function (req, res) {
 /* local and remote differ when outside the lan
    console.log("localAddress: " + req.socket.localAddress);
    console.log("remoteAddress: " + req.socket.remoteAddress);
-   console.log("remoteAddress: " + req.connection.remoteAddress);
+   console.log("remoteAddress: " + req.socket.remoteAddress);
 */
    
    
@@ -701,6 +901,7 @@ var achieveApp = function (req, res) {
  }
 }
 exports.listen2 = function (ioptions) {
+  if (!canStartListener()) return;
   http2 = require('http2');
   
   let server;
@@ -744,11 +945,13 @@ exports.listen2 = function (ioptions) {
     server = http2.createServer(achieveApp.bind({protocol:"http2.http"}));
   }
   attachStartupLogging(server,ssl ? "http2.https" : "http2.http",sport);
+  registerListener(server);
   server.listen(sport);
   return server;
   
 }
 exports.slisten = function (ioptions) {
+  if (!canStartListener()) return;
   https = require('https');
   
   let server;
@@ -785,6 +988,7 @@ exports.slisten = function (ioptions) {
   server = https.createServer(ioptions, achieveApp.bind({protocol:"https"}));
   handleConnectRequests(server,"https");
   attachStartupLogging(server,"https",sport);
+  registerListener(server);
   server.listen(sport);
 /*
   server.on('connection', function (socket) {
@@ -797,6 +1001,7 @@ exports.slisten = function (ioptions) {
   
 }
 exports.listen = function (port) {
+  if (!canStartListener()) return;
   http = require('http');
     
   let server;
@@ -823,6 +1028,7 @@ exports.listen = function (port) {
   server = http.createServer(achieveApp.bind({protocol:"http"}));
   handleConnectRequests(server,"http");
   attachStartupLogging(server,"http",port);
+  registerListener(server);
   server.listen(port);
   
   if (showMimes) {
@@ -1416,7 +1622,7 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
         // This is where the application code is "called"
         context = new Context(request,response,request.post,fileInfo.dirPath,boundLoader,fileInfo.proxyOptions,proxies,achieve_proxy);
         let content = myApp.servlet(context);
-        if (response.finished || context.allowAsync) {
+        if (response.writableEnded || context.allowAsync) {
           developmentLog("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
           return;
         } else if (content === undefined || content === null) {
@@ -1439,7 +1645,7 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
             }
             return;
           }
-          if (response.finished || (context && context.allowAsync)) {
+          if (response.writableEnded || (context && context.allowAsync)) {
           developmentLog("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
           return;
           }
@@ -1462,7 +1668,7 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
         // This is where the application code is "called"
         context = new Context(request,response,request.get,fileInfo.dirPath,boundLoader,fileInfo.proxyOptions,proxies,achieve_proxy);
         let content = myApp.servlet(context);
-        if (response.finished || context.allowAsync) {
+        if (response.writableEnded || context.allowAsync) {
           developmentLog("INFO: GET " + fileInfo.path + " session ended or will end by application.");
           return;
         }
@@ -1480,7 +1686,7 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
           }
           return;
         }
-        if (response.finished || (context && context.allowAsync)) {
+        if (response.writableEnded || (context && context.allowAsync)) {
           developmentLog("INFO: GET " + fileInfo.path + " session ended or will end by application.");
           return;
         }
