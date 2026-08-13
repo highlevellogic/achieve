@@ -12,7 +12,7 @@ From the repository directory:
 node start.js
 ```
 
-The development launcher serves the `tests/` application directory at `http://localhost:8989/`. Windows and Unix-like convenience launchers are also provided as `runw.bat` and `runl.sh`.
+The development launcher serves the executable documentation under `examples/` at `http://localhost:8989/`. Windows and Unix-like convenience launchers are also provided as `runw.bat` and `runl.sh`.
 
 An Achieve application directory contains static resources and server-side servlets. The preferred servlet suffix is `.jss`; servlet source is executed on the server and is protected from static delivery. Extensionless requests remain compatible with legacy `.js` servlets, while an explicit request for a `.js` file continues to serve it as static JavaScript.
 
@@ -33,6 +33,6 @@ Achieve 3.0 replaces the 2.x `setRootDir(...)` API with `useRoot(true)`. Arbitra
 
 The current development server handles GET, HEAD, and POST requests. It also includes static compression and caching, audiovisual streaming, and single-byte-range media responses.
 
-See [instructions.txt](instructions.txt) for development and test instructions. The focused, mostly manual regression applications are under [tests/](tests/), with an overview in [tests/README_TESTS.txt](tests/README_TESTS.txt).
+See [instructions.txt](instructions.txt) for development instructions. The working examples under [examples/](examples/) are intended for learning and exploration. Engineering verification, edge cases, and failure fixtures remain under [tests/](tests/), with an overview in [tests/README_TESTS.txt](tests/README_TESTS.txt).
 
 For the current stable release and its quick-start guide, see the [Achieve package on npm](https://www.npmjs.com/package/achieve).

@@ -1,68 +1,21 @@
 # ACHIEVE TESTS
 
-The tests directory contains simple applications used to verify Achieve server
-behavior during development.
+The tests directory contains engineering verification, protocol assertions,
+edge cases, intentionally broken servlets, and support fixtures used during
+Achieve development.
 
-These are primarily manual, browser-oriented regression tests rather than a
-fully automated test suite. Start the repository server with `node start.js`;
-it serves this directory at http://localhost:8989/.
+Executable documentation for developers and students is under examples/.
+Start the ordinary examples with `node start.js`, then open:
 
-The tests are intentionally kept small and readable. Each test focuses on a
-particular feature or behavior so that the request, expected result, and test
-code can be easily examined.
-
-Most browser-based tests contain the complete client-side test code in the
-test application's index.htm file.
+http://localhost:8989/
 
 # RUNNING THE TESTS
 
 1. Install Node.js if it is not already installed.
 
-2. Start Achieve from the repository directory.
+2. Run the focused verifier for the behavior under review.
 
-   Windows:
-
-   runw.bat
-
-   Linux:
-
-   sh runl.sh
-
-3. By default, the development server runs on port 8989.
-
-4. Open the desired test application in a browser.
-
-   Example:
-
-   http://localhost:8989/confirm/
-
-   and  http://localhost:8989
-
-   Tests may also be run using another hostname or IP address configured for
-   the server.
-
-# CONFIRMATION TEST
-
-## confirm
-
-Purpose:
-
-Provides a basic confirmation that the downloaded development version of
-Achieve is running and can execute an application servlet.
-
-The browser loads an HTML page and makes a request to a servlet. The servlet
-returns a confirmation response which is displayed on the page.
-
-Run:
-
-http://localhost:8989/confirm/
-
-Expected result:
-
-The page should display the confirmation message returned by the servlet.
-
-This test is also intended as a simple first test for someone who has
-downloaded the Achieve development repository.
+3. Treat deliberately invalid fixtures as test inputs, not files to repair.
 
 # DEVELOPMENT TESTS
 
@@ -74,32 +27,36 @@ Individual tests are kept in separate subdirectories. This makes each test
 independently readable and makes it easier to determine which server feature
 has failed.
 
+For retained browser-oriented engineering fixtures, run:
+
+node tests/server.js
+
+and open the desired fixture beneath http://localhost:8988/. Focused automated
+verifiers start and stop their own configured servers instead.
+
 The principal areas are:
 
-* confirm: static delivery, compressed artifacts, and basic servlet execution;
-* get, head, and post: method-specific request and servlet behavior;
 * cache: ETag and cache validation;
 * conditional: exact conditional-request and representation validation;
 * redirect: directory redirects;
-* media: full and single-byte-range media responses;
+* media: engineering-only and local large-media regression material;
 * helper: helper-module loading, reload, and error propagation;
 * jss: .jss routing, defaults, precedence, live reload, legacy compatibility,
   and source protection;
-* root_mode: optional ROOT and named application-context routing.
+* root_mode: automated ROOT and named application-context verification.
 
 # ROOT/APPLICATION-CONTEXT FIXTURES
 
-The root_mode directory is an application-space fixture for testing
-useRoot(true). Configure root_mode as the application path before starting a
-focused server. Its ROOT directory owns /, while accounting is a named sibling
-application at /accounting.
+The root_mode verifier uses the valid public application layout under
+examples/root_mode/. Its ROOT directory owns /, while accounting is a named
+sibling application at /accounting.
 
 The fixture verifies ROOT static and servlet routing, a legacy extensionless
 .js servlet, named-application precedence, and the rule that a missing resource
 in a selected named application does not fall back to ROOT.
 
-By default useRoot(false) remains in effect, so the normal repository launcher
-continues serving tests/ directly and does not require a ROOT directory.
+By default useRoot(false) remains in effect, so the ordinary examples server
+does not require a ROOT directory.
 
 The setup page is available under the normal development server at:
 
@@ -107,7 +64,7 @@ http://localhost:8989/root_mode/index.html
 
 Start the persistent ROOT-mode browser demonstration with:
 
-node tests/root_mode/server.js
+node examples/root_mode/server.js
 
 Then open:
 
@@ -124,13 +81,13 @@ fallback, and GET/HEAD/POST behavior.
 
 # CONDITIONAL-REQUEST TESTS
 
-The existing cache/ page remains the simple browser-cache demonstration. The
-conditional/ test provides exact request-header and status verification for
-ETags and preconditions.
+The conditional browser example provides a friendly introduction to ETags and
+preconditions. The verifier under tests/ provides exact request-header and
+status verification.
 
 Start its focused browser server with:
 
-node tests/conditional/server.js
+node examples/conditional/server.js
 
 Then open:
 
@@ -156,6 +113,22 @@ If-Unmodified-Since, or successful date-form If-Range validation. Date-form
 If-Range is tested only for the implemented behavior of ignoring Range and
 returning the full current representation.
 
+# HEAD REGRESSION EXPECTATIONS
+
+The public example under examples/head/ introduces HEAD with a simple servlet
+request. Engineering HEAD verification should cover the broader server-managed
+resource paths:
+
+* ordinary static resources and servlet responses return the corresponding
+  GET status and relevant headers without a response body;
+* directory redirects and error responses preserve their status and headers
+  while suppressing server-generated explanatory bodies;
+* media HEAD describes the complete resource without opening a media stream;
+* a Range header on HEAD is ignored, so media metadata remains a full 200
+  response rather than a partial 206 response;
+* asynchronous servlets retain application ownership after enabling
+  allowAsync, with Node responsible for suppressing HEAD body bytes.
+
 # SERVLET FIXTURES
 
 .jss is the preferred protected servlet suffix. Extensionless requests remain
@@ -169,8 +142,9 @@ check fails.
 
 # MEDIA AND COMPRESSION FIXTURES
 
-mov_bbb.mp4 is the short Big Buck Bunny MP4 used by W3Schools HTML video
-examples. This copy was downloaded from W3Schools. Original film credit:
+The tracked fixture is examples/media/media/mov_bbb.mp4. It is the short Big
+Buck Bunny MP4 used by W3Schools HTML video examples. This copy was downloaded
+from W3Schools. Original film credit:
 Big Buck Bunny / Blender Foundation / Peach Open Movie. Achieve uses it only
 as a small media/Range regression fixture.
 
@@ -183,7 +157,7 @@ regression is needed. Without it, that filename exercises missing-resource
 behavior. The confirmed regression used a 276,134,947-byte file with
 Range: bytes=276103168-.
 
-The .gz files under confirm and helper are intentional compression fixtures.
+The .gz files under examples/confirm and tests/helper are intentional compression fixtures.
 They expand exactly to their neighboring source files and are not globally
 ignored.
 
@@ -215,109 +189,24 @@ To create a new test:
 
 5. Add the new test and its expected result to this README_TESTS.txt file.
 
-# HTTP METHOD TESTS
-
-## GET
-
-Purpose:
-
-Verify normal GET request handling, including resource resolution and servlet
-GET processing.
-
-Expected behavior:
-
-GET should resolve the requested resource and return its normal response body,
-status, and headers.
-
-## POST
-
-Purpose:
-
-Verify POST request handling and servlet POST data processing.
-
-Expected behavior:
-
-POST data should be received and parsed correctly and the servlet should
-return its normal response.
-
-## HEAD
-
-Purpose:
-
-Verify Achieve's implementation of the HTTP HEAD method.
-
-HEAD follows the same resource-resolution path as GET but does not return a
-response body.
-
-HEAD testing should cover the important resource types and outcomes,
-including:
-
-* static files;
-* servlets;
-* redirects;
-* missing resources and errors;
-* media resources.
-
-Expected behavior:
-
-A HEAD request should return the appropriate status and headers without a
-response body.
-
-For static resources, Achieve should not open and stream the file body.
-
-For media resources, HEAD should describe the complete resource and should
-not stream the media file. A Range request accompanying HEAD should not cause
-partial-content streaming.
-
-For servlets, the servlet is executed with:
-
-request.method === "HEAD"
-
-Achieve suppresses its normal framework-generated servlet response body.
-
-If a servlet takes control of asynchronous response handling, the application
-remains responsible for its processing. Servlet developers can check
-request.method when they wish to avoid unnecessary body-generation work for
-HEAD.
-
 # ADDING TESTS
 
 Tests should normally be focused on one Achieve feature or closely related
 group of behaviors.
 
-Prefer:
-
-tests/head/
-tests/post/
-tests/cache/
-tests/media/
-
-rather than placing unrelated tests into one large application.
+Prefer a clearly named focused directory rather than placing unrelated checks
+into one large application.
 
 A test directory may contain several checks when they all exercise the same
 feature. For example, the HEAD test may check static files, servlets,
 redirects, errors, and media because they are all testing HEAD semantics.
 
-Keep tests simple enough that a developer can open index.htm and quickly
-understand:
+Keep verification simple enough that a developer can quickly understand:
 
 * what request is being made;
 * what result is expected;
 * how PASS or FAIL is determined.
 
-Avoid adding unnecessary test-framework complexity. These tests are intended
-both to detect regressions and to make Achieve behavior easy to inspect and
-understand.
-
-# MASTER TEST PAGE
-
-The tests/index.html page may be used as an index to the individual focused
-tests.
-
-It can initially provide links to the tests.
-
-As the test collection grows, it may also become a convenient way to run
-multiple tests and summarize their PASS/FAIL results.
-
-The individual test applications should remain independently runnable and
-understandable even if a master test runner is added later.
+Avoid adding unnecessary test-framework complexity. Friendly teaching and
+browser exploration belong under examples/; exact verification and failure
+fixtures belong here.

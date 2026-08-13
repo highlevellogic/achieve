@@ -13,7 +13,7 @@ From the repository directory, run:
 
     node start.js
 
-start.js configures tests/ as the application directory and starts HTTP on
+start.js configures examples/ as the application directory and starts HTTP on
 port 8989. It uses paths relative to the repository and contains no
 machine-specific application path.
 
@@ -26,7 +26,7 @@ Then open:
 
     http://localhost:8989/
 
-The root page links to the principal browser-oriented tests. A basic first
+The root page links to executable examples that show how Achieve works. A basic first
 confirmation is:
 
     http://localhost:8989/confirm/
@@ -63,26 +63,39 @@ on the server and must not be served as static content. Extensionless
 requests remain compatible with legacy .js servlets. An explicit request for
 a .js resource remains a static JavaScript request.
 
-TESTS
+EXAMPLES
 
-The tests/ directory contains small development applications and regression
-fixtures. Most tests are manual and browser-oriented rather than a fully
-automated test suite. Open the relevant index.htm to see its requests and
-PASS/FAIL output, and use browser developer tools when response headers or
-body suppression need inspection.
+The examples/ directory is executable documentation for developers and
+students. The ordinary server provides confirmation, GET, HEAD, POST, and
+media examples from its landing page.
+
+Two examples use focused launchers because they require their own server
+configuration:
+
+    node examples/conditional/server.js
+        open http://localhost:8991/
+
+    node examples/root_mode/server.js
+        open http://localhost:8990/
+
+The conditional example enables caching and compression. The ROOT-mode
+example demonstrates the ROOT application and a named sibling application.
+
+ENGINEERING TESTS
+
+The tests/ directory contains regression verification, protocol assertions,
+edge cases, intentionally broken servlets, and support fixtures. It is not the
+ordinary beginner application served by start.js.
 
 Representative areas include:
 
-    confirm/       basic static, compression, and servlet confirmation
-    get/           GET servlet processing
-    head/          HEAD across static, servlet, redirect, error, and media
-    post/          POST body parsing and servlet processing
     cache/         ETag/cache validation
+    conditional/   exact conditional and media protocol verification
     redirect/      directory redirects
-    media/         full and single-range media responses
+    media/         engineering-only and local large-media cases
     helper/        servlet helper loading and error propagation
     jss/           .jss routing, reload, precedence, and source protection
-    root_mode/     optional ROOT and named application-context routing
+    root_mode/     automated ROOT/application-context verification
 
 The .jss tree deliberately contains invalid or incomplete servlet modules for
 syntax-error, runtime-error, missing-export, reload-recovery, and

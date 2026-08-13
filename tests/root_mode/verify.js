@@ -66,7 +66,7 @@ async function withServer(configure, run) {
 }
 
 (async function () {
-    const fixturePath = __dirname;
+    const fixturePath = path.join(__dirname, "..", "..", "examples", "root_mode");
 
     await withServer(function () {
         achieve.setAppPath(fixturePath);

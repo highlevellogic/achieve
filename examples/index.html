@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Achieve 3.0 examples</title>
+</head>
+<body>
+    <main>
+        <h1>Achieve 3.0 examples</h1>
+        <p>These working examples show how Achieve handles browser resources, HTTP methods, servlets, conditional requests, media, and application contexts.</p>
+        <p>Start the ordinary example server with <code>node start.js</code>, open <code>http://localhost:8989/</code>, and explore the links below. Public servlet examples use the preferred protected <code>.jss</code> suffix.</p>
+
+        <h2>Examples on the ordinary server</h2>
+        <ul>
+            <li><a href="confirm/">Confirm that static files and a servlet work</a></li>
+            <li><a href="get/">Make a GET request to a servlet</a></li>
+            <li><a href="head/">Compare HEAD metadata with a bodyless response</a></li>
+            <li><a href="post/">Send POST data to a servlet</a></li>
+            <li><a href="media/">Play a small MP4 through Achieve's media handling</a></li>
+        </ul>
+
+        <h2>Focused examples</h2>
+        <p><a href="conditional/">Conditional requests and representation ETags</a> uses <code>node examples/conditional/server.js</code> and prints its browser URL.</p>
+        <p><a href="root_mode/index.html">ROOT/application mode</a> uses <code>node examples/root_mode/server.js</code> and prints its browser URL. It runs separately because its directory is an application-container layout.</p>
+        <p>Engineering verification and failure fixtures remain under <code>tests/</code>.</p>
+    </main>
+</body>
+</html>
