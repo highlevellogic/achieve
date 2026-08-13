@@ -3,6 +3,10 @@ node_modules/
 *.log
 *.zl
 
+# Generated Achieve operational logs.
+logs/*
+!logs/README.txt
+
 # Local development artifacts that are not part of the public test fixtures.
 tests/helper.zip
 tests/media/media/bbb_sunflower_1080p_30fps_normal.mp4
