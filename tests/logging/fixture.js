@@ -3,8 +3,9 @@ const path = require("path");
 const scenario = process.env.ACHIEVE_LOGGING_SCENARIO;
 let controlledDay = 13;
 let ownedStreams = [];
+let injectedCategory = process.env.ACHIEVE_INJECT_STREAM_ERROR_CATEGORY;
 
-if (scenario === "rollover-error") {
+if (scenario === "rollover-error" || scenario === "access-init-failure") {
     const RealDate = Date;
     global.Date = class extends RealDate {
         constructor(...args) {
@@ -23,13 +24,18 @@ if (scenario === "rollover-error") {
     };
 }
 
-if (process.env.ACHIEVE_INJECT_STREAM_ERROR === "true") {
+if (process.env.ACHIEVE_INJECT_STREAM_ERROR === "true" || injectedCategory) {
     const createWriteStream = fs.createWriteStream;
     fs.createWriteStream = function (...args) {
         const stream = createWriteStream.apply(fs, args);
-        setTimeout(function () {
-            stream.emit("error", new Error("injected server log failure"));
-        }, 100);
+        let filePath = String(args[0]);
+        let shouldInject = !injectedCategory ||
+            path.basename(path.dirname(filePath)) === injectedCategory;
+        if (shouldInject) {
+            setTimeout(function () {
+                stream.emit("error", new Error("injected " + (injectedCategory || "server") + " log failure"));
+            }, 100);
+        }
         return stream;
     };
 }
@@ -60,6 +66,16 @@ if (scenario === "production") {
     achieve.setLogging(false);
 } else if (scenario === "access-only") {
     achieve.setLogging("access");
+} else if (scenario === "access-suite") {
+    achieve.setLogging("access");
+    achieve.setCaching(true);
+} else if (scenario === "access-production") {
+    achieve.setMode("production");
+    achieve.setLogging("access");
+} else if (scenario === "access-http2") {
+    achieve.setLogging("access");
+} else if (scenario === "access-runtime-error") {
+    achieve.setLogging("server", "access");
 } else if (scenario === "duplicate") {
     achieve.setLogging("server", "server");
 } else if (scenario === "selective") {
@@ -89,14 +105,27 @@ if (scenario === "production") {
     process.exit(0);
 } else if (scenario === "init-failure") {
     achieve.setLogging("server");
+} else if (scenario === "access-init-failure") {
+    achieve.setLogging("server", "access");
 }
 
 achieve.setAppPath(process.env.ACHIEVE_APP_PATH);
-const server = achieve.listen(port);
+const server = scenario === "access-http2"
+    ? achieve.listen2(port)
+    : achieve.listen(port);
 
-if (scenario === "init-failure") {
-    send({type: "startup-result", refused: server === undefined});
-    process.exit(server === undefined ? 0 : 1);
+if (scenario === "init-failure" || scenario === "access-init-failure") {
+    setTimeout(function () {
+        send({
+            type: "startup-result",
+            refused: server === undefined,
+            serverStreamDestroyed:
+                scenario !== "access-init-failure" ||
+                (ownedStreams[0] && ownedStreams[0].destroyed)
+        });
+        process.exit(server === undefined ? 0 : 1);
+    }, 25);
+    return;
 }
 
 if (!server) {
@@ -119,6 +148,11 @@ server.once("listening", function () {
     }
     if (scenario !== "rollover-error") {
         send({type: "ready", port: port, checks: checks});
+        if (scenario === "access-runtime-error") {
+            setTimeout(function () {
+                achieve.setCompress("invalid");
+            }, 150);
+        }
         return;
     }
 

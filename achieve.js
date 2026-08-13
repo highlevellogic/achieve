@@ -26,6 +26,7 @@ let loggingConfigurationLocked = false;
 let serverInstallationPath = getServerInstallationPath();
 let logRoot = path.join(serverInstallationPath,"logs");
 let serverLogSink;
+let accessLogSink;
 
 function getServerInstallationPath() {
   if (
@@ -179,7 +180,7 @@ function createLogSink(category) {
     }
   }
 
-  function write(event,message) {
+  function write(record) {
     if (failed) return false;
     if (!stream && !initialize()) return false;
     let now = new Date();
@@ -198,7 +199,7 @@ function createLogSink(category) {
       previousStream.end();
     }
     try {
-      stream.write(localTimestamp(now) + " " + event + " " + message + "\n");
+      stream.write(localTimestamp(now) + " " + record + "\n");
       return true;
     } catch (err) {
       disable(err);
@@ -206,9 +207,16 @@ function createLogSink(category) {
     }
   }
 
+  function close() {
+    if (stream && !stream.destroyed) stream.destroy();
+    stream = undefined;
+    dateKey = undefined;
+  }
+
   return {
     initialize:initialize,
     write:write,
+    close:close,
     hasFailed:function () { return failed; }
   };
 }
@@ -224,8 +232,8 @@ function serverEvent(event,message,err) {
   }
   if (logging.server && serverLogSink) {
     serverLogSink.write(
-      event,
-      err && err.stack ? message + "\n" + err.stack : message
+      event + " " +
+      (err && err.stack ? message + "\n" + err.stack : message)
     );
   }
 }
@@ -238,17 +246,86 @@ function serverError(message,err) {
   serverEvent("ERROR",message,err);
 }
 
+function accessLogValue(value) {
+  return '"' +
+    String(value)
+      .replace(/\\/g,"\\\\")
+      .replace(/"/g,'\\"')
+      .replace(/[\x00-\x1F\x7F]/g,function (character) {
+        return "\\u" +
+          character.charCodeAt(0).toString(16).padStart(4,"0");
+      }) +
+    '"';
+}
+
+function attachAccessLogging(req,res) {
+  if (
+    !logging.access ||
+    !accessLogSink ||
+    accessLogSink.hasFailed()
+  ) return;
+
+  let started = process.hrtime.bigint();
+  let recorded = false;
+  let method = req.method || "";
+  let requestTarget = req.url || "";
+  let remoteAddress =
+    req.socket && req.socket.remoteAddress
+      ? req.socket.remoteAddress
+      : "-";
+
+  function recordAccess(completionState) {
+    if (recorded) return;
+    recorded = true;
+
+    let elapsedNanoseconds = process.hrtime.bigint() - started;
+    let elapsedMilliseconds = Number(elapsedNanoseconds) / 1e6;
+
+    accessLogSink.write(
+      "remote=" + accessLogValue(remoteAddress) +
+      " method=" + accessLogValue(method) +
+      " target=" + accessLogValue(requestTarget) +
+      " status=" + res.statusCode +
+      " elapsed=" + elapsedMilliseconds.toFixed(3) + "ms" +
+      " state=" + completionState
+    );
+  }
+
+  res.once("finish",function () {
+    recordAccess("complete");
+  });
+
+  res.once("close",function () {
+    recordAccess("aborted");
+  });
+}
+
 function initializeLogging() {
   if (loggingConfigurationLocked) {
-    return !logging.server || (serverLogSink && !serverLogSink.hasFailed());
+    return (
+      (!logging.server || (serverLogSink && !serverLogSink.hasFailed())) &&
+      (!logging.access || (accessLogSink && !accessLogSink.hasFailed()))
+    );
   }
   loggingConfigurationLocked = true;
-  if (!logging.server) return true;
-  serverLogSink = createLogSink("server");
-  if (!serverLogSink.initialize()) {
-    console.error("Achieve listener was not started because server logging could not be initialized.");
-    return false;
+
+  if (logging.server) {
+    serverLogSink = createLogSink("server");
+    if (!serverLogSink.initialize()) {
+      console.error("Achieve listener was not started because server logging could not be initialized.");
+      return false;
+    }
   }
+
+  if (logging.access) {
+    accessLogSink = createLogSink("access");
+    if (!accessLogSink.initialize()) {
+      if (serverLogSink) serverLogSink.close();
+      console.error("Achieve listener was not started because access logging could not be initialized.");
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -572,7 +649,7 @@ function attachStartupLogging(server,protocol,port) {
       "logging console=" + (logging.console ? "on" : "off") +
       " server=" + (logging.server ? "on" : "off") +
       " access=" + (logging.access ? "on" : "off") +
-      (logging.server ? " logRoot=" + logRoot : "")
+      (logging.server || logging.access ? " logRoot=" + logRoot : "")
     );
     serverEvent(
       "CONFIG",
@@ -593,6 +670,7 @@ function attachStartupLogging(server,protocol,port) {
 }
 
 var achieveApp = function (req, res) {
+  attachAccessLogging(req,res);
   developmentLog(req.method);
  try {
    // Get information about the requested file or application.

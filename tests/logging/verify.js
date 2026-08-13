@@ -1,6 +1,7 @@
 const childProcess = require("child_process");
 const fs = require("fs");
 const http = require("http");
+const http2 = require("http2");
 const os = require("os");
 const path = require("path");
 
@@ -22,16 +23,51 @@ function request(port, options = {}) {
         const req = http.request({
             port: port,
             path: options.path || "/",
-            method: options.method || "GET"
+            method: options.method || "GET",
+            headers: options.headers || {}
         }, function (res) {
             const chunks = [];
             res.on("data", chunk => chunks.push(chunk));
             res.on("end", function () {
-                resolve({status: res.statusCode, body: Buffer.concat(chunks)});
+                resolve({status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks)});
             });
         });
         req.on("error", reject);
         if (options.body) req.write(options.body);
+        req.end();
+    });
+}
+
+function abortRequest(port, requestPath) {
+    return new Promise(resolve => {
+        const req = http.request({port: port, path: requestPath}, function (res) {
+            res.resume();
+        });
+        req.on("error", function () {});
+        req.on("close", resolve);
+        req.end();
+        setTimeout(function () {
+            req.destroy();
+        }, 50);
+    });
+}
+
+function http2Request(port, requestPath) {
+    return new Promise((resolve, reject) => {
+        const client = http2.connect("http://localhost:" + port);
+        const req = client.request({":path": requestPath});
+        const chunks = [];
+        let status;
+        req.on("response", headers => status = headers[":status"]);
+        req.on("data", chunk => chunks.push(chunk));
+        req.on("end", function () {
+            client.close();
+            resolve({status: status, body: Buffer.concat(chunks)});
+        });
+        req.on("error", function (err) {
+            client.destroy();
+            reject(err);
+        });
         req.end();
     });
 }
@@ -47,7 +83,8 @@ function startCase(scenario, options = {}) {
                 ACHIEVE_LOGGING_SCENARIO: scenario,
                 ACHIEVE_LOGGING_PORT: String(nextPort++),
                 ACHIEVE_LOG_PATH: options.logPath || "",
-                ACHIEVE_INJECT_STREAM_ERROR: options.injectStreamError ? "true" : "false"
+                ACHIEVE_INJECT_STREAM_ERROR: options.injectStreamError ? "true" : "false",
+                ACHIEVE_INJECT_STREAM_ERROR_CATEGORY: options.injectStreamErrorCategory || ""
             }),
             stdio: ["ignore", "pipe", "pipe", "ipc"]
         });
@@ -90,6 +127,22 @@ function serverLogFiles(root) {
     const directory = path.join(root, "server");
     if (!fs.existsSync(directory)) return [];
     return fs.readdirSync(directory).map(name => path.join(directory, name));
+}
+
+function accessLogFiles(root) {
+    const directory = path.join(root, "access");
+    if (!fs.existsSync(directory)) return [];
+    return fs.readdirSync(directory).map(name => path.join(directory, name));
+}
+
+function accessRecords(root) {
+    const files = accessLogFiles(root);
+    if (!files.length) return [];
+    return fs.readFileSync(files[0], "utf8").trim().split(/\r?\n/).filter(Boolean);
+}
+
+function recordsForTarget(records, target) {
+    return records.filter(record => record.includes(' target="' + target + '" '));
 }
 
 function removeTree(target) {
@@ -168,6 +221,86 @@ async function runningCase(scenario, options, inspect) {
             check("POST lifecycle label", postResult.status === 200 && trace.includes("INFO: POST ") && !trace.includes("INFO: GET "));
         });
 
+        const accessRoot = path.join(temporaryPath, "access-suite");
+        await runningCase("access-suite", {
+            logPath: accessRoot,
+            appPath: path.join(__dirname, "application")
+        }, async function (testCase) {
+            check("access-only creates no server directory", !fs.existsSync(path.join(accessRoot, "server")));
+            check("access daily file created", accessLogFiles(accessRoot).length === 1);
+            check("access daily filename", /^\d{4}-\d{2}-\d{2}\.log$/.test(path.basename(accessLogFiles(accessRoot)[0])));
+
+            await request(testCase.message.port, {path: "/resource.txt?value=one"});
+            await request(testCase.message.port, {method: "HEAD", path: "/resource.txt?head=true"});
+            await request(testCase.message.port, {method: "GET", path: "/servlets/lifecycle?method=get"});
+            await request(testCase.message.port, {method: "POST", path: "/servlets/lifecycle?method=post", body: "value=1"});
+            await request(testCase.message.port, {path: "/directory"});
+
+            const current = await request(testCase.message.port, {path: "/resource.txt?conditional=current"});
+            await request(testCase.message.port, {
+                path: "/resource.txt?conditional=304",
+                headers: {"If-None-Match": current.headers.etag}
+            });
+            await request(testCase.message.port, {path: "/missing?status=404"});
+            await request(testCase.message.port, {
+                path: "/resource.txt?conditional=412",
+                headers: {"If-Match": '"stale"'}
+            });
+            await request(testCase.message.port, {
+                path: "/media/sample.mp4?status=416",
+                headers: {Range: "bytes=999999-"}
+            });
+            await request(testCase.message.port, {
+                path: "/media/sample.mp4?status=400",
+                headers: {Range: "bytes=abc-def"}
+            });
+            await request(testCase.message.port, {path: "/servlets/lifecycle?status=405"});
+            await request(testCase.message.port, {path: "/servlets/lifecycle?throw=true"});
+            await request(testCase.message.port, {method: "PUT", path: "/resource.txt?status=501"});
+            await abortRequest(testCase.message.port, "/servlets/lifecycle?abort=true");
+            await new Promise(resolve => setTimeout(resolve, 125));
+
+            const records = accessRecords(accessRoot);
+            const expected = [
+                ["/resource.txt?value=one", "GET", 200, "complete"],
+                ["/resource.txt?head=true", "HEAD", 200, "complete"],
+                ["/servlets/lifecycle?method=get", "GET", 200, "complete"],
+                ["/servlets/lifecycle?method=post", "POST", 200, "complete"],
+                ["/directory", "GET", 301, "complete"],
+                ["/resource.txt?conditional=304", "GET", 304, "complete"],
+                ["/missing?status=404", "GET", 404, "complete"],
+                ["/resource.txt?conditional=412", "GET", 412, "complete"],
+                ["/media/sample.mp4?status=416", "GET", 416, "complete"],
+                ["/media/sample.mp4?status=400", "GET", 400, "complete"],
+                ["/servlets/lifecycle?status=405", "GET", 405, "complete"],
+                ["/servlets/lifecycle?throw=true", "GET", 500, "complete"],
+                ["/resource.txt?status=501", "PUT", 501, "complete"],
+                ["/servlets/lifecycle?abort=true", "GET", 200, "aborted"]
+            ];
+
+            for (const item of expected) {
+                const matching = recordsForTarget(records, item[0]);
+                check("one access record for " + item[0], matching.length === 1, matching.length);
+                check(
+                    "access fields for " + item[0],
+                    matching.length === 1 &&
+                    matching[0].includes(' method="' + item[1] + '" ') &&
+                    matching[0].includes(" status=" + item[2] + " ") &&
+                    matching[0].endsWith(" state=" + item[3]),
+                    matching[0]
+                );
+            }
+
+            check("access remote address present", records.every(record => {
+                const match = / remote="([^"]*)" /.exec(record);
+                return match && match[1] && match[1] !== "-";
+            }));
+            check("access elapsed time is nonnegative milliseconds", records.every(record => / elapsed=\d+\.\d{3}ms /.test(record)));
+            check("access timestamp uses local offset", records.every(record => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2} /.test(record)));
+            check("development trace absent from access log", records.every(record => !record.includes("req.url:") && !record.includes("using GET")));
+            check("access records are not printed to console", testCase.stdout().trim() === "");
+        });
+
         const productionRoot = path.join(temporaryPath, "production");
         await runningCase("production", {logPath: productionRoot}, async function (testCase) {
             check("production mode reported", testCase.stdout().includes("mode=production"));
@@ -197,7 +330,15 @@ async function runningCase(scenario, options, inspect) {
             const root = path.join(temporaryPath, scenario);
             await runningCase(scenario, {logPath: root}, async function (testCase) {
                 check(scenario + " enables server sink", serverLogFiles(root).length === 1);
-                check(scenario + " creates no access sink", !fs.existsSync(path.join(root, "access")));
+                if (scenario === "all" || scenario === "selective") {
+                    check(scenario + " enables access sink", accessLogFiles(root).length === 1);
+                    const serverLog = fs.readFileSync(serverLogFiles(root)[0], "utf8");
+                    const accessLog = fs.readFileSync(accessLogFiles(root)[0], "utf8");
+                    check(scenario + " access records stay out of server log", !serverLog.includes(' remote="'));
+                    check(scenario + " server events stay out of access log", !accessLog.includes(" START ") && !accessLog.includes(" CONFIG "));
+                } else {
+                    check(scenario + " leaves access disabled", !fs.existsSync(path.join(root, "access")));
+                }
                 if (scenario === "all") {
                     const log = fs.readFileSync(serverLogFiles(root)[0], "utf8");
                     check("setLogging(true) enables all selections", log.includes("console=on server=on access=on"));
@@ -212,15 +353,49 @@ async function runningCase(scenario, options, inspect) {
             });
         }
 
-        for (const scenario of ["none", "access-only"]) {
+        for (const scenario of ["none"]) {
             const root = path.join(temporaryPath, scenario);
             await runningCase(scenario, {logPath: root}, async function (testCase) {
                 check(scenario + " creates no server directory", !fs.existsSync(path.join(root, "server")));
-                check(scenario + " creates no access directory in Stage 1", !fs.existsSync(path.join(root, "access")));
+                check(scenario + " creates no access directory", !fs.existsSync(path.join(root, "access")));
                 if (scenario === "none") {
                     check("setLogging(false) suppresses normal Achieve console output", testCase.stdout().trim() === "");
                 }
             });
+        }
+
+        const productionAccessRoot = path.join(temporaryPath, "access-production");
+        await runningCase("access-production", {
+            logPath: productionAccessRoot,
+            appPath: path.join(__dirname, "application")
+        }, async function (testCase) {
+            const records = accessRecords(productionAccessRoot);
+            check("production access record created", records.length === 1);
+            check(
+                "production uses the same access structure",
+                records.length === 1 &&
+                /^\S+ remote="[^"]+" method="GET" target="\/" status=200 elapsed=\d+\.\d{3}ms state=complete$/.test(records[0])
+            );
+            check("production access logging stays off console", testCase.stdout().trim() === "");
+        });
+
+        const http2AccessRoot = path.join(temporaryPath, "access-http2");
+        const http2Case = await startCase("access-http2", {
+            logPath: http2AccessRoot,
+            appPath: path.join(__dirname, "application")
+        });
+        try {
+            const response = await http2Request(http2Case.message.port, "/resource.txt?protocol=http2");
+            await new Promise(resolve => setTimeout(resolve, 75));
+            const records = recordsForTarget(accessRecords(http2AccessRoot), "/resource.txt?protocol=http2");
+            check("HTTP/2 access response", response.status === 200);
+            check("HTTP/2 access record", records.length === 1 && records[0].includes(' method="GET" ') && records[0].includes(" status=200 ") && records[0].endsWith(" state=complete"));
+            const remoteMatch = records.length === 1
+                ? / remote="([^"]*)" /.exec(records[0])
+                : null;
+            check("HTTP/2 remote address", remoteMatch && remoteMatch[1] && remoteMatch[1] !== "-");
+        } finally {
+            await stopCase(http2Case);
         }
 
         const relativeLauncher = path.join(temporaryPath, "launcher");
@@ -242,11 +417,37 @@ async function runningCase(scenario, options, inspect) {
         check("initialization failure reports directly", initializationFailure.stderr().includes("logging failed") && initializationFailure.stderr().includes("listener was not started"));
         await stopCase(initializationFailure);
 
+        const accessFailureRoot = path.join(temporaryPath, "access-init-failure");
+        fs.mkdirSync(accessFailureRoot);
+        fs.writeFileSync(path.join(accessFailureRoot, "access"), "not a directory");
+        const accessInitializationFailure = await startCase("access-init-failure", {logPath: accessFailureRoot});
+        check("access initialization failure prevents listener", accessInitializationFailure.message.refused === true);
+        check("access initialization failure closes server sink", accessInitializationFailure.message.serverStreamDestroyed === true);
+        check("access initialization failure reports directly", accessInitializationFailure.stderr().includes("access logging failed") && accessInitializationFailure.stderr().includes("listener was not started"));
+        await stopCase(accessInitializationFailure);
+
         const runtimeRoot = path.join(temporaryPath, "runtime-failure");
         await runningCase("server-only", {logPath: runtimeRoot, injectStreamError: true}, async function (testCase) {
             check("runtime sink failure reported", testCase.stderr().includes("injected server log failure"));
             const secondResponse = await request(testCase.message.port);
             check("runtime sink failure keeps HTTP service running", secondResponse.status === 200);
+        });
+
+        const accessRuntimeRoot = path.join(temporaryPath, "access-runtime-error");
+        await runningCase("access-runtime-error", {
+            logPath: accessRuntimeRoot,
+            injectStreamErrorCategory: "access"
+        }, async function (testCase) {
+            const before = accessRecords(accessRuntimeRoot).length;
+            const response = await request(testCase.message.port, {path: "/get/servlets/hello?after=failure"});
+            await new Promise(resolve => setTimeout(resolve, 75));
+            const after = accessRecords(accessRuntimeRoot).length;
+            const serverLog = fs.readFileSync(serverLogFiles(accessRuntimeRoot)[0], "utf8");
+            const diagnosticCount = (testCase.stderr().match(/injected access log failure/g) || []).length;
+            check("access runtime failure reported once", diagnosticCount === 1, diagnosticCount);
+            check("access runtime failure drops later records", after === before, before + " -> " + after);
+            check("access runtime failure keeps HTTP service running", response.status === 200);
+            check("access runtime failure leaves server logging healthy", serverLog.includes("ERROR ERROR: setCompress(true) requires a boolean argument."));
         });
 
         const rolloverRoot = path.join(temporaryPath, "rollover-error");
@@ -269,7 +470,7 @@ async function runningCase(scenario, options, inspect) {
         console.error(failures + " logging verification test(s) failed.");
         process.exitCode = 1;
     } else {
-        console.log("All Stage 1 logging verification tests passed.");
+        console.log("All Stage 2 logging verification tests passed.");
     }
 })().catch(err => {
     console.error(err);
