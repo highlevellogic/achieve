@@ -3,20 +3,19 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Achieve ROOT application example</title>
+    <title>Achieve ROOT directory example</title>
 </head>
 <body>
     <main>
-        <h1>ROOT application</h1>
-        <p>This page is <code>ROOT/index.html</code>, served at <code>/</code> while <code>useRoot(true)</code> is active.</p>
+        <h1>ROOT directory</h1>
+        <p>This page is <code>ROOT/index.html</code>, served at <code>/ROOT/</code> as an ordinary directory in the active application.</p>
         <ul>
-            <li><a href="/accounting/">/accounting/</a> — the named sibling accounting application.</li>
-            <li><a href="/accounting/collision.txt">/accounting/collision.txt</a> — expected: <code>accounting collision</code>. The sibling application wins over <code>ROOT/accounting/collision.txt</code>.</li>
-            <li><a href="/accounting/missing.txt">/accounting/missing.txt</a> — expected: 404. The selected accounting application does not fall back to the matching ROOT file.</li>
-            <li><a href="/servlets/hello">/servlets/hello</a> — ROOT <code>.jss</code> servlet.</li>
-            <li><a href="/servlets/legacy">/servlets/legacy</a> — ROOT legacy extensionless <code>.js</code> servlet.</li>
+            <li><a href="/accounting/">/accounting/</a> — another ordinary directory in the same application.</li>
+            <li><a href="accounting/collision.txt">accounting/collision.txt</a> — a resource beneath this ROOT directory.</li>
+            <li><a href="servlets/hello">servlets/hello</a> — a <code>.jss</code> servlet beneath this directory.</li>
+            <li><a href="servlets/legacy">servlets/legacy</a> — a legacy extensionless <code>.js</code> servlet beneath this directory.</li>
         </ul>
-        <p><code>useRoot(false)</code> instead serves <code>appPath</code> directly. A missing or non-directory ROOT with <code>useRoot(true)</code> is a startup configuration failure, not an HTTP 404; the focused verifier checks those cases.</p>
+        <p>No URL directory changes the application or its containment boundary.</p>
     </main>
 </body>
 </html>

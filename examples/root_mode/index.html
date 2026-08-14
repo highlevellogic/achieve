@@ -3,17 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Achieve ROOT/application mode setup</title>
+    <title>Achieve application-directory example</title>
 </head>
 <body>
     <main>
-        <h1>ROOT/application mode setup</h1>
-        <p>This directory is a complete Achieve application space, not an application running beneath the ordinary <code>examples/</code> server.</p>
-        <p>From the repository directory, start the focused ROOT-mode demonstration server:</p>
+        <h1>One application directory</h1>
+        <p>This directory is one complete Achieve application. Its <code>accounting/</code> and <code>ROOT/</code> directories are ordinary URL directories within the same containment boundary.</p>
+        <p>From the repository directory, start the focused demonstration server:</p>
         <pre><code>node examples/root_mode/server.js</code></pre>
-        <p>Then open <a href="http://localhost:8990/"><code>http://localhost:8990/</code></a>. Its <code>ROOT/</code> application owns <code>/</code>, and the sibling <code>accounting/</code> application owns <code>/accounting</code>.</p>
-        <p>The links on the live ROOT page are not active through the normal simple-mode development server. The demonstration server keeps running for browser exploration; press <code>Ctrl+C</code> to stop it.</p>
-        <p>Separately, run <code>node tests/root_mode/verify.js</code> for automated configuration and routing checks. The verifier starts and stops its own servers.</p>
+        <p>Then open <a href="http://localhost:8990/"><code>http://localhost:8990/</code></a>. Try <a href="http://localhost:8990/accounting/"><code>/accounting/</code></a> and <a href="http://localhost:8990/ROOT/"><code>/ROOT/</code></a> as directories in that application.</p>
+        <p>The demonstration server keeps running for browser exploration; press <code>Ctrl+C</code> to stop it.</p>
+        <p>Separately, run <code>node tests/root_mode/verify.js</code> for automated default and configured application-directory checks.</p>
     </main>
 </body>
 </html>

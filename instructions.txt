@@ -47,26 +47,10 @@ Achieve resolves requests within the configured application directory.
 Static HTML, CSS, browser JavaScript, images, and other resources are served
 normally.
 
-By default, the configured application path contains the root application
-directly. No ROOT configuration is required for ordinary development or
-classroom use.
-
-For a production-style application-container layout, call useRoot(true)
-before starting the server and use this fixed structure:
-
-    apps/
-        ROOT/
-        accounting/
-        inventory/
-
-ROOT owns the / context. Sibling directories own named contexts such as
-/accounting. Named applications take precedence over same-named paths inside
-ROOT, and requests do not fall back between applications. ROOT must exist as
-a directory when the server starts.
-
-Achieve 3.0 removes setRootDir(...). Migrate a separately configured 2.x root
-application to the fixed ROOT directory beneath the application path and use
-useRoot(true). Arbitrary root names and paths are no longer supported.
+Achieve uses the server project's root directory as its default application
+directory. Use setAppPath(...) to specify a different application directory.
+URL directories such as /accounting, /images, and /servlets are ordinary
+directories inside that one application.
 
 The preferred server-side servlet suffix is .jss. Servlet source is executed
 on the server and must not be served as static content. Extensionless
@@ -79,17 +63,13 @@ The examples/ directory is executable documentation for developers and
 students. The ordinary server provides confirmation, GET, HEAD, POST, and
 media examples from its landing page.
 
-Two examples use focused launchers because they require their own server
+One example uses a focused launcher because it requires its own server
 configuration:
 
     node examples/conditional/server.js
         open http://localhost:8991/
 
-    node examples/root_mode/server.js
-        open http://localhost:8990/
-
-The conditional example enables caching and compression. The ROOT-mode
-example demonstrates the ROOT application and a named sibling application.
+The conditional example enables caching and compression.
 
 ENGINEERING TESTS
 
@@ -105,7 +85,7 @@ Representative areas include:
     media/         engineering-only and local large-media cases
     helper/        servlet helper loading and error propagation
     jss/           .jss routing, reload, precedence, and source protection
-    root_mode/     automated ROOT/application-context verification
+    root_mode/     default and configured application-directory verification
 
 The .jss tree deliberately contains invalid or incomplete servlet modules for
 syntax-error, runtime-error, missing-export, reload-recovery, and

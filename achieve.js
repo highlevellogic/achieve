@@ -536,8 +536,6 @@ let connectionArray;
    // It can be reset by the app developer using .setAppPath(appDir);
  //  let basePath = path.normalize(require.main.filename.substring(0,require.main.filename.lastIndexOf(path.sep)));
    let basePath = require.main.path;
-   let applicationPath=basePath;
-   let useRootEnabled=false;
    let bCaching=false, bCachingCheck=false, compress=false, showMimes=false;
    let corsdomains=[];
    let shortVersion = require('./package.json').version;
@@ -572,11 +570,8 @@ exports.setNodeEnv = function (env) {
   process.env.NODE_ENV=env;
   serverEvent("CONFIG","NODE_ENV set to " + env);
 }
-exports.useRoot = function (enabled) {
-  if (typeof enabled !== "boolean") {
-    throw new TypeError("useRoot() requires a boolean argument.");
-  }
-  useRootEnabled=enabled;
+exports.setRootDir = function () {
+  serverError("ERROR: setRootDir() is no longer supported. Use setAppPath() instead.");
 }
 exports.setAppPath = function (bp) {
   try {
@@ -740,11 +735,20 @@ function validAuthorityTarget(target) {
   }
 }
 
+function rawPathContainsBackslash(target) {
+  let queryStart = target.indexOf("?");
+  let pathname = queryStart === -1
+    ? target
+    : target.substring(0,queryStart);
+  return pathname.indexOf("\\") !== -1;
+}
+
 function requestTarget(req) {
   let rawTarget = req.url;
 
   if (rawTarget.charAt(0) === "/") {
     if (req.method === "CONNECT") return false;
+    if (rawPathContainsBackslash(rawTarget)) return false;
     return {form:"origin",resourceTarget:rawTarget};
   }
 
@@ -759,6 +763,7 @@ function requestTarget(req) {
   }
 
   let absoluteTarget;
+  if (rawPathContainsBackslash(rawTarget)) return false;
   try {
     absoluteTarget = url.parse(rawTarget);
   } catch (err) {
@@ -773,12 +778,13 @@ function requestTarget(req) {
     return false;
   }
 
+  let resourceTarget =
+    (absoluteTarget.pathname || "/") +
+    (absoluteTarget.search || "");
   return {
     form:"absolute",
     authority:absoluteTarget.host,
-    resourceTarget:
-      (absoluteTarget.pathname || "/") +
-      (absoluteTarget.search || "")
+    resourceTarget:resourceTarget
   };
 }
 
@@ -822,25 +828,6 @@ function handleConnectRequests(server,protocol) {
   });
 }
 
-function configureApplicationPath() {
-  applicationPath=basePath;
-  if (!useRootEnabled) return true;
-
-  let rootApplicationPath=path.join(basePath,"ROOT");
-  try {
-    if (!fs.statSync(rootApplicationPath).isDirectory()) {
-      serverError("FATAL ERROR: useRoot(true) requires ROOT to be a directory under the application path.");
-      return false;
-    }
-  } catch (err) {
-    serverError("FATAL ERROR: useRoot(true) requires an existing ROOT directory under the application path.",err);
-    return false;
-  }
-
-  applicationPath=rootApplicationPath;
-  return true;
-}
-
 function attachStartupLogging(server,protocol,port) {
   server.once("listening",function () {
     serverEvent("START",version + " mode=" + mode);
@@ -853,9 +840,7 @@ function attachStartupLogging(server,protocol,port) {
     );
     serverEvent(
       "CONFIG",
-      "appPath=" + basePath +
-      " rootMode=" + (useRootEnabled ? "on" : "off") +
-      " applicationPath=" + applicationPath
+      "appPath=" + basePath
     );
     serverEvent(
       "CONFIG",
@@ -935,7 +920,6 @@ exports.listen2 = function (ioptions) {
     serverWarning("Error setting port in listen2(). Setting port to default.")
     sport=portDefault;
   }
-  if (!configureApplicationPath()) return;
   if (!bCachingCheck) exports.setCaching(bCaching);
   if (!initializeLogging()) return;
 
@@ -981,7 +965,6 @@ exports.slisten = function (ioptions) {
     serverWarning("Error setting port in slisten(). Setting port to default.")
     sport=443;
   }
-  if (!configureApplicationPath()) return;
   if (!bCachingCheck) exports.setCaching(bCaching);
   if (!initializeLogging()) return;
   
@@ -1021,7 +1004,6 @@ exports.listen = function (port) {
     serverWarning("Error setting port in listen(). Setting port to default.")
     port=80;
   }
-  if (!configureApplicationPath()) return;
   if (!bCachingCheck) exports.setCaching(bCaching);
   if (!initializeLogging()) return;
   
@@ -1263,8 +1245,7 @@ function PathInfo (filePath,reload,action,stats) {
 }
 function containedRequestPath (boundaryPath,requestPath) {
   let boundary = path.resolve(boundaryPath);
-  let relativeRequestPath = requestPath.replace(/^[/\\]+/, "");
-  let candidate = path.resolve(boundary,relativeRequestPath);
+  let candidate = path.join(boundary,requestPath);
   let relativeCandidate = path.relative(boundary,candidate);
 
   if (
@@ -1275,44 +1256,11 @@ function containedRequestPath (boundaryPath,requestPath) {
     return false;
   }
 
-  if (
-    /[/\\]$/.test(requestPath) &&
-    candidate.charAt(candidate.length-1) != path.sep
-  ) {
-    candidate += path.sep;
-  }
-
   return candidate;
 }
-function selectApplication (basePath,requestPath) {
-  if (!useRootEnabled) {
-    return {basePath:basePath,requestPath:requestPath};
-  }
-
-  let relativeRequestPath=requestPath.replace(/^[/\\]+/,"");
-  let separator=relativeRequestPath.search(/[/\\]/);
-  let contextName=separator === -1
-    ? relativeRequestPath
-    : relativeRequestPath.substring(0,separator);
-
-  if (contextName && contextName !== "ROOT" && contextName !== "." && contextName !== "..") {
-    let contextPath=containedRequestPath(basePath,contextName);
-    try {
-      if (contextPath && fs.statSync(contextPath).isDirectory()) {
-        let applicationRequestPath=relativeRequestPath.substring(contextName.length);
-        if (applicationRequestPath.length === 0) applicationRequestPath=".";
-        return {basePath:contextPath,requestPath:applicationRequestPath};
-      }
-    } catch (err) {
-    }
-  }
-
-  return {basePath:applicationPath,requestPath:requestPath};
-}
-function checkPath (basePath,relativePath) {
+function checkPath (basePath,relativePath,directoryForm) {
   // Build full path.
   let action="";
-  if (relativePath.length == 0) relativePath="/";
   let fullPath = containedRequestPath(basePath,relativePath);
   let stats, checkPath;
   let reload=false;
@@ -1349,7 +1297,7 @@ function checkPath (basePath,relativePath) {
   // If fullPath points to a directory:
   if (stats.isDirectory()) {
 	// directory requests without trailing '/' are redirected with '/' added
-    if (fullPath.charAt(fullPath.length-1) != path.sep) return new PathInfo(path.normalize(relativePath),false,"redirect",stats);
+    if (!directoryForm) return new PathInfo(path.normalize(relativePath),false,"redirect",stats);
 	  // Check for default files like index.html and index.js
 	  for (let df of defaultFiles) {
       checkPath = path.join(fullPath,df);
@@ -1413,11 +1361,8 @@ developmentLog("req.url: " + req.url);
     let uncheckedPath = pathObj.pathname;
     // If undefined, noSuchFile in FileInfo object is set to true.
     if (uncheckedPath === undefined) return new FileInfo(thisBasePath,requestUrl,fullPath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
-    let selectedApplication=selectApplication(thisBasePath,uncheckedPath);
-    thisBasePath=selectedApplication.basePath;
-    uncheckedPath=selectedApplication.requestPath;
     // checkPath returns path request after performing various checks, (See checkPath() for details.)
-   let checkedPath = checkPath(thisBasePath,uncheckedPath);
+   let checkedPath = checkPath(thisBasePath,uncheckedPath,uncheckedPath.endsWith("/"));
    if (checkedPath.action == "noSuchFile") return new FileInfo(thisBasePath,requestUrl,checkedPath.filePath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
    // If null, redirect in FileInfo object is set to true. (Needs redirect to add trailing slash.)
    if (checkedPath.action == "redirect") return new FileInfo(thisBasePath,requestUrl,fullPath,dirPath,suffix,headers,contentType,queryString,false,true,false,reload,etag,audioVisual,proxyOptions);
@@ -1737,8 +1682,7 @@ function safeSourceIdentity (sourcePath) {
     source = source.substring(0,source.length-location.length);
   }
 
-  var approvedRoots = [applicationPath];
-  if (applicationPath !== basePath) approvedRoots.push(basePath);
+  var approvedRoots = [basePath];
   for (var root of approvedRoots) {
     if (typeof root !== "string" || root.length === 0) continue;
     var normalizedRoot = root.replace(/\\/g,"/").replace(/\/$/,"");
@@ -1934,7 +1878,7 @@ function rtErrorMsg (err,shortPath="",code=500) {
 function ServeFile (req,res,fileInfo,sendBody = true) {
   this.res = res;
   this.req = req;
-  this.fp = fileInfo.basePath+fileInfo.path;
+  this.fp = path.join(fileInfo.basePath,fileInfo.path);
   this.contentType = fileInfo.contentType;
   this.sendBody = sendBody;
   this.init = function () {

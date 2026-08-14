@@ -18,20 +18,7 @@ Pressing Ctrl-C or sending `SIGTERM` asks Achieve to stop accepting new connecti
 
 An Achieve application directory contains static resources and server-side servlets. The preferred servlet suffix is `.jss`; servlet source is executed on the server and is protected from static delivery. Extensionless requests remain compatible with legacy `.js` servlets, while an explicit request for a `.js` file continues to serve it as static JavaScript.
 
-By default, the path selected with `setAppPath()` contains the root application directly. This keeps small projects and classroom exercises simple; they do not need a `ROOT` directory.
-
-For a production-style application-container layout, call `useRoot(true)` before starting the server:
-
-```text
-apps/
-    ROOT/
-    accounting/
-    inventory/
-```
-
-`ROOT` is the fixed root application and owns `/`. Sibling application directories own their named URL contexts, such as `/accounting`. A named application takes precedence over a same-named path inside `ROOT`, and a missing resource does not fall back to another application. When `useRoot(true)` is configured, `ROOT` must exist as a directory before the server starts.
-
-Achieve 3.0 replaces the 2.x `setRootDir(...)` API with `useRoot(true)`. Arbitrary root directory names and paths are no longer supported; move the root application to the fixed `ROOT` directory beneath the application path.
+Achieve uses the server project's root directory as its default application directory. Use `setAppPath()` to specify a different application directory. URL directories such as `/accounting/`, `/images/`, and `/servlets/` remain ordinary directories inside that one application.
 
 The current development server handles GET, HEAD, and POST requests. It also includes static compression and caching, audiovisual streaming, and single-byte-range media responses.
 

@@ -57,26 +57,21 @@ The principal areas are:
 * helper: helper-module loading, reload, and error propagation;
 * jss: .jss routing, defaults, precedence, live reload, legacy compatibility,
   and source protection;
-* root_mode: automated ROOT and named application-context verification.
+* request_path: one-application routing, containment, and raw-backslash
+  rejection;
+* root_mode: default and configured application-directory verification.
 
-# ROOT/APPLICATION-CONTEXT FIXTURES
+Run the focused request-path verifier with:
 
-The root_mode verifier uses the valid public application layout under
-examples/root_mode/. Its ROOT directory owns /, while accounting is a named
-sibling application at /accounting.
+    node tests/request_path/verify.js
 
-The fixture verifies ROOT static and servlet routing, a legacy extensionless
-.js servlet, named-application precedence, and the rule that a missing resource
-in a selected named application does not fall back to ROOT.
+# APPLICATION-DIRECTORY FIXTURES
 
-By default useRoot(false) remains in effect, so the ordinary examples server
-does not require a ROOT directory.
+Achieve uses the server project's root directory as its default application
+directory. Use setAppPath() to select a different application directory. URL
+directories never select another application or containment boundary.
 
-The setup page is available under the normal development server at:
-
-http://localhost:8989/root_mode/index.html
-
-Start the persistent ROOT-mode browser demonstration with:
+Start the focused browser demonstration with:
 
 node examples/root_mode/server.js
 
@@ -88,10 +83,9 @@ Run the focused automated verification with:
 
 node tests/root_mode/verify.js
 
-The live ROOT page demonstrates root and named-application links. The verifier
-also proves simple mode, setter-order equivalence, startup rejection for a
-missing or non-directory ROOT, sibling precedence, no cross-application
-fallback, and GET/HEAD/POST behavior.
+The browser demonstration shows ordinary directories inside one configured
+application. The verifier proves the default directory, setAppPath() override,
+and the inert diagnostic behavior of obsolete setRootDir().
 
 # CONDITIONAL-REQUEST TESTS
 
