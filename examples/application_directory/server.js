@@ -1,7 +1,7 @@
 const path = require("path");
 const achieve = require("../../achieve");
 
-const port = Number(process.env.ACHIEVE_ROOT_MODE_PORT || 8990);
+const port = Number(process.env.ACHIEVE_APPLICATION_DIRECTORY_PORT || 8990);
 
 achieve.setAppPath(__dirname);
 const server = achieve.listen(port);

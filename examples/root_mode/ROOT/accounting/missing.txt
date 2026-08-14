@@ -1,1 +1,0 @@
-ROOT fallback must not be served

@@ -59,7 +59,8 @@ The principal areas are:
   and source protection;
 * request_path: one-application routing, containment, and raw-backslash
   rejection;
-* root_mode: default and configured application-directory verification.
+* application_directory: default and configured application-directory
+  verification.
 
 Run the focused request-path verifier with:
 
@@ -73,7 +74,7 @@ directories never select another application or containment boundary.
 
 Start the focused browser demonstration with:
 
-node examples/root_mode/server.js
+node examples/application_directory/server.js
 
 Then open:
 
@@ -81,7 +82,7 @@ http://localhost:8990/
 
 Run the focused automated verification with:
 
-node tests/root_mode/verify.js
+node tests/application_directory/verify.js
 
 The browser demonstration shows ordinary directories inside one configured
 application. The verifier proves the default directory, setAppPath() override,

@@ -63,13 +63,18 @@ The examples/ directory is executable documentation for developers and
 students. The ordinary server provides confirmation, GET, HEAD, POST, and
 media examples from its landing page.
 
-One example uses a focused launcher because it requires its own server
+Two examples use focused launchers because they require their own server
 configuration:
 
     node examples/conditional/server.js
         open http://localhost:8991/
 
-The conditional example enables caching and compression.
+    node examples/application_directory/server.js
+        open http://localhost:8990/
+
+The conditional example enables caching and compression. The application
+directory example shows setAppPath() selecting one application containing an
+ordinary nested directory.
 
 ENGINEERING TESTS
 
@@ -85,7 +90,7 @@ Representative areas include:
     media/         engineering-only and local large-media cases
     helper/        servlet helper loading and error propagation
     jss/           .jss routing, reload, precedence, and source protection
-    root_mode/     default and configured application-directory verification
+    application_directory/   default and configured application-directory verification
 
 The .jss tree deliberately contains invalid or incomplete servlet modules for
 syntax-error, runtime-error, missing-export, reload-recovery, and
