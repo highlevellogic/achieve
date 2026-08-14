@@ -1,5 +1,5 @@
 // Essential modules. Always load. 
-global.fs = require('fs');
+const fs = require('fs');
 const path = require('path');
 const url = require('url');
 const querystring = require('querystring');
@@ -535,7 +535,7 @@ let connectionArray;
    // The default is the directory of the entry point or main module for the application.
    // It can be reset by the app developer using .setAppPath(appDir);
  //  let basePath = path.normalize(require.main.filename.substring(0,require.main.filename.lastIndexOf(path.sep)));
-   let basePath = require.main.path;
+   let basePath = serverInstallationPath;
    let bCaching=false, bCachingCheck=false, compress=false, showMimes=false;
    let corsdomains=[];
    let shortVersion = require('./package.json').version;
@@ -883,7 +883,29 @@ var achieveApp = function (req, res) {
    return dispatchMethod(req, res, basePath, targetInfo.resourceTarget);
  } catch (e) {
    serverError("Catchall error in achieveApp.",e);
+   if (res.destroyed || res.writableEnded) return;
+   if (res.headersSent) {
+     res.destroy();
+     return;
+   }
+   try {
+     res.statusCode=500;
+     res.setHeader('Content-Type','text/plain;charset=utf-8');
+     res.end("Internal Server Error");
+   } catch (responseError) {
+     serverError("Failed to send catchall error response.",responseError);
+     if (!res.destroyed) res.destroy();
+   }
  }
+}
+function normalizedPort(port) {
+  if (typeof port === "string") {
+    let numericPort=port.trim();
+    if (!/^\d+$/.test(numericPort)) return false;
+    port=Number(numericPort);
+  }
+  if (typeof port !== "number" || !Number.isInteger(port)) return false;
+  return port;
 }
 exports.listen2 = function (ioptions) {
   if (!canStartListener()) return;
@@ -909,10 +931,13 @@ exports.listen2 = function (ioptions) {
 
   if (sport === undefined) {
     sport=portDefault;
-  } else if (Number.isNaN(sport)) {
+  } else if (normalizedPort(sport) === false) {
     serverWarning("http2 port " + sport + " is not a number. Setting port to default: " + portDefault + ".");
     sport=portDefault;
-  } else if ((sport<1024 && sport != portDefault) || sport>49151) {
+  } else {
+    sport=normalizedPort(sport);
+  }
+  if ((sport<1024 && sport != portDefault) || sport>49151) {
     serverWarning("http2 port " + sport + " is outside acceptable range. (1024-49151) Setting port to default: " + portDefault + ".");
     sport=portDefault;
   }
@@ -954,10 +979,13 @@ exports.slisten = function (ioptions) {
   sport = ioptions.httpsPort;
   if (sport === undefined) {
     sport=443;
-  } else if (Number.isNaN(sport)) {
+  } else if (normalizedPort(sport) === false) {
     serverWarning("https port " + sport + " is not a number. Setting port to default.");
     sport=443;
-  } else if ((sport<1024 && sport!=443) || sport>49151) {
+  } else {
+    sport=normalizedPort(sport);
+  }
+  if ((sport<1024 && sport!=443) || sport>49151) {
     serverWarning("https port " + sport + " is outside acceptable range. (1024-49151) Setting port to default.");
     sport=443;
   }
@@ -993,10 +1021,13 @@ exports.listen = function (port) {
   
   if (port === undefined) {
     port=80;
-  } else if (Number.isNaN(port)) {
+  } else if (normalizedPort(port) === false) {
     serverWarning(port + " is not a number. Setting port to default.");
     port=80;
-  } else if ((port<1024 && port != 80) || port>49151) {
+  } else {
+    port=normalizedPort(port);
+  }
+  if ((port<1024 && port != 80) || port>49151) {
     serverWarning("Port " + port + " is outside acceptable range. (1024-49151) Setting port to default.");
     port=80;
   }
@@ -1958,7 +1989,7 @@ exports.loadModule = function (moduleName) {
   let localModulePath = require.main.paths[0];
   try {
     fullPath = path.normalize(localModulePath +'/'+moduleName+'/'+moduleName+'.js');
-    stats = fs.statSync(fullPath);
+    const stats = fs.statSync(fullPath);
 	  if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
 	    delete require.cache[require.resolve(fullPath)];
       moduleLoadTimes[fullPath] = stats.mtimeMs; // new Date().getTime();
@@ -1972,7 +2003,7 @@ let load = function (filePath) {
   let dirname=this.dirPath;
   let fullPath = path.join(dirname,filePath+".js");
   let loadedMtime;
-  stats = fs.statSync(fullPath);
+  const stats = fs.statSync(fullPath);
 	if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
     loadedMtime = stats.mtimeMs;
 	  delete require.cache[require.resolve(fullPath)];
@@ -2024,7 +2055,7 @@ let blank = {
   init: function () {return "";}
 }
 */
-Base64 = {
+const Base64 = {
   _Rixits:"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/",
   fromNumber : function(residual) {
     var rixit; // like 'digit', only in some non-decimal radix 
