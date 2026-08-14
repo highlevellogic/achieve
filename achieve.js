@@ -743,6 +743,28 @@ function rawPathContainsBackslash(target) {
   return pathname.indexOf("\\") !== -1;
 }
 
+function absoluteAuthorityHost(authority) {
+  let hostValue = authority;
+  let userinfoEnd = authority.indexOf("@");
+  if (userinfoEnd !== -1) {
+    if (authority.indexOf("@",userinfoEnd + 1) !== -1) return false;
+    let userinfo = authority.substring(0,userinfoEnd);
+    if (!/^(?:[A-Za-z0-9._~!$&'()*+,;=:]|%[0-9A-F]{2})*$/i.test(userinfo)) {
+      return false;
+    }
+    hostValue = authority.substring(userinfoEnd + 1);
+  }
+
+  if (!validHostValue(hostValue)) return false;
+  if (hostValue.charAt(0) === "[") return hostValue;
+
+  let portStart = hostValue.lastIndexOf(":");
+  let host = portStart === -1
+    ? hostValue
+    : hostValue.substring(0,portStart);
+  return host.length > 0 ? hostValue : false;
+}
+
 function requestTarget(req) {
   let rawTarget = req.url;
 
@@ -762,28 +784,36 @@ function requestTarget(req) {
     return {form:"authority",authority:rawTarget};
   }
 
-  let absoluteTarget;
   if (rawPathContainsBackslash(rawTarget)) return false;
-  try {
-    absoluteTarget = url.parse(rawTarget);
-  } catch (err) {
-    return false;
-  }
-  if (
-    (absoluteTarget.protocol !== "http:" && absoluteTarget.protocol !== "https:") ||
-    !absoluteTarget.slashes ||
-    !absoluteTarget.host ||
-    absoluteTarget.hash
-  ) {
-    return false;
-  }
+  let scheme = rawTarget.match(/^https?:\/\//i);
+  if (!scheme || rawTarget.indexOf("#") !== -1) return false;
 
-  let resourceTarget =
-    (absoluteTarget.pathname || "/") +
-    (absoluteTarget.search || "");
+  let authorityStart = scheme[0].length;
+  let pathStart = rawTarget.indexOf("/",authorityStart);
+  let queryStart = rawTarget.indexOf("?",authorityStart);
+  let resourceStart;
+  if (pathStart === -1) {
+    resourceStart = queryStart;
+  } else if (queryStart === -1) {
+    resourceStart = pathStart;
+  } else {
+    resourceStart = Math.min(pathStart,queryStart);
+  }
+  let authorityEnd = resourceStart === -1
+    ? rawTarget.length
+    : resourceStart;
+  let authority = absoluteAuthorityHost(
+    rawTarget.substring(authorityStart,authorityEnd)
+  );
+  if (!authority) return false;
+
+  let resourceTarget = resourceStart === -1
+    ? "/"
+    : rawTarget.substring(resourceStart);
+  if (resourceTarget.charAt(0) === "?") resourceTarget = "/" + resourceTarget;
   return {
     form:"absolute",
-    authority:absoluteTarget.host,
+    authority:authority,
     resourceTarget:resourceTarget
   };
 }
@@ -1388,18 +1418,19 @@ developmentLog("req.url: " + req.url);
        // console.log("proxyRequest not true: " + proxyRequest);
      }
    }
-   let pathObj = url.parse(requestUrl,true);
-    let uncheckedPath = pathObj.pathname;
-    // If undefined, noSuchFile in FileInfo object is set to true.
-    if (uncheckedPath === undefined) return new FileInfo(thisBasePath,requestUrl,fullPath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
+   let queryStart = requestUrl.indexOf("?");
+   let uncheckedPath = queryStart === -1
+     ? requestUrl
+     : requestUrl.substring(0,queryStart);
+   queryString = queryStart === -1
+     ? ""
+     : requestUrl.substring(queryStart + 1);
     // checkPath returns path request after performing various checks, (See checkPath() for details.)
    let checkedPath = checkPath(thisBasePath,uncheckedPath,uncheckedPath.endsWith("/"));
    if (checkedPath.action == "noSuchFile") return new FileInfo(thisBasePath,requestUrl,checkedPath.filePath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
    // If null, redirect in FileInfo object is set to true. (Needs redirect to add trailing slash.)
    if (checkedPath.action == "redirect") return new FileInfo(thisBasePath,requestUrl,fullPath,dirPath,suffix,headers,contentType,queryString,false,true,false,reload,etag,audioVisual,proxyOptions);
-   let urlArray = requestUrl.split("?");
    let currentPath = checkedPath.filePath;
-   queryString = urlArray[1] || ""; // without '?'
    suffix = path.extname(currentPath).substring(1) || "";
    fullPath = path.join(thisBasePath,currentPath);
    dirPath = path.dirname(fullPath);

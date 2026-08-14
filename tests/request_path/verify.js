@@ -52,6 +52,33 @@ function rawRequest(target) {
     });
 }
 
+function directRequest(server,target) {
+    const requestListener=server.listeners("request")[0];
+    const headers={};
+    const req={
+        method:"GET",
+        url:target,
+        httpVersion:"2.0",
+        headers:{},
+        rawHeaders:[],
+        socket:{remoteAddress:"direct-test"}
+    };
+    const res={
+        statusCode:200,
+        destroyed:false,
+        writableEnded:false,
+        setHeader:function (name,value) {
+            headers[name.toLowerCase()]=value;
+        },
+        end:function (body) {
+            this.body=body === undefined ? "" : String(body);
+            this.writableEnded=true;
+        }
+    };
+    requestListener(req,res);
+    return {status:res.statusCode,headers:headers,body:res.body};
+}
+
 (async function () {
     achieve.setAppPath(applicationPath);
     const server=achieve.listen(port);
@@ -64,6 +91,9 @@ function rawRequest(target) {
         let result=await request("/");
         check("application root",result.status === 200 && result.body.includes("request-path root"));
 
+        result=await request("/foo");
+        check("origin-form path",result.status === 301 && result.headers.location === "/foo/");
+
         result=await request("/index.html");
         check("index file",result.status === 200 && result.body.includes("request-path root"));
 
@@ -72,6 +102,36 @@ function rawRequest(target) {
 
         result=await request("/foo/bar?x=1");
         check("nested resource with query",result.status === 200 && result.body.includes("nested resource"));
+
+        result=await request("/servlets/query?x=1");
+        check("origin-form single query value",
+            result.status === 200 && result.body === '{"x":"1"}');
+
+        result=await request("/servlets/query?x=1&y=2");
+        check("origin-form multiple query values",
+            result.status === 200 && result.body === '{"x":"1","y":"2"}');
+
+        result=await request("/servlets/query?x=1?y=2");
+        check("origin-form preserves query after first question mark",
+            result.status === 200 && result.body === '{"x":"1?y=2"}');
+
+        result=await request("/servlets/query?");
+        check("origin-form empty query",result.status === 200 && result.body === "{}");
+
+        result=await rawRequest("/encoded%20name");
+        check("origin-form preserves encoded percent-20 pathname",
+            result.status === 200 && result.raw.includes("encoded percent-20 pathname"),
+            result.status);
+
+        result=await rawRequest("/encoded%2fname");
+        check("origin-form preserves encoded percent-2f pathname",
+            result.status === 200 && result.raw.includes("encoded percent-2f pathname"),
+            result.status);
+
+        result=await rawRequest("/foo#bar");
+        check("origin-form raw fragment is not rewritten",
+            result.status === 404 && !result.raw.includes("nested resource"),
+            result.status);
 
         result=await request("/accounting/index.html");
         check("URL directory stays in one application",
@@ -85,6 +145,97 @@ function rawRequest(target) {
         check("absolute-form nested resource",
             result.status === 200 && result.raw.includes("nested resource"),
             result.status + " " + JSON.stringify(result.raw));
+
+        result=await rawRequest("https://localhost:" + port + "/foo/bar?x=1");
+        check("HTTPS absolute-form nested resource",
+            result.status === 200 && result.raw.includes("nested resource"),
+            result.status);
+
+        for (const target of [
+            "HTTP://example.com/foo/bar",
+            "http://example.com:80/foo/bar",
+            "http://example.com:99999/foo/bar",
+            "http://example.com:/foo/bar",
+            "http://[::1]/foo/bar",
+            "http://[::1]:8080/foo/bar",
+            "http://[v1.a]/foo/bar",
+            "http://[v1.a]:99999/foo/bar",
+            "http://user:pass@example.com/foo/bar"
+        ]) {
+            result=await rawRequest(target);
+            check("absolute-form authority accepted " + JSON.stringify(target),
+                result.status === 200 && result.raw.includes("nested resource"),
+                result.status);
+        }
+
+        result=await rawRequest("http://localhost:" + port);
+        check("absolute-form without explicit path",
+            result.status === 200 && result.raw.includes("request-path root"),
+            result.status);
+
+        result=await rawRequest("http://localhost:" + port + "?x=1");
+        check("absolute-form query without explicit path",
+            result.status === 200 && result.raw.includes("request-path root"),
+            result.status);
+
+        result=await rawRequest("http://localhost:" + port + "/foo/../bar");
+        check("absolute-form contained dot segment maps normally",
+            result.status === 200 && result.raw.includes("contained dot-segment target"),
+            result.status);
+
+        result=await rawRequest("http://localhost:" + port + "/foo/../../secret.txt");
+        check("absolute-form raw dot segments reach containment",
+            result.status === 404 && !result.raw.includes("inside application secret marker"),
+            result.status);
+
+        result=await rawRequest("http://localhost:" + port + "/foo//bar");
+        check("absolute-form preserves repeated forward slashes",
+            result.status === 200 && result.raw.includes("nested resource"),
+            result.status);
+
+        result=await rawRequest("http://localhost:" + port + "/encoded%2fname");
+        check("absolute-form preserves encoded pathname",
+            result.status === 200 && result.raw.includes("encoded percent-2f pathname"),
+            result.status);
+
+        result=await rawRequest("http://localhost:" + port + "/encoded%20name");
+        check("absolute-form preserves encoded percent-20 pathname",
+            result.status === 200 && result.raw.includes("encoded percent-20 pathname"),
+            result.status);
+
+        result=await rawRequest("http://localhost:" + port + "/servlets/query?x=1?y=2");
+        check("absolute-form preserves query after first question mark",
+            result.status === 200 && result.raw.includes('{"x":"1?y=2"}'),
+            result.status);
+
+        result=await rawRequest("http://localhost:" + port + "/foo#bar");
+        check("absolute-form fragment is rejected",result.status === 400,result.status);
+
+        result=await rawRequest("ftp://localhost:" + port + "/foo/bar");
+        check("non-HTTP absolute-form is rejected",result.status === 400,result.status);
+
+        result=await rawRequest("not-an-absolute-target");
+        check("invalid absolute-form is rejected",result.status === 400,result.status);
+
+        for (const target of [
+            "http:///foo/bar",
+            "http://exa[mple.com/foo/bar",
+            "http://example.com:abc/foo/bar",
+            "http://::1/foo/bar",
+            "http://[::1/foo/bar"
+        ]) {
+            result=await rawRequest(target);
+            check("malformed absolute-form authority rejected " + JSON.stringify(target),
+                result.status === 400,
+                result.status);
+        }
+
+        result=directRequest(server,"http://user@@example.com/foo/bar");
+        check("Achieve rejects multiple raw userinfo delimiters",
+            result.status === 400 &&
+            result.headers["content-type"] === "text/plain;charset=utf-8" &&
+            result.body === "Bad Request",
+            result.status + " " + result.headers["content-type"] + " " + result.body);
 
         result=await request("/servlets/hello?x=query");
         check("jss servlet and query",result.status === 200 && result.body === "hello query");
