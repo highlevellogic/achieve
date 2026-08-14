@@ -170,9 +170,12 @@ The .gz files under examples/confirm and tests/helper are intentional compressio
 They expand exactly to their neighboring source files and are not globally
 ignored.
 
-Containment, malformed request-target, Host-field, CONNECT, and HTTP/2 checks
-require a native HTTP client or small ad hoc harness rather than a browser
-page. They are not yet collected into a complete automated suite.
+Containment, malformed request-target, Host-field, and HTTP/2 checks require a
+native HTTP client or focused harness rather than a browser page. CONNECT
+authority validation, controlled rejection, socket closure, logging, and
+deprecation behavior are verified with:
+
+    node tests/connect/verify.js
 
 The test pages are based on a common simple HTML structure. Test-specific
 request and result handling is kept in the individual index.htm file whenever

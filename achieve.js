@@ -1,7 +1,6 @@
 // Essential modules. Always load. 
 const fs = require('fs');
 const path = require('path');
-const url = require('url');
 const querystring = require('querystring');
 // Optional modules. Load only when used.
 
@@ -315,7 +314,7 @@ function accessLogValue(value) {
     '"';
 }
 
-function attachAccessLogging(req,res) {
+function createAccessRecorder(req) {
   if (
     !logging.access ||
     !accessLogSink ||
@@ -331,7 +330,7 @@ function attachAccessLogging(req,res) {
       ? req.socket.remoteAddress
       : "-";
 
-  function recordAccess(completionState) {
+  return function recordAccess(statusCode,completionState) {
     if (recorded) return;
     recorded = true;
 
@@ -342,18 +341,23 @@ function attachAccessLogging(req,res) {
       "remote=" + accessLogValue(remoteAddress) +
       " method=" + accessLogValue(method) +
       " target=" + accessLogValue(requestTarget) +
-      " status=" + res.statusCode +
+      " status=" + statusCode +
       " elapsed=" + elapsedMilliseconds.toFixed(3) + "ms" +
       " state=" + completionState
     );
-  }
+  };
+}
+
+function attachAccessLogging(req,res) {
+  let recordAccess = createAccessRecorder(req);
+  if (!recordAccess) return;
 
   res.once("finish",function () {
-    recordAccess("complete");
+    recordAccess(res.statusCode,"complete");
   });
 
   res.once("close",function () {
-    recordAccess("aborted");
+    recordAccess(res.statusCode,"aborted");
   });
 }
 
@@ -606,11 +610,16 @@ exports.allowAccess = function (ad) {
     return;
   }
 }
-function methodNotSupported(req, res) {
-    let message =
+function methodNotSupportedMessage(req) {
+    return (
         req.method +
         " request method is not yet supported on the server: " +
-        version;
+        version
+    );
+}
+
+function methodNotSupported(req, res) {
+    let message = methodNotSupportedMessage(req);
 
     res.statusCode = 501;
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -717,22 +726,27 @@ function dispatchMethod(req, res, basePath, resourceTarget) {
 }
 
 function validAuthorityTarget(target) {
-  try {
-    let authority = url.parse("http://" + target);
-    let port = authority.port;
-    return (
-      authority.hostname &&
-      port &&
-      /^\d+$/.test(port) &&
-      Number(port) <= 65535 &&
-      authority.auth === null &&
-      authority.pathname === "/" &&
-      authority.search === null &&
-      authority.hash === null
-    );
-  } catch (err) {
-    return false;
+  if (typeof target !== "string") return false;
+
+  let host;
+  let port;
+  if (target.charAt(0) === "[") {
+    let hostEnd = target.indexOf("]");
+    if (hostEnd === -1 || target.charAt(hostEnd + 1) !== ":") return false;
+    host = target.substring(0,hostEnd + 1);
+    port = target.substring(hostEnd + 2);
+  } else {
+    let portStart = target.lastIndexOf(":");
+    if (portStart <= 0 || target.indexOf(":") !== portStart) return false;
+    host = target.substring(0,portStart);
+    port = target.substring(portStart + 1);
   }
+
+  return (
+    validHostValue(host) &&
+    /^\d+$/.test(port) &&
+    Number(port) <= 65535
+  );
 }
 
 function rawPathContainsBackslash(target) {
@@ -850,11 +864,96 @@ function validHttp11Host(req) {
   return hostCount === 1 && validHostValue(hostValue);
 }
 
-function handleConnectRequests(server,protocol) {
-  server.on('connect',function(req,socket) {
-    let response = new (require('http').ServerResponse)(req);
-    response.assignSocket(socket);
-    achieveApp.call({protocol:protocol},req,response);
+function connectResponseText(statusCode,statusMessage,contentType,body) {
+  return (
+    "HTTP/1.1 " + statusCode + " " + statusMessage + "\r\n" +
+    "Content-Type: " + contentType + "\r\n" +
+    "Content-Length: " + Buffer.byteLength(body,"utf8") + "\r\n" +
+    "Connection: close\r\n" +
+    "Date: " + new Date().toUTCString() + "\r\n" +
+    "\r\n" +
+    body
+  );
+}
+
+function handleConnectRequests(server) {
+  server.on('connect',function(req,socket,head) {
+    let recordAccess = createAccessRecorder(req);
+    let responseStatus = 500;
+    let responseStarted = false;
+    let responseCompleted = false;
+
+    function recordAborted() {
+      if (recordAccess) recordAccess(responseStatus,"aborted");
+    }
+
+    socket.once("error",recordAborted);
+    socket.once("close",function () {
+      if (!responseCompleted) recordAborted();
+    });
+
+    function endResponse(statusCode,statusMessage,contentType,body) {
+      responseStatus = statusCode;
+      if (!socket.writable) {
+        recordAborted();
+        socket.destroy();
+        return;
+      }
+
+      let responseText = connectResponseText(
+        statusCode,
+        statusMessage,
+        contentType,
+        body
+      );
+      responseStarted = true;
+      socket.end(responseText,function () {
+        responseCompleted = true;
+        if (recordAccess) recordAccess(statusCode,"complete");
+      });
+    }
+
+    try {
+      let targetInfo = requestTarget(req);
+      if (!targetInfo || !validHttp11Host(req)) {
+        endResponse(
+          400,
+          "Bad Request",
+          "text/plain;charset=utf-8",
+          "Bad Request"
+        );
+        return;
+      }
+
+      let message = methodNotSupportedMessage(req);
+      developmentLog(message);
+      endResponse(
+        501,
+        "Not Implemented",
+        "text/plain; charset=utf-8",
+        message
+      );
+    } catch (err) {
+      serverError("Catchall error handling CONNECT.",err);
+      if (responseStarted || !socket.writable) {
+        recordAborted();
+        if (!socket.destroyed) socket.destroy();
+        return;
+      }
+
+      try {
+        endResponse(
+          500,
+          "Internal Server Error",
+          "text/plain;charset=utf-8",
+          "Internal Server Error"
+        );
+      } catch (responseError) {
+        serverError("Failed to send CONNECT catchall error response.",responseError);
+        recordAborted();
+        if (!socket.destroyed) socket.destroy();
+      }
+    }
   });
 }
 
@@ -1027,7 +1126,7 @@ exports.slisten = function (ioptions) {
   if (!initializeLogging()) return;
   
   server = https.createServer(ioptions, achieveApp.bind({protocol:"https"}));
-  handleConnectRequests(server,"https");
+  handleConnectRequests(server);
   attachStartupLogging(server,"https",sport);
   registerListener(server);
   server.listen(sport);
@@ -1069,7 +1168,7 @@ exports.listen = function (port) {
   if (!initializeLogging()) return;
   
   server = http.createServer(achieveApp.bind({protocol:"http"}));
-  handleConnectRequests(server,"http");
+  handleConnectRequests(server);
   attachStartupLogging(server,"http",port);
   registerListener(server);
   server.listen(port);
