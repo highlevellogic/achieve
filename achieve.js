@@ -17,6 +17,8 @@ let compressionTempSequence = 0;
 if (process.env.NODE_ENV === undefined) process.env.NODE_ENV = 'production';
 
 let moduleLoadTimes = {};
+let servletResolutionCache = new Map();
+let servletResolutionAliases = new Map();
 
 let mode = "development";
 let logging = {
@@ -584,6 +586,8 @@ exports.setRootDir = function () {
   serverError("ERROR: setRootDir() is no longer supported. Use setAppPath() instead.");
 }
 exports.setAppPath = function (bp) {
+  servletResolutionCache.clear();
+  servletResolutionAliases.clear();
   try {
     let newPath = path.normalize(bp);
     if (!fs.existsSync(newPath)) {
@@ -633,7 +637,7 @@ function methodNotSupported(req, res) {
     res.end(message);
 }
 
-function handleResolvedResource(req, res, fileInfo, sendBody = true) {
+function handleResolvedResource(req, res, fileInfo, sendBody = true, servletCacheKey) {
  // display(fileInfo);
    // If request is a directory, it must have a trailing slash (otherwise resources such as css and js won't be loaded).
    if (fileInfo.redirect) {
@@ -685,30 +689,125 @@ function handleResolvedResource(req, res, fileInfo, sendBody = true) {
 	   // Checks and adds JavaScript file.
 	   let accountInfo = getAccount(res,fileInfo);
      if (accountInfo.code == 200) {
-	     if (evaluatePreconditions(req,res,true)) return;
-	     try {
-		     // Executes the JavaScript.
-		     new startObject(req,res,fileInfo,accountInfo.account,sendBody).init();
-	     } catch (err) {}
+	     if (mode === "production") {
+         let servletIdentity=servletPhysicalIdentity(fileInfo.fullPath);
+         servletResolutionCache.set(servletIdentity,{
+           basePath:fileInfo.basePath,
+           path:fileInfo.path,
+           fullPath:fileInfo.fullPath,
+           dirPath:fileInfo.dirPath,
+           suffix:fileInfo.suffix,
+           contentType:fileInfo.contentType,
+           account:accountInfo.account
+         });
+         servletResolutionAliases.set(
+           servletRequestIdentity(fileInfo.basePath,servletCacheKey),
+           servletIdentity
+         );
+       }
+	     return handlePreparedServlet(req,res,fileInfo,accountInfo.account,sendBody);
 	   } else {
 	     reportError(res,accountInfo.account,accountInfo.code,accountInfo.reason,sendBody);
 	   }
    }
 }
 
+function servletResourcePath(resourceTarget) {
+    let queryStart=resourceTarget.indexOf("?");
+    return queryStart === -1
+      ? resourceTarget
+      : resourceTarget.substring(0,queryStart);
+}
+
+function servletPhysicalIdentity(fullPath) {
+    let identity=path.resolve(fullPath);
+    return process.platform === "win32" ? identity.toLowerCase() : identity;
+}
+
+function servletRequestIdentity(basePath,resourceTarget) {
+    let proxyRequest=proxies && checkProxies(resourceTarget);
+    let resourcePath=servletResourcePath(
+      proxyRequest ? proxyRequest.url : resourceTarget
+    );
+    let identity=containedRequestPath(basePath,resourcePath);
+    if (!identity) return false;
+    return servletPhysicalIdentity(identity);
+}
+
+function prepareProxyRequest(resourceTarget) {
+    if (!proxies) return false;
+    let proxyRequest=checkProxies(resourceTarget);
+    if (proxyRequest) {
+      proxyRequest.options.url=proxyRequest.url;
+      achieve_proxy = _this.loadModule('achieve-proxy');
+    }
+    return proxyRequest;
+}
+
+function cachedServletFileInfo(cached,req,resourceTarget) {
+    let proxyRequest=prepareProxyRequest(resourceTarget);
+    let currentTarget=proxyRequest ? proxyRequest.url : resourceTarget;
+    let queryStart=currentTarget.indexOf("?");
+    return new FileInfo(
+      cached.basePath,
+      cached.path,
+      cached.fullPath,
+      cached.dirPath,
+      cached.suffix,
+      req.headers,
+      cached.contentType,
+      queryStart === -1 ? "" : currentTarget.substring(queryStart+1),
+      false,
+      false,
+      false,
+      false,
+      "",
+      false,
+      proxyRequest ? proxyRequest.options : ""
+    );
+}
+
+function handlePreparedServlet(req,res,fileInfo,account,sendBody) {
+    if (evaluatePreconditions(req,res,true)) return;
+    try {
+      return new startObject(req,res,fileInfo,account,sendBody).init();
+    } catch (err) {}
+}
+
+function cachedServlet(basePath,resourceTarget) {
+    if (mode !== "production") return;
+    let servletIdentity=servletResolutionAliases.get(
+      servletRequestIdentity(basePath,resourceTarget)
+    );
+    if (!servletIdentity) return;
+    return servletResolutionCache.get(servletIdentity);
+}
+
 function handleGet(req, res, basePath, resourceTarget) {
+    let cached=cachedServlet(basePath,resourceTarget);
+    if (cached) {
+      return handlePreparedServlet(req,res,cachedServletFileInfo(cached,req,resourceTarget),cached.account,true);
+    }
     let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
-    return handleResolvedResource(req, res, fileInfo);
+    return handleResolvedResource(req, res, fileInfo, true, resourceTarget);
 }
 
 function handlePost(req, res, basePath, resourceTarget) {
+    let cached=cachedServlet(basePath,resourceTarget);
+    if (cached) {
+      return handlePreparedServlet(req,res,cachedServletFileInfo(cached,req,resourceTarget),cached.account,true);
+    }
     let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
-    return handleResolvedResource(req, res, fileInfo);
+    return handleResolvedResource(req, res, fileInfo, true, resourceTarget);
 }
 
 function handleHead(req, res, basePath, resourceTarget) {
+    let cached=cachedServlet(basePath,resourceTarget);
+    if (cached) {
+      return handlePreparedServlet(req,res,cachedServletFileInfo(cached,req,resourceTarget),cached.account,false);
+    }
     let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
-    return handleResolvedResource(req, res, fileInfo, false);
+    return handleResolvedResource(req, res, fileInfo, false, resourceTarget);
 }
 
 function dispatchMethod(req, res, basePath, resourceTarget) {
