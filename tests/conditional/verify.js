@@ -93,15 +93,50 @@ function stopServer(serverInfo) {
     });
 }
 
+function waitForCurrentArtifact(sourcePath,artifactPath,timeout=5000) {
+    return new Promise((resolve,reject) => {
+        const started=Date.now();
+        function inspect() {
+            try {
+                const sourceStats=fs.statSync(sourcePath);
+                const artifactStats=fs.statSync(artifactPath);
+                if (sourceStats.mtimeMs <= artifactStats.mtimeMs) {
+                    resolve();
+                    return;
+                }
+            } catch (err) {
+                if (err.code !== "ENOENT") {
+                    reject(err);
+                    return;
+                }
+            }
+            if (Date.now()-started >= timeout) {
+                reject(new Error("Timed out waiting for compressed artifact: " + artifactPath));
+                return;
+            }
+            setTimeout(inspect,10);
+        }
+        inspect();
+    });
+}
+
 async function staticTests(server) {
     const identity = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "identity"}});
+    const firstGzip = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "gzip"}});
+    const sourcePath = path.join(server.applicationPath,"static","resource.txt");
+    const cachePath = path.join(server.applicationPath,"compression-cache","static","resource.txt");
+    await waitForCurrentArtifact(sourcePath,cachePath+".gz");
     const gzip = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "gzip"}});
+    const firstDeflate = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "deflate"}});
+    await waitForCurrentArtifact(sourcePath,cachePath+".zl");
     const deflate = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "deflate"}});
     const identityTag = identity.headers.etag;
     const gzipTag = gzip.headers.etag;
     const deflateTag = deflate.headers.etag;
 
     check("static identity 200", identity.status === 200);
+    check("first gzip miss returns identity", firstGzip.status === 200 && firstGzip.headers["content-encoding"] === undefined);
+    check("first deflate miss returns identity", firstDeflate.status === 200 && firstDeflate.headers["content-encoding"] === undefined);
     check("identity ETag suffix", /-i"$/.test(identityTag), identityTag);
     check("gzip ETag suffix", /-g"$/.test(gzipTag), gzipTag);
     check("deflate ETag suffix", /-d"$/.test(deflateTag), deflateTag);

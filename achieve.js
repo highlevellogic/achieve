@@ -7,6 +7,9 @@ const querystring = require('querystring');
 let http;
 let https;
 let zlib;
+let streamPipeline;
+let compressionJobs = new Set();
+let compressionTempSequence = 0;
 // const avmine = require("./avmine");
 // const dt = require('./datetime');
 // let flatted = require('flatted');
@@ -565,7 +568,10 @@ exports.showMimeTypes = function () {
 exports.setCompress = function (on) {
   if (typeof on == "boolean") {
     compress=on;
-    if (compress) zlib = require('zlib');
+    if (compress) {
+      zlib = require('node:zlib');
+      streamPipeline = require('node:stream').pipeline;
+    }
   } else {
     serverError("ERROR: setCompress(true) requires a boolean argument. (default: false)");
   }
@@ -1561,9 +1567,9 @@ developmentLog("req.url: " + req.url);
        res.setHeader("Vary","Accept-Encoding");
        let enc = getEncoding(req);
        if (enc.check) {
-         let ccPath = checkCPath(fullPath,enc.ext,checkedPath.stats.mtimeMs);
+         let ccPath = checkCPath(fullPath,enc.ext,checkedPath.stats,thisBasePath);
          if (ccPath !== false) {
-           currentPath += enc.ext;
+           currentPath = path.relative(thisBasePath,ccPath);
            res.setHeader("Content-Encoding",enc.contentEncoding);
            etagCoding = enc.contentEncoding == "gzip" ? "g" : "d";
          }
@@ -1575,28 +1581,108 @@ developmentLog("req.url: " + req.url);
    }
    return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual,proxyOptions);
 }
-function checkCPath (path,ext,oAge) {
-  try {
-    if (fs.existsSync(path+ext)) {
-      let cstats = fs.statSync(path+ext);
-      if (oAge > cstats.mtimeMs) {
-        if (ext == ".gz") {
-          fs.writeFileSync(path+ext,zlib.gzipSync(fs.readFileSync(path)));
-        } else if (ext == ".zl") {
-          fs.writeFileSync(path+ext,zlib.deflateSync(fs.readFileSync(path)));
+function removeCompressionTemp (tempPath,callback) {
+  fs.unlink(tempPath,function (err) {
+    if (err && err.code !== "ENOENT") {
+      serverError(tempPath + "  Compression temporary-file cleanup failed.",err);
+    }
+    callback();
+  });
+}
+function compressionArtifactPath (basePath,sourcePath,ext) {
+  let cachePath=path.join(basePath,"compression-cache");
+  let cacheRelative=path.relative(cachePath,sourcePath);
+  if (
+    cacheRelative === "" ||
+    (
+      cacheRelative !== ".." &&
+      !cacheRelative.startsWith(".." + path.sep) &&
+      !path.isAbsolute(cacheRelative)
+    )
+  ) {
+    return false;
+  }
+  return path.join(cachePath,path.relative(basePath,sourcePath)) + ext;
+}
+function scheduleCompressedArtifact (sourcePath,artifactPath,ext,sourceStats) {
+  if (compressionJobs.has(artifactPath)) return;
+  compressionJobs.add(artifactPath);
+
+  let sourceMtimeMs=sourceStats.mtimeMs;
+  let sourceSize=sourceStats.size;
+  let tempPath = artifactPath +
+    ".tmp-" + process.pid +
+    "-" + Date.now() +
+    "-" + (++compressionTempSequence);
+
+  function clearJob () {
+    compressionJobs.delete(artifactPath);
+  }
+  function fail (message,err) {
+    serverError(message,err);
+    removeCompressionTemp(tempPath,clearJob);
+  }
+
+  fs.mkdir(path.dirname(artifactPath),{recursive:true},function (err) {
+    if (err) {
+      serverError(artifactPath + "  Compression cache directory creation failed.",err);
+      clearJob();
+      return;
+    }
+    try {
+      let compressor = ext == ".gz"
+        ? zlib.createGzip()
+        : zlib.createDeflate();
+      streamPipeline(
+        fs.createReadStream(sourcePath),
+        compressor,
+        fs.createWriteStream(tempPath,{flags:"wx"}),
+        function (err) {
+          if (err) {
+            fail(sourcePath + "  Compression failed.",err);
+            return;
+          }
+          fs.stat(sourcePath,function (err,currentStats) {
+            if (err) {
+              fail(sourcePath + "  Compression source restat failed.",err);
+              return;
+            }
+            if (
+              currentStats.mtimeMs !== sourceMtimeMs ||
+              currentStats.size !== sourceSize
+            ) {
+              removeCompressionTemp(tempPath,clearJob);
+              return;
+            }
+            fs.rename(tempPath,artifactPath,function (err) {
+              if (err) {
+                fail(artifactPath + "  Compression artifact publication failed.",err);
+                return;
+              }
+              clearJob();
+            });
+          });
         }
-      }
-    } else {
-      if (ext == ".gz") {
-        fs.writeFileSync(path+ext,zlib.gzipSync(fs.readFileSync(path)));
-      } else if (ext == ".zl") {
-        fs.writeFileSync(path+ext,zlib.deflateSync(fs.readFileSync(path)));
-      }
+      );
+    } catch (err) {
+      fail(sourcePath + "  Compression failed.",err);
+    }
+  });
+}
+function checkCPath (path,ext,sourceStats,basePath) {
+  let artifactPath=compressionArtifactPath(basePath,path,ext);
+  if (!artifactPath) return false;
+  try {
+    if (fs.existsSync(artifactPath)) {
+      let cstats = fs.statSync(artifactPath);
+      if (sourceStats.mtimeMs <= cstats.mtimeMs) return artifactPath;
     }
   } catch (err) {
     serverError(path + "  Compression failed.",err);
     return false;
   }
+  scheduleCompressedArtifact(path,artifactPath,ext,sourceStats);
+  return false;
 }
 function encodeData (check,contentEncoding,ext) {
   this.check = check;
