@@ -665,12 +665,8 @@ function handleResolvedResource(req, res, fileInfo, sendBody = true, servletCach
      reportError(res,fileInfo.fullPath,406,"No acceptable representation is available.",sendBody);
    } else if (fileInfo.serveFile) {
      try {
-	   if (fs.existsSync(fileInfo.fullPath)) {
 		 if (evaluatePreconditions(req,res,true,fileInfo.etag)) return;
 		 new ServeFile(req,res,fileInfo,sendBody).init();
-	   } else {
-		 reportError(res,fileInfo.fullPath,404,"File not found: " + safeSourceIdentity(fileInfo.fullPath),sendBody);
-	   }
 	 } catch (err) {
 		reportError(res,fileInfo.fullPath,500,"Error attempting to serve " + safeSourceIdentity(fileInfo.fullPath),sendBody);
 	 }

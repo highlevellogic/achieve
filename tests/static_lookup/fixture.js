@@ -1,0 +1,36 @@
+const fs=require("node:fs");
+
+let counting=false;
+let counts={statSync:0,existsSync:0,createReadStream:0};
+for (const name of ["statSync","existsSync","createReadStream"]) {
+    const original=fs[name];
+    fs[name]=function (...args) {
+        if (counting) counts[name]++;
+        return original.apply(this,args);
+    };
+}
+
+const achieve=require("../../achieve");
+achieve.setMode("production");
+achieve.setLogging(false);
+achieve.setAppPath(process.env.ACHIEVE_STATIC_LOOKUP_APP);
+achieve.setCaching(true);
+achieve.setCompress(false);
+const server=achieve.listen(Number(process.env.ACHIEVE_STATIC_LOOKUP_PORT));
+server.on("listening",function () { process.send({event:"ready"}); });
+
+process.on("message",function (message) {
+    if (message.command === "count-start") {
+        counts={statSync:0,existsSync:0,createReadStream:0};
+        counting=true;
+        process.send({event:"count-started"});
+    } else if (message.command === "count-stop") {
+        counting=false;
+        process.send({event:"counts",counts:counts});
+    } else if (message.command === "stop") {
+        counting=false;
+        achieve.shutdown("static lookup verification complete",function () {
+            process.exit();
+        });
+    }
+});
