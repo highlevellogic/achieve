@@ -1368,19 +1368,14 @@ let avMimeList = {
 };
 function reportError (res,account,statusCode,reason,sendBody = true) {
   if (statusCode === undefined) statusCode = 500;
-  try {
-    delete require.cache[require.resolve(account)];
-  } catch (err) {
-  } finally {
-	  if (statusCode >= 500) serverError(statusCode + ": " + reason);
-    else developmentLog(statusCode + ": " + reason);
-    res.statusCode=statusCode;
-    res.setHeader('Content-Type','text/plain;charset=utf-8');
-    if (sendBody) {
-      res.end(reason);
-    } else {
-      res.end();
-    }
+  if (statusCode >= 500) serverError(statusCode + ": " + reason);
+  else developmentLog(statusCode + ": " + reason);
+  res.statusCode=statusCode;
+  res.setHeader('Content-Type','text/plain;charset=utf-8');
+  if (sendBody) {
+    res.end(reason);
+  } else {
+    res.end();
   }
 }
 function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag,audioVisual,proxyOptions,notAcceptable = false) {
