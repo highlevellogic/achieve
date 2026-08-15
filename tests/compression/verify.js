@@ -18,11 +18,12 @@ function check(name,condition,detail) {
     if (!condition) failures++;
 }
 
-function request(port,resource,encoding,headers={}) {
+function request(port,resource,encoding,headers={},method="GET") {
     return new Promise((resolve,reject) => {
         let req = http.request({
             port:port,
             path:resource,
+            method:method,
             headers:Object.assign({"Accept-Encoding":encoding},headers)
         },res => {
             let chunks=[];
@@ -131,7 +132,7 @@ async function run() {
     fs.mkdirSync(staticPath,{recursive:true});
     const sourcePath=path.join(staticPath,"resource.txt");
     const pingPath=path.join(staticPath,"ping.txt");
-    const cachePath=path.join(applicationPath,"compression-cache");
+    const cachePath=path.join(applicationPath,".compression-cache");
     const cacheStaticPath=path.join(cachePath,"static");
     const gzipPath=path.join(cacheStaticPath,"resource.txt.gz");
     const deflatePath=path.join(cacheStaticPath,"resource.txt.zl");
@@ -154,14 +155,88 @@ async function run() {
     check("current deflate selected",result.status === 200 && result.headers["content-encoding"] === "deflate");
     check("current deflate exact source",zlib.inflateSync(result.body).equals(original));
     check("current deflate ETag",/-d"$/.test(result.headers.etag),result.headers.etag);
+
+    result=await request(port,"/static/resource.txt"," GZip ");
+    check("whitespace and coding case",result.headers["content-encoding"] === "gzip");
+    result=await request(port,"/static/resource.txt","deflate, gzip");
+    check("gzip wins equal-quality reverse list",result.headers["content-encoding"] === "gzip");
+    result=await request(port,"/static/resource.txt","gzip, deflate");
+    check("gzip wins equal-quality forward list",result.headers["content-encoding"] === "gzip");
+    result=await request(port,"/static/resource.txt","gzip;q=1");
+    check("explicit q=1",result.headers["content-encoding"] === "gzip");
+    result=await request(port,"/static/resource.txt","gzip;q=1.000");
+    check("three-digit q=1",result.headers["content-encoding"] === "gzip");
+    unlinkIfExists(gzipPath);
+    let belowIdentityBefore=await state();
+    result=await request(port,"/static/resource.txt","gzip;q=0.5");
+    let belowIdentityAfter=await state();
+    check("implicit identity outranks fractional gzip",result.headers["content-encoding"] === undefined && result.body.equals(original));
+    check("fractional gzip below identity starts no generation",belowIdentityAfter.gzip === belowIdentityBefore.gzip,JSON.stringify({before:belowIdentityBefore,after:belowIdentityAfter}));
+    check("fractional gzip below identity creates no artifact",!fs.existsSync(gzipPath));
+    fs.writeFileSync(gzipPath,zlib.gzipSync(original));
+    setCurrent(gzipPath);
+    result=await request(port,"/static/resource.txt","gzip;q=0.");
+    check("q=0 excludes gzip",result.headers["content-encoding"] === undefined && result.body.equals(original));
+    result=await request(port,"/static/resource.txt","gzip;q=0.5, deflate;q=1");
+    check("highest quality selects deflate",result.headers["content-encoding"] === "deflate");
+    result=await request(port,"/static/resource.txt","*;q=0.5");
+    check("implicit identity outranks fractional wildcard",result.headers["content-encoding"] === undefined);
+    result=await request(port,"/static/resource.txt","*");
+    check("gzip wins wildcard tie",result.headers["content-encoding"] === "gzip");
+    result=await request(port,"/static/resource.txt","gzip;q=0, *;q=1");
+    check("explicit gzip exclusion overrides wildcard",result.headers["content-encoding"] === "deflate");
+    result=await request(port,"/static/resource.txt","gzip;q=0.2, *;q=0.8, identity;q=0.5");
+    check("explicit gzip quality overrides wildcard",result.headers["content-encoding"] === "deflate");
+    result=await request(port,"/static/resource.txt","identity;q=0, *;q=1");
+    check("explicit identity exclusion preserves compressed wildcard",result.headers["content-encoding"] === "gzip");
+    result=await request(port,"/static/resource.txt","*;q=0, identity;q=1");
+    check("explicit identity overrides excluded wildcard",result.headers["content-encoding"] === undefined && result.body.equals(original));
+    result=await request(port,"/static/resource.txt","gzip;q=0, gzip;q=1");
+    check("duplicate coding retains highest quality",result.headers["content-encoding"] === "gzip");
+    result=await request(port,"/static/resource.txt","br, gzip");
+    check("unsupported br does not hide gzip",result.headers["content-encoding"] === "gzip");
+    result=await request(port,"/static/resource.txt","gzip;q=abc, deflate");
+    check("malformed member ignored",result.headers["content-encoding"] === "deflate");
+    result=await request(port,"/static/resource.txt","gzip;q=1.5, deflate");
+    check("out-of-range q member ignored",result.headers["content-encoding"] === "deflate");
+    result=await request(port,"/static/resource.txt","gzip;foo=bar, deflate");
+    check("unsupported parameter member ignored",result.headers["content-encoding"] === "deflate");
+    result=await request(port,"/static/resource.txt",", gzip,");
+    check("empty list members ignored",result.headers["content-encoding"] === "gzip");
+    unlinkIfExists(gzipPath);
+    unlinkIfExists(deflatePath);
+    let allExcludedBefore=await state();
+    result=await request(port,"/static/resource.txt","gzip;q=0, deflate;q=0, identity;q=0");
+    let allExcludedAfter=await state();
+    check("all representations excluded",result.status === 406 && result.headers["content-encoding"] === undefined && result.headers.vary === "Accept-Encoding" && result.headers.etag === undefined && result.body.toString() === "No acceptable representation is available.");
+    check("all representations excluded start no generation",allExcludedAfter.gzip === allExcludedBefore.gzip && allExcludedAfter.deflate === allExcludedBefore.deflate,JSON.stringify({before:allExcludedBefore,after:allExcludedAfter}));
+    check("all representations excluded create no artifacts",!fs.existsSync(gzipPath) && !fs.existsSync(deflatePath));
+    result=await request(port,"/static/resource.txt","gzip;q=0, deflate;q=0, identity;q=0",{},"HEAD");
+    check("HEAD 406 suppresses body",result.status === 406 && result.headers.vary === "Accept-Encoding" && result.body.length === 0);
+    fs.writeFileSync(gzipPath,zlib.gzipSync(original));
+    setCurrent(gzipPath);
+    fs.writeFileSync(deflatePath,zlib.deflateSync(original));
+    setCurrent(deflatePath);
+
     let currentState=await state();
     check("current artifacts start no generation",currentState.gzip === 0 && currentState.deflate === 0,JSON.stringify(currentState));
-    result=await request(port,"/compression-cache/static/resource.txt.gz","gzip");
+    result=await request(port,"/.compression-cache/static/resource.txt.gz","gzip");
     let recursionState=await state();
     check("direct cache request remains available",result.status === 200 && result.headers["content-encoding"] === undefined && result.body.equals(fs.readFileSync(gzipPath)));
     check("direct cache request starts no recursive generation",recursionState.gzip === currentState.gzip && recursionState.deflate === currentState.deflate,JSON.stringify(recursionState));
-    check("no recursive compression-cache tree",!fs.existsSync(path.join(cachePath,"compression-cache")));
+    check("no recursive .compression-cache tree",!fs.existsSync(path.join(cachePath,".compression-cache")));
     check("source directory has no sibling artifacts",!fs.existsSync(sourcePath+".gz") && !fs.existsSync(sourcePath+".zl"));
+
+    unlinkIfExists(gzipPath);
+    await command("hold");
+    let lowerBefore=await state();
+    result=await request(port,"/static/resource.txt","gzip;q=1, deflate;q=0.8, identity;q=0.5");
+    await waitForMessage(message => message.event === "pipeline-start" && message.encoding === "gzip","preferred gzip generation start");
+    let lowerAfter=await state();
+    check("current lower-ranked deflate selected",result.status === 200 && result.headers["content-encoding"] === "deflate" && zlib.inflateSync(result.body).equals(original));
+    check("only preferred missing encoding generated",lowerAfter.gzip-lowerBefore.gzip === 1 && lowerAfter.deflate-lowerBefore.deflate === 0,JSON.stringify({before:lowerBefore,after:lowerAfter}));
+    await command("release");
+    await waitForRename(gzipPath,false,"preferred gzip publication");
 
     fs.rmSync(cachePath,{recursive:true,force:true});
     await command("hold");
@@ -177,10 +252,23 @@ async function run() {
     await command("release");
     await waitForRename(gzipPath,false,"missing gzip publication");
     check("background gzip artifact appears",fs.existsSync(gzipPath));
-    check("nested source path mirrored in cache",gzipPath === path.join(applicationPath,"compression-cache","static","resource.txt.gz"));
+    check("nested source path mirrored in cache",gzipPath === path.join(applicationPath,".compression-cache","static","resource.txt.gz"));
     check("source remains free of sibling artifact",!fs.existsSync(sourcePath+".gz"));
     result=await request(port,"/static/resource.txt","gzip",{"If-None-Match":identityTag});
     check("later request selects gzip",result.status === 200 && result.headers["content-encoding"] === "gzip" && /-g"$/.test(result.headers.etag));
+
+    unlinkIfExists(gzipPath);
+    await command("hold");
+    let forbiddenBefore=await state();
+    result=await request(port,"/static/resource.txt","gzip, identity;q=0");
+    await waitForMessage(message => message.event === "pipeline-start" && message.encoding === "gzip","identity-forbidden gzip start");
+    let forbiddenAfter=await state();
+    check("missing compressed artifact with identity forbidden returns 406",result.status === 406 && result.headers.vary === "Accept-Encoding" && result.headers.etag === undefined && result.body.toString() === "No acceptable representation is available.");
+    check("identity-forbidden miss schedules gzip",forbiddenAfter.gzip-forbiddenBefore.gzip === 1 && forbiddenAfter.deflate-forbiddenBefore.deflate === 0,JSON.stringify({before:forbiddenBefore,after:forbiddenAfter}));
+    result=await request(port,"/static/resource.txt","gzip, identity;q=0",{},"HEAD");
+    check("identity-forbidden HEAD returns bodyless 406",result.status === 406 && result.body.length === 0 && result.headers.vary === "Accept-Encoding");
+    await command("release");
+    await waitForRename(gzipPath,false,"identity-forbidden gzip publication");
 
     unlinkIfExists(gzipPath);
     await command("hold");

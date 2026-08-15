@@ -657,6 +657,8 @@ function handleResolvedResource(req, res, fileInfo, sendBody = true) {
        res.end();
      }
    // Files are served using the serveFile object in this application.
+   } else if (fileInfo.notAcceptable) {
+     reportError(res,fileInfo.fullPath,406,"No acceptable representation is available.",sendBody);
    } else if (fileInfo.serveFile) {
      try {
 	   if (fs.existsSync(fileInfo.fullPath)) {
@@ -1286,7 +1288,7 @@ function reportError (res,account,statusCode,reason,sendBody = true) {
     }
   }
 }
-function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag,audioVisual,proxyOptions) {
+function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag,audioVisual,proxyOptions,notAcceptable = false) {
   this.basePath = basePath;
   this.path = path;
   this.fullPath = fullPath;
@@ -1302,6 +1304,7 @@ function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,que
   this.etag = etag;
   this.audioVisual = audioVisual;
   this.proxyOptions = proxyOptions;
+  this.notAcceptable = notAcceptable;
 }
 function hasEntityTagPrecondition (req) {
   return (
@@ -1511,6 +1514,7 @@ function setFileInfo (req, res, basePath, requestUrl) {
    let thisBasePath=basePath;
    let proxyOptions="";
    let audioVisual = false;
+   let notAcceptable = false;
 developmentLog("req.url: " + req.url);
    if (proxies) {
      let proxyRequest = checkProxies(requestUrl);
@@ -1565,21 +1569,26 @@ developmentLog("req.url: " + req.url);
      // For compression
      if (compress && (contentType.indexOf("text") == 0 || contentType.indexOf("application") == 0)) {
        res.setHeader("Vary","Accept-Encoding");
-       let enc = getEncoding(req);
-       if (enc.check) {
-         let ccPath = checkCPath(fullPath,enc.ext,checkedPath.stats,thisBasePath);
-         if (ccPath !== false) {
-           currentPath = path.relative(thisBasePath,ccPath);
-           res.setHeader("Content-Encoding",enc.contentEncoding);
-           etagCoding = enc.contentEncoding == "gzip" ? "g" : "d";
-         }
-       }
-     }
-     if (bCaching || hasEntityTagPrecondition(req)) {
-       etag = representationETag(checkedPath.stats.mtimeMs,etagCoding);
-     }
-   }
-   return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual,proxyOptions);
+        let enc = getEncoding(req);
+        let schedule = true;
+        for (let candidate of enc.candidates) {
+          if (candidate.quality < enc.identityQuality) break;
+          let ccPath = checkCPath(fullPath,candidate.ext,checkedPath.stats,thisBasePath,schedule);
+          schedule = false;
+          if (ccPath !== false) {
+            currentPath = path.relative(thisBasePath,ccPath);
+            res.setHeader("Content-Encoding",candidate.contentEncoding);
+            etagCoding = candidate.contentEncoding == "gzip" ? "g" : "d";
+            break;
+          }
+        }
+        if (etagCoding == "i" && enc.identityQuality == 0) notAcceptable = true;
+      }
+      if (!notAcceptable && (bCaching || hasEntityTagPrecondition(req))) {
+        etag = representationETag(checkedPath.stats.mtimeMs,etagCoding);
+      }
+    }
+    return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual,proxyOptions,notAcceptable);
 }
 function removeCompressionTemp (tempPath,callback) {
   fs.unlink(tempPath,function (err) {
@@ -1590,7 +1599,7 @@ function removeCompressionTemp (tempPath,callback) {
   });
 }
 function compressionArtifactPath (basePath,sourcePath,ext) {
-  let cachePath=path.join(basePath,"compression-cache");
+  let cachePath=path.join(basePath,".compression-cache");
   let cacheRelative=path.relative(cachePath,sourcePath);
   if (
     cacheRelative === "" ||
@@ -1669,7 +1678,7 @@ function scheduleCompressedArtifact (sourcePath,artifactPath,ext,sourceStats) {
     }
   });
 }
-function checkCPath (path,ext,sourceStats,basePath) {
+function checkCPath (path,ext,sourceStats,basePath,schedule = true) {
   let artifactPath=compressionArtifactPath(basePath,path,ext);
   if (!artifactPath) return false;
   try {
@@ -1681,30 +1690,55 @@ function checkCPath (path,ext,sourceStats,basePath) {
     serverError(path + "  Compression failed.",err);
     return false;
   }
-  scheduleCompressedArtifact(path,artifactPath,ext,sourceStats);
+  if (schedule) scheduleCompressedArtifact(path,artifactPath,ext,sourceStats);
   return false;
 }
-function encodeData (check,contentEncoding,ext) {
-  this.check = check;
-  this.contentEncoding = contentEncoding;
-  this.ext = ext;
+function encodingQuality (value) {
+  if (!/^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/.test(value)) return false;
+  let parts=value.split(".");
+  let fraction=(parts[1] || "").padEnd(3,"0");
+  return Number(parts[0])*1000+Number(fraction);
 }
 function getEncoding (req) {
-  let acceptEncoding = req.headers['accept-encoding'];
-  if (acceptEncoding === undefined) {
-    return "";
-  } else {
-    let aeList = acceptEncoding.split(",");
-    for (let adItem of aeList) {
-      if (adItem == "gzip") {
-        return new encodeData(true,"gzip",".gz");
-      } else if (adItem == "deflate") {
-        return new encodeData(true,"deflate",".zl");
-      } else {
-        return new encodeData(false);
+  let acceptEncoding=req.headers['accept-encoding'];
+  let qualities={};
+  if (acceptEncoding !== undefined && acceptEncoding !== "") {
+    for (let fieldMember of acceptEncoding.split(",")) {
+      let member=fieldMember.trim();
+      if (member === "") continue;
+      let parts=member.split(";");
+      if (parts.length > 2) continue;
+      let coding=parts[0].trim().toLowerCase();
+      if (!/^[!#$%&'*+\-.^_`|~0-9a-z]+$/.test(coding)) continue;
+      let quality=1000;
+      if (parts.length == 2) {
+        let match=/^q=(.*)$/i.exec(parts[1].trim());
+        if (!match) continue;
+        quality=encodingQuality(match[1]);
+        if (quality === false) continue;
+      }
+      if (
+        coding == "gzip" ||
+        coding == "deflate" ||
+        coding == "identity" ||
+        coding == "*"
+      ) {
+        if (qualities[coding] === undefined || quality > qualities[coding]) {
+          qualities[coding]=quality;
+        }
       }
     }
   }
+  let gzipQuality=qualities.gzip === undefined ? qualities["*"] : qualities.gzip;
+  let deflateQuality=qualities.deflate === undefined ? qualities["*"] : qualities.deflate;
+  let identityQuality=qualities.identity === undefined
+    ? (qualities["*"] === 0 ? 0 : 1000)
+    : qualities.identity;
+  let candidates=[];
+  if (gzipQuality > 0) candidates.push({contentEncoding:"gzip",ext:".gz",quality:gzipQuality});
+  if (deflateQuality > 0) candidates.push({contentEncoding:"deflate",ext:".zl",quality:deflateQuality});
+  if (candidates.length == 2 && candidates[1].quality > candidates[0].quality) candidates.reverse();
+  return {candidates:candidates,identityQuality:identityQuality};
 }
 function nodeVersion () {
   var result="";

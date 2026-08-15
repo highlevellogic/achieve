@@ -124,7 +124,7 @@ async function staticTests(server) {
     const identity = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "identity"}});
     const firstGzip = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "gzip"}});
     const sourcePath = path.join(server.applicationPath,"static","resource.txt");
-    const cachePath = path.join(server.applicationPath,"compression-cache","static","resource.txt");
+    const cachePath = path.join(server.applicationPath,".compression-cache","static","resource.txt");
     await waitForCurrentArtifact(sourcePath,cachePath+".gz");
     const gzip = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "gzip"}});
     const firstDeflate = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "deflate"}});
