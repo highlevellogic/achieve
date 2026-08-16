@@ -140,8 +140,9 @@ resource paths:
 
 # SERVLET FIXTURES
 
-.jss is the preferred protected servlet suffix. Extensionless requests remain
-compatible with legacy .js servlets; explicit .js requests remain static.
+.jss is the modern protected servlet suffix, and requests must include it
+explicitly. Extensionless requests remain compatible with legacy .js
+servlets; explicit .js requests remain static.
 
 Several files under jss/source_protection and jss/lifecycle are deliberately
 invalid, throw errors, or omit the servlet export. They verify safe diagnostics,

@@ -188,29 +188,29 @@ async function staticTests(server) {
 }
 
 async function servletTests(server) {
-    let result = await request(server.port, {path: "/servlets/counter"});
+    let result = await request(server.port, {path: "/servlets/counter.jss"});
     check("servlet has no automatic ETag", result.status === 200 && result.headers.etag === undefined);
     check("counter starts at zero", result.body.toString() === "0");
 
-    result = await request(server.port, {path: "/servlets/counter", headers: {"If-Match": "*"}});
+    result = await request(server.port, {path: "/servlets/counter.jss", headers: {"If-Match": "*"}});
     check("servlet If-Match wildcard", result.status === 200);
 
-    result = await request(server.port, {path: "/servlets/counter", headers: {"If-Match": '"specific"'}});
+    result = await request(server.port, {path: "/servlets/counter.jss", headers: {"If-Match": '"specific"'}});
     check("servlet specific If-Match fails", result.status === 412);
 
-    result = await request(server.port, {path: "/servlets/counter", headers: {"If-None-Match": "*"}});
+    result = await request(server.port, {path: "/servlets/counter.jss", headers: {"If-None-Match": "*"}});
     check("servlet GET If-None-Match wildcard", result.status === 304);
 
-    result = await request(server.port, {method: "HEAD", path: "/servlets/counter", headers: {"If-None-Match": "*"}});
+    result = await request(server.port, {method: "HEAD", path: "/servlets/counter.jss", headers: {"If-None-Match": "*"}});
     check("servlet HEAD If-None-Match wildcard", result.status === 304 && result.body.length === 0);
 
-    result = await request(server.port, {method: "POST", path: "/servlets/counter", headers: {"If-None-Match": "*"}, body: "value=1"});
+    result = await request(server.port, {method: "POST", path: "/servlets/counter.jss", headers: {"If-None-Match": "*"}, body: "value=1"});
     check("servlet POST If-None-Match wildcard", result.status === 412);
 
-    result = await request(server.port, {path: "/servlets/counter"});
+    result = await request(server.port, {path: "/servlets/counter.jss"});
     check("failed POST did not execute servlet", result.body.toString() === "0");
 
-    result = await request(server.port, {path: "/servlets/counter", headers: {"If-None-Match": '"specific"'}});
+    result = await request(server.port, {path: "/servlets/counter.jss", headers: {"If-None-Match": '"specific"'}});
     check("servlet specific If-None-Match proceeds", result.status === 200);
 }
 

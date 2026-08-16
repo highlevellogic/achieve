@@ -30,12 +30,12 @@ async function runStaticTests() {
 }
 
 async function runServletTests() {
-    const before = await request("servlets/counter");
+    const before = await request("servlets/counter.jss");
     const beforeCount = await before.text();
     addResult("Counter before failed POST", before, 200, beforeCount === "0");
-    addResult("Servlet GET If-None-Match: *", await request("servlets/counter", {headers: {"If-None-Match": "*"}}), 304);
-    addResult("Servlet POST If-None-Match: *", await request("servlets/counter", {method: "POST", headers: {"If-None-Match": "*", "Content-Type": "application/x-www-form-urlencoded"}, body: "value=1"}), 412);
-    const after = await request("servlets/counter");
+    addResult("Servlet GET If-None-Match: *", await request("servlets/counter.jss", {headers: {"If-None-Match": "*"}}), 304);
+    addResult("Servlet POST If-None-Match: *", await request("servlets/counter.jss", {method: "POST", headers: {"If-None-Match": "*", "Content-Type": "application/x-www-form-urlencoded"}, body: "value=1"}), 412);
+    const after = await request("servlets/counter.jss");
     const afterCount = await after.text();
     addResult("Failed POST did not execute servlet", after, 200, afterCount === beforeCount);
 }

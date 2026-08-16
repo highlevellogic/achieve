@@ -84,12 +84,12 @@ async function stop(child) {
     try {
         child=await start("production",appA,24400);
 
-        let response=await request(24400,"/hello?value=one");
+        let response=await request(24400,"/hello.jss?value=one");
         assert(response.status === 200 && response.body === "A1:one",
             "Initial production servlet resolution failed.");
 
         await command(child,"count-start","count-started",{});
-        response=await request(24400,"/hello?value=two");
+        response=await request(24400,"/hello.jss?value=two");
         const steadyCounts=(await command(child,"count-stop","counts",{})).counts;
         assert(response.status === 200 && response.body === "A1:two",
             "Cached query request did not retain independent query data.");
@@ -97,26 +97,26 @@ async function stop(child) {
             "Cached production request performed servlet discovery: "+JSON.stringify(steadyCounts));
 
         await command(child,"count-start","count-started",{});
-        response=await request(24400,"/x/../hello?value=alias-one");
+        response=await request(24400,"/x/../hello.jss?value=alias-one");
         assert(response.status === 200 && response.body === "A1:alias-one",
             "Dot-segment alias did not reuse the resolved servlet.");
-        response=await request(24400,"//hello?value=alias-two");
+        response=await request(24400,"//hello.jss?value=alias-two");
         assert(response.status === 200 && response.body === "A1:alias-two",
             "Repeated-slash alias did not reuse the resolved servlet.");
         const aliasCounts=(await command(child,"count-stop","counts",{})).counts;
         assert(aliasCounts.statSync === 0 && aliasCounts.existsSync === 0,
             "Servlet aliases performed duplicate discovery: "+JSON.stringify(aliasCounts));
 
-        response=await request(24400,"/proxyTarget?a=1");
+        response=await request(24400,"/proxyTarget.jss?a=1");
         assert(response.status === 200 &&
             response.body === '{"path":"?a=1","query":{}}',
             "Initial proxied servlet request had incorrect request state: "+response.body);
         await command(child,"count-start","count-started",{});
-        response=await request(24400,"/proxyTarget?a=2");
+        response=await request(24400,"/proxyTarget.jss?a=2");
         assert(response.status === 200 &&
             response.body === '{"path":"?a=2","query":{}}',
             "Cached proxied servlet retained the first query: "+response.body);
-        response=await request(24400,"/proxyTarget");
+        response=await request(24400,"/proxyTarget.jss");
         assert(response.status === 200 &&
             response.body === '{"path":"","query":{}}',
             "Cached proxied servlet retained stale query text: "+response.body);
@@ -125,45 +125,45 @@ async function stop(child) {
             "Cached proxied servlet performed discovery: "+JSON.stringify(proxyCounts));
 
         write(helloA,servlet("A2"),true);
-        response=await request(24400,"/hello?value=stable");
+        response=await request(24400,"/hello.jss?value=stable");
         assert(response.status === 200 && response.body === "A1:stable",
             "Production unexpectedly reloaded an edited cached servlet.");
 
-        response=await request(24400,"/created");
+        response=await request(24400,"/created.jss");
         assert(response.status === 404,"Missing servlet did not return 404.");
         write(path.join(appA,"created.jss"),servlet("CREATED"));
-        response=await request(24400,"/created?value=now");
+        response=await request(24400,"/created.jss?value=now");
         assert(response.status === 200 && response.body === "CREATED:now",
             "Missing servlet was negatively cached.");
 
         write(path.join(appA,"broken.jss"),"exports.servlet=function () {\n");
-        response=await request(24400,"/broken");
+        response=await request(24400,"/broken.jss");
         assert(response.status === 500,"Broken servlet did not fail with 500.");
         write(path.join(appA,"broken.jss"),servlet("RECOVERED"));
-        response=await request(24400,"/broken?value=yes");
+        response=await request(24400,"/broken.jss?value=yes");
         assert(response.status === 200 && response.body === "RECOVERED:yes",
             "Failed servlet load was permanently cached.");
 
         await command(child,"set-app","app-set",{path:appB});
-        response=await request(24400,"/hello?value=switch");
+        response=await request(24400,"/hello.jss?value=switch");
         assert(response.status === 200 && response.body === "B:switch",
             "setAppPath() reused the previous application's servlet.");
         await stop(child);
         child=undefined;
 
         child=await start("production",appA,24401);
-        response=await request(24401,"/hello?value=restart");
+        response=await request(24401,"/hello.jss?value=restart");
         assert(response.status === 200 && response.body === "A2:restart",
             "New production server state did not discover the edited servlet.");
         await stop(child);
         child=undefined;
 
         child=await start("development",appA,24402);
-        response=await request(24402,"/hello?value=before");
+        response=await request(24402,"/hello.jss?value=before");
         assert(response.status === 200 && response.body === "A2:before",
             "Development initial servlet request failed.");
         write(helloA,servlet("A3"),true);
-        response=await request(24402,"/hello?value=after");
+        response=await request(24402,"/hello.jss?value=after");
         assert(response.status === 200 && response.body === "A3:after",
             "Development hot reload did not detect the servlet edit.");
         await stop(child);

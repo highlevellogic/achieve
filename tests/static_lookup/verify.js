@@ -12,6 +12,8 @@ fs.writeFileSync(path.join(testRoot,"tiny.txt"),staticBody);
 fs.writeFileSync(path.join(directoryPath,"index.html"),"directory index");
 fs.writeFileSync(path.join(testRoot,"hello.jss"),
     "exports.servlet=function () { return 'servlet'; };\n");
+fs.writeFileSync(path.join(testRoot,"legacy.js"),
+    "exports.servlet=function () { return 'legacy servlet'; };\n");
 
 function assert(condition,message) {
     if (!condition) throw new Error(message);
@@ -103,12 +105,31 @@ async function command(child,name,event) {
         assert(response.status === 200 && response.body === "directory index",
             "Directory index behavior changed.");
 
+        await command(child,"count-start","count-started");
         response=await request("/missing");
+        const missingCounts=(await command(child,"count-stop","counts")).counts;
         assert(response.status === 404,"Missing resource behavior changed.");
+        assert(!missingCounts.paths.some(value => value.endsWith("missing.jss")),
+            "Missing extensionless request retained a .jss probe: "+JSON.stringify(missingCounts));
 
-        response=await request("/hello");
+        response=await request("/hello.jss");
         assert(response.status === 200 && response.body === "servlet",
-            "First servlet resolution changed.");
+            "Explicit .jss servlet resolution changed.");
+        response=await request("/hello");
+        assert(response.status === 404,
+            "Extensionless request unexpectedly resolved the .jss servlet.");
+
+        await command(child,"count-start","count-started");
+        response=await request("/legacy");
+        const legacyCounts=(await command(child,"count-stop","counts")).counts;
+        assert(response.status === 200 && response.body === "legacy servlet",
+            "Legacy extensionless .js servlet resolution changed.");
+        assert(legacyCounts.discoveryStatSync === 2,
+            "Legacy discovery did not use the exact target plus one .js statSync: "+JSON.stringify(legacyCounts));
+        assert(legacyCounts.discoveryExistsSync === 0,
+            "Legacy discovery retained existsSync: "+JSON.stringify(legacyCounts));
+        assert(legacyCounts.discoveryPaths.filter(value => value.endsWith("legacy.js")).length === 1,
+            "Legacy discovery did not perform exactly one .js metadata lookup: "+JSON.stringify(legacyCounts));
 
         const staticResponse=await request("/tiny.txt");
         const conditional=await request("/tiny.txt",{"If-None-Match":staticResponse.headers.etag});
@@ -117,6 +138,8 @@ async function command(child,name,event) {
 
         console.log("PASS static lookup verification");
         console.log("STATIC_LOOKUP_COUNTS "+JSON.stringify(counts));
+        console.log("MISSING_LOOKUP_COUNTS "+JSON.stringify(missingCounts));
+        console.log("LEGACY_LOOKUP_COUNTS "+JSON.stringify(legacyCounts));
     } finally {
         if (child.exitCode === null) {
             const exited=new Promise(resolve => child.once("exit",resolve));

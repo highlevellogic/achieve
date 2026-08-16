@@ -49,7 +49,7 @@ function callback() {
 }
 function init () {
   // START TEST HERE
-  var url = "servlets/hello";
+  var url = "servlets/hello.jss";
   fetchData (url,"post");
 
 }
@@ -57,7 +57,7 @@ window.onload=init;
 </script>
 </head>
 <body>
-  <h1>Both hello.js and hello.jss exist - Achieve prefers .jss servlet.</h1>
+  <h1>Both hello.js and hello.jss exist - the explicit .jss request selects hello.jss.</h1>
 <div id="result">Waiting for test.</div>
 </body>
 </html>

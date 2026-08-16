@@ -143,7 +143,7 @@ class FakeServer extends EventEmitter {
             expectedETag(path.join(__dirname,"resource.txt"),"i")
         );
 
-        const loader=await request(port,"/servlets/loader");
+        const loader=await request(port,"/servlets/loader.jss");
         check("helper loader status",loader.status,200);
         check("helper loader uses local stats",loader.body,"localized helper stats");
         check("helper loader did not create global stats",Object.hasOwn(global,"stats"),false);

@@ -103,19 +103,19 @@ function directRequest(server,target) {
         result=await request("/foo/bar?x=1");
         check("nested resource with query",result.status === 200 && result.body.includes("nested resource"));
 
-        result=await request("/servlets/query?x=1");
+        result=await request("/servlets/query.jss?x=1");
         check("origin-form single query value",
             result.status === 200 && result.body === '{"x":"1"}');
 
-        result=await request("/servlets/query?x=1&y=2");
+        result=await request("/servlets/query.jss?x=1&y=2");
         check("origin-form multiple query values",
             result.status === 200 && result.body === '{"x":"1","y":"2"}');
 
-        result=await request("/servlets/query?x=1?y=2");
+        result=await request("/servlets/query.jss?x=1?y=2");
         check("origin-form preserves query after first question mark",
             result.status === 200 && result.body === '{"x":"1?y=2"}');
 
-        result=await request("/servlets/query?");
+        result=await request("/servlets/query.jss?");
         check("origin-form empty query",result.status === 200 && result.body === "{}");
 
         result=await rawRequest("/encoded%20name");
@@ -137,7 +137,7 @@ function directRequest(server,target) {
         check("URL directory stays in one application",
             result.status === 200 && result.body.includes("accounting directory"));
 
-        result=await request("/servlets/accounting/account");
+        result=await request("/servlets/accounting/account.jss");
         check("nested servlet stays in one application",
             result.status === 200 && result.body === "accounting servlet");
 
@@ -203,7 +203,7 @@ function directRequest(server,target) {
             result.status === 200 && result.raw.includes("encoded percent-20 pathname"),
             result.status);
 
-        result=await rawRequest("http://localhost:" + port + "/servlets/query?x=1?y=2");
+        result=await rawRequest("http://localhost:" + port + "/servlets/query.jss?x=1?y=2");
         check("absolute-form preserves query after first question mark",
             result.status === 200 && result.raw.includes('{"x":"1?y=2"}'),
             result.status);
@@ -237,7 +237,7 @@ function directRequest(server,target) {
             result.body === "Bad Request",
             result.status + " " + result.headers["content-type"] + " " + result.body);
 
-        result=await request("/servlets/hello?x=query");
+        result=await request("/servlets/hello.jss?x=query");
         check("jss servlet and query",result.status === 200 && result.body === "hello query");
 
         result=await request("/servlets/legacy");

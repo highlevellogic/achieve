@@ -18,7 +18,7 @@ achieve.setMode(process.env.ACHIEVE_CACHE_MODE);
 achieve.setLogging(false);
 achieve.setAppPath(process.env.ACHIEVE_CACHE_APP);
 achieve.setProxy({
-    "/proxyTarget": {
+    "/proxyTarget.jss": {
         host:"127.0.0.1"
     }
 });

@@ -1533,13 +1533,10 @@ function checkPath (basePath,relativePath,directoryForm) {
 	    stats = fs.statSync(fullPath); 
     } catch (err) {
           
-    if (fs.existsSync(fullPath+".jss")) {
-	    stats = fs.statSync(fullPath+".jss");
-	    if (moduleLoadTimes[fullPath+".jss"] === undefined || moduleLoadTimes[fullPath+".jss"] < stats.mtimeMs) reload = true;
-	    return new PathInfo(path.normalize(relativePath+".jss"),reload,"servlet",stats);
-	  }
-    if (fs.existsSync(fullPath+".js")) {
-	    stats = fs.statSync(fullPath+".js");
+    stats = fs.statSync(fullPath+".js",{
+      throwIfNoEntry:false
+    });
+    if (stats !== undefined) {
 	    if (moduleLoadTimes[fullPath+".js"] === undefined || moduleLoadTimes[fullPath+".js"] < stats.mtimeMs) reload = true;
 	    return new PathInfo(path.normalize(relativePath+".js"),reload,"servlet",stats);
 	  }

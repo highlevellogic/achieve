@@ -57,7 +57,7 @@ function callback() {
 function init () {
   // MAKE THE EXAMPLE REQUEST HERE
 
-  var url = "servlets/hello";
+  var url = "servlets/hello.jss";
   fetchData (url,"POST","data=data from client");  // last position undefined may be omitted
 
 }
@@ -66,7 +66,7 @@ window.onload=init;
 </head>
 <body>
   <h1>POST servlet example</h1>
-  <p>This page posts form data to the protected <code>servlets/hello.jss</code> servlet through its extensionless URL.</p>
+  <p>This page posts form data to the protected <code>servlets/hello.jss</code> servlet explicitly.</p>
   <p>Expected result: status 200 and a body showing POST plus the data received by the servlet.</p>
 <div id="result">Waiting for the POST response.</div>
 </body>

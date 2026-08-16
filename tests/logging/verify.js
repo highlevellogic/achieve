@@ -187,9 +187,9 @@ async function runningCase(scenario, options, inspect) {
             check("development request trace is visible", testCase.stdout().includes("GET") && testCase.stdout().includes("req.url:"));
             check("default server logging creates no files", serverLogFiles(defaultRoot).length === 0);
             check("configuration locks after startup", Object.values(testCase.message.checks).every(Boolean));
-            const getResult = await request(testCase.message.port, {path: "/get/servlets/hello"});
-            const headResult = await request(testCase.message.port, {method: "HEAD", path: "/head/servlets/hello"});
-            const postResult = await request(testCase.message.port, {method: "POST", path: "/post/servlets/hello", body: "value=1"});
+            const getResult = await request(testCase.message.port, {path: "/get/servlets/hello.jss"});
+            const headResult = await request(testCase.message.port, {method: "HEAD", path: "/head/servlets/hello.jss"});
+            const postResult = await request(testCase.message.port, {method: "POST", path: "/post/servlets/hello.jss", body: "value=1"});
             const containmentResult = await request(testCase.message.port, {path: "/..%2fpackage.json"});
             check("GET .jss regression", getResult.status === 200 && getResult.body.toString().includes("Hello World"));
             check("HEAD regression", headResult.status === 200 && headResult.body.length === 0);
@@ -203,19 +203,19 @@ async function runningCase(scenario, options, inspect) {
             appPath: path.join(__dirname, "application")
         }, async function (testCase) {
             let start = testCase.stdout().length;
-            const getResult = await request(testCase.message.port, {path: "/servlets/lifecycle"});
+            const getResult = await request(testCase.message.port, {path: "/servlets/lifecycle.jss"});
             await new Promise(resolve => setTimeout(resolve, 25));
             let trace = testCase.stdout().substring(start);
             check("GET lifecycle label", getResult.status === 200 && trace.includes("INFO: GET ") && !trace.includes("INFO: POST "));
 
             start = testCase.stdout().length;
-            const headResult = await request(testCase.message.port, {method: "HEAD", path: "/servlets/lifecycle"});
+            const headResult = await request(testCase.message.port, {method: "HEAD", path: "/servlets/lifecycle.jss"});
             await new Promise(resolve => setTimeout(resolve, 25));
             trace = testCase.stdout().substring(start);
             check("HEAD lifecycle uses GET label", headResult.status === 200 && trace.includes("INFO: GET ") && !trace.includes("INFO: POST "));
 
             start = testCase.stdout().length;
-            const postResult = await request(testCase.message.port, {method: "POST", path: "/servlets/lifecycle", body: "value=1"});
+            const postResult = await request(testCase.message.port, {method: "POST", path: "/servlets/lifecycle.jss", body: "value=1"});
             await new Promise(resolve => setTimeout(resolve, 25));
             trace = testCase.stdout().substring(start);
             check("POST lifecycle label", postResult.status === 200 && trace.includes("INFO: POST ") && !trace.includes("INFO: GET "));
@@ -232,8 +232,8 @@ async function runningCase(scenario, options, inspect) {
 
             await request(testCase.message.port, {path: "/resource.txt?value=one"});
             await request(testCase.message.port, {method: "HEAD", path: "/resource.txt?head=true"});
-            await request(testCase.message.port, {method: "GET", path: "/servlets/lifecycle?method=get"});
-            await request(testCase.message.port, {method: "POST", path: "/servlets/lifecycle?method=post", body: "value=1"});
+            await request(testCase.message.port, {method: "GET", path: "/servlets/lifecycle.jss?method=get"});
+            await request(testCase.message.port, {method: "POST", path: "/servlets/lifecycle.jss?method=post", body: "value=1"});
             await request(testCase.message.port, {path: "/directory"});
 
             const current = await request(testCase.message.port, {path: "/resource.txt?conditional=current"});
@@ -254,28 +254,28 @@ async function runningCase(scenario, options, inspect) {
                 path: "/media/sample.mp4?status=400",
                 headers: {Range: "bytes=abc-def"}
             });
-            await request(testCase.message.port, {path: "/servlets/lifecycle?status=405"});
-            await request(testCase.message.port, {path: "/servlets/lifecycle?throw=true"});
+            await request(testCase.message.port, {path: "/servlets/lifecycle.jss?status=405"});
+            await request(testCase.message.port, {path: "/servlets/lifecycle.jss?throw=true"});
             await request(testCase.message.port, {method: "PUT", path: "/resource.txt?status=501"});
-            await abortRequest(testCase.message.port, "/servlets/lifecycle?abort=true");
+            await abortRequest(testCase.message.port, "/servlets/lifecycle.jss?abort=true");
             await new Promise(resolve => setTimeout(resolve, 125));
 
             const records = accessRecords(accessRoot);
             const expected = [
                 ["/resource.txt?value=one", "GET", 200, "complete"],
                 ["/resource.txt?head=true", "HEAD", 200, "complete"],
-                ["/servlets/lifecycle?method=get", "GET", 200, "complete"],
-                ["/servlets/lifecycle?method=post", "POST", 200, "complete"],
+                ["/servlets/lifecycle.jss?method=get", "GET", 200, "complete"],
+                ["/servlets/lifecycle.jss?method=post", "POST", 200, "complete"],
                 ["/directory", "GET", 301, "complete"],
                 ["/resource.txt?conditional=304", "GET", 304, "complete"],
                 ["/missing?status=404", "GET", 404, "complete"],
                 ["/resource.txt?conditional=412", "GET", 412, "complete"],
                 ["/media/sample.mp4?status=416", "GET", 416, "complete"],
                 ["/media/sample.mp4?status=400", "GET", 400, "complete"],
-                ["/servlets/lifecycle?status=405", "GET", 405, "complete"],
-                ["/servlets/lifecycle?throw=true", "GET", 500, "complete"],
+                ["/servlets/lifecycle.jss?status=405", "GET", 405, "complete"],
+                ["/servlets/lifecycle.jss?throw=true", "GET", 500, "complete"],
                 ["/resource.txt?status=501", "PUT", 501, "complete"],
-                ["/servlets/lifecycle?abort=true", "GET", 200, "aborted"]
+                ["/servlets/lifecycle.jss?abort=true", "GET", 200, "aborted"]
             ];
 
             for (const item of expected) {
@@ -439,7 +439,7 @@ async function runningCase(scenario, options, inspect) {
             injectStreamErrorCategory: "access"
         }, async function (testCase) {
             const before = accessRecords(accessRuntimeRoot).length;
-            const response = await request(testCase.message.port, {path: "/get/servlets/hello?after=failure"});
+            const response = await request(testCase.message.port, {path: "/get/servlets/hello.jss?after=failure"});
             await new Promise(resolve => setTimeout(resolve, 75));
             const after = accessRecords(accessRuntimeRoot).length;
             const serverLog = fs.readFileSync(serverLogFiles(accessRuntimeRoot)[0], "utf8");

@@ -57,7 +57,7 @@ function callback() {
 function init () {
   // MAKE THE EXAMPLE REQUEST HERE
 
-  var url = "servlets/hello";
+  var url = "servlets/hello.jss";
   fetchData (url);  // last position undefined may be omitted
 
 }
@@ -66,7 +66,7 @@ window.onload=init;
 </head>
 <body>
   <h1>GET servlet example</h1>
-  <p>This page sends a GET request to the protected <code>servlets/hello.jss</code> servlet through its extensionless URL.</p>
+  <p>This page sends a GET request to the protected <code>servlets/hello.jss</code> servlet explicitly.</p>
   <p>Expected result: status 200, response headers, and a body reporting that the servlet received GET.</p>
 <div id="result">Waiting for the GET response.</div>
 </body>

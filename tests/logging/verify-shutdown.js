@@ -266,7 +266,7 @@ async function normalShutdown(scenario,protocol,root) {
         const inFlightShutdown = nextMessage(inFlight,"shutdown");
         const shutdownProgress = nextMessage(inFlight,"shutdown-progress");
         const inFlightResponse = new Promise((resolve,reject) => {
-            const req = http.request({port:inFlight.port,path:"/servlets/shutdown"},function (res) {
+            const req = http.request({port:inFlight.port,path:"/servlets/shutdown.jss"},function (res) {
                 const chunks = [];
                 let requested = false;
                 res.on("data",function (chunk) {
@@ -294,7 +294,7 @@ async function normalShutdown(scenario,protocol,root) {
         check("in-flight shutdown completes",inFlightShutdownResult.errors.length === 0);
         const inFlightAccess = logText(inFlightRoot,"access");
         check("in-flight access record drains",
-            inFlightAccess.includes(' target="/servlets/shutdown" ') && inFlightAccess.includes(" state=complete"),
+            inFlightAccess.includes(' target="/servlets/shutdown.jss" ') && inFlightAccess.includes(" state=complete"),
             inFlightAccess);
         const inFlightServerLog = logText(inFlightRoot,"server");
         check("in-flight shutdown records occur exactly once",
