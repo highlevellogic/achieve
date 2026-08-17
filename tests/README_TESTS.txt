@@ -66,6 +66,15 @@ Run the focused request-path verifier with:
 
     node tests/request_path/verify.js
 
+Run the focused GET/POST parameter, JSON POST, and OPTIONS verifier with:
+
+    node tests/request_methods/verify.js
+
+The request-method verifier checks `session.params`, form and JSON POST data,
+malformed-JSON recovery, the intentional absence of parsed data on
+`session.request.get` and `session.request.post`, and the current OPTIONS
+status and response headers.
+
 # APPLICATION-DIRECTORY FIXTURES
 
 Achieve uses the server project's root directory as its default application

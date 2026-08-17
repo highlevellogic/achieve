@@ -74,13 +74,13 @@ async function command(child,name,event) {
         assert(missingCount === 0,
             "Ordinary 404 performed CommonJS module resolution: "+missingCount);
 
-        response=await request("/invalid");
+        response=await request("/invalid.jss");
         assert(response.status === 500 &&
             response.body.includes("does not have a valid servlet() function"),
             "Invalid servlet export did not fail normally.");
         fs.writeFileSync(invalidServlet,
             "exports.servlet=function () { return 'recovered'; };\n");
-        response=await request("/invalid");
+        response=await request("/invalid.jss");
         assert(response.status === 200 && response.body === "recovered",
             "Invalid servlet module remained cached after repair.");
 

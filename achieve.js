@@ -766,7 +766,7 @@ function cachedServletFileInfo(cached,req,resourceTarget) {
 function handlePreparedServlet(req,res,fileInfo,account,sendBody) {
     if (evaluatePreconditions(req,res,true)) return;
     try {
-      return new startObject(req,res,fileInfo,account,sendBody).init();
+      new startObject(req,res,fileInfo,account,sendBody).init();
     } catch (err) {}
 }
 
@@ -779,48 +779,68 @@ function cachedServlet(basePath,resourceTarget) {
     return servletResolutionCache.get(servletIdentity);
 }
 
-function handleGet(req, res, basePath, resourceTarget) {
+function handleGet (req, res, basePath, resourceTarget) {
     let cached=cachedServlet(basePath,resourceTarget);
     if (cached) {
-      return handlePreparedServlet(req,res,cachedServletFileInfo(cached,req,resourceTarget),cached.account,true);
+      handlePreparedServlet(req,res,cachedServletFileInfo(cached,req,resourceTarget),cached.account,true);
+      return;
     }
     let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
-    return handleResolvedResource(req, res, fileInfo, true, resourceTarget);
+    handleResolvedResource(req, res, fileInfo, true, resourceTarget);
 }
 
-function handlePost(req, res, basePath, resourceTarget) {
+function handlePost (req, res, basePath, resourceTarget) {
     let cached=cachedServlet(basePath,resourceTarget);
     if (cached) {
-      return handlePreparedServlet(req,res,cachedServletFileInfo(cached,req,resourceTarget),cached.account,true);
+      handlePreparedServlet(req,res,cachedServletFileInfo(cached,req,resourceTarget),cached.account,true);
+      return;
     }
     let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
-    return handleResolvedResource(req, res, fileInfo, true, resourceTarget);
+    handleResolvedResource(req, res, fileInfo, true, resourceTarget);
 }
 
-function handleHead(req, res, basePath, resourceTarget) {
+function handleHead (req, res, basePath, resourceTarget) {
     let cached=cachedServlet(basePath,resourceTarget);
     if (cached) {
-      return handlePreparedServlet(req,res,cachedServletFileInfo(cached,req,resourceTarget),cached.account,false);
+      handlePreparedServlet(req,res,cachedServletFileInfo(cached,req,resourceTarget),cached.account,false);
+      return;
     }
     let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
-    return handleResolvedResource(req, res, fileInfo, false, resourceTarget);
+    handleResolvedResource(req, res, fileInfo, false, resourceTarget);
+}
+function handleOptions (req, res, basePath, resourceTarget) {
+    developmentLog("OPTIONS REQUEST: " + req);
+    res.statusCode = 204;
+    // res.setHeader('access-control-allow-headers', '*');
+    // res.setHeader('access-control-allow-origin', '*');
+    // res.setHeader('access-control-max-age', 86400);
+    res.setHeader('date', new Date());
+    res.setHeader('allow', 'GET, HEAD, POST, OPTIONS');
+    res.setHeader('server', version);
+    res.end();
 }
 
 function dispatchMethod(req, res, basePath, resourceTarget) {
     switch (req.method) {
         case "GET":
-            return handleGet(req, res, basePath, resourceTarget);
+            handleGet(req, res, basePath, resourceTarget);
+            break;
 
         case "POST":
-            return handlePost(req, res, basePath, resourceTarget);
+            handlePost(req, res, basePath, resourceTarget);
+            break;
 
         case "HEAD":
-            return handleHead(req, res, basePath, resourceTarget);
+            handleHead(req, res, basePath, resourceTarget);
+            break;
+
+        case "OPTIONS":
+            handleOptions(req, res, basePath, resourceTarget);
+            break;
 
         case "PUT":
         case "DELETE":
         case "CONNECT":
-        case "OPTIONS":
         case "TRACE":
         case "PATCH":
         default:
@@ -1887,6 +1907,7 @@ function getAccount (res,fileInfo) {
   accountInfo = new Account(accountRoot,startPage,code,reason);
 	return accountInfo;
 }
+
 // startObject's init() method runs the code that was loaded by getAccount()
 // It will get parameter values from the request and call the loaded application's init() method.
 function startObject (req,res,fileInfo,myApp,sendBody = true) {
@@ -1900,97 +1921,37 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
   this.init = function () {
 	let request = this.req;
 	let response = this.res;
-	let fsapp = this.fsapp;
   let fileInfo = this.fileInfo;
-	let shortPath = this.fileInfo.path;
   let load = this.load;
-	let contentType = this.fileInfo.contentType;
     let myApp = this.myApp;
     let sendBody = this.sendBody;
 	// This service loads the application file and calls exports.servlet(context)
 	  // Extract data sent from the browser for POST or GET
-	  let queryData="";
+    let queryData="";
     let wmsg;
-    let content;
-    response.setHeader('server', version);
-    response.setHeader('Content-Type','text/plain');
+    function runServlet(params) {
+      let context;
 
-        if (this.req.method == "POST") {
-          developmentLog("using POST");
-	      this.req.on('data', function(data) {
-			try {
-              queryData += data;
-              if(queryData.length > 1e6) {
-                queryData = "";
-              }
-			} catch (err) {
-		      serverError("Error processing POST data.",err);
-		    }
-          });
-          this.req.on('end', function() {
-			let context;
-			try {
-        request.post = querystring.parse(queryData);
-        let boundLoader = load.bind({request:request,response:response,dirPath:fileInfo.dirPath});
-        // This is where the application code is "called"
-        context = new Context(request,response,request.post,fileInfo.dirPath,boundLoader,fileInfo.proxyOptions,proxies,achieve_proxy);
+      try {
+        let boundLoader = load.bind({request: request, response: response, dirPath: fileInfo.dirPath   });
+        context = new Context(request, response, params, fileInfo.dirPath, boundLoader, fileInfo.proxyOptions, proxies, achieve_proxy);
         let content = myApp.servlet(context);
         if (response.writableEnded || context.allowAsync) {
-          developmentLog("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
+          developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
           return;
         } else if (content === undefined || content === null) {
           wmsg="WARNING: Return value from servlet " + fileInfo.path + " is " + content + ".";
           response.statusCode=500;
-			    response.write(wmsg);
+          response.write(wmsg);
           response.end();
           serverError(wmsg);
           return;
         }
-          response.statusCode=200;
-			    response.write(content,'binary');
-          response.end(null,'binary');
-		  } catch (err) {
-          if (response.headersSent) {
-            wmsg=rtErrorMsg(err);
-            serverError(wmsg,err);
-            if (!response.writableEnded && !response.destroyed) {
-              response.destroy();
-            }
-            return;
-          }
-          if (response.writableEnded || (context && context.allowAsync)) {
-          developmentLog("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
-          return;
-          }
-          wmsg=rtErrorMsg(err);
-          response.statusCode=500;
-			    response.write(wmsg);
-          response.end();
-          serverError(wmsg,err);
-		  	}
-	      });
-        } else if (
-          this.req.method == "GET" ||
-          this.req.method == "HEAD"
-        ) {
-          developmentLog("using GET");
-          let context;
-		  try {
-        request.get =  querystring.parse(fileInfo.queryString);
-		  	let boundLoader = load.bind({request:request,response:response,dirPath:fileInfo.dirPath});
-        // This is where the application code is "called"
-        context = new Context(request,response,request.get,fileInfo.dirPath,boundLoader,fileInfo.proxyOptions,proxies,achieve_proxy);
-        let content = myApp.servlet(context);
-        if (response.writableEnded || context.allowAsync) {
-          developmentLog("INFO: GET " + fileInfo.path + " session ended or will end by application.");
-          return;
-        }
         response.statusCode=200;
-			  if (sendBody) {
-          response.write(content);
-        }
+        if (sendBody) response.write(content);
         response.end();
-		  } catch (err) {
+        // response handling
+      } catch (err) {
         if (response.headersSent) {
           wmsg=rtErrorMsg(err);
           serverError(wmsg,err);
@@ -2000,29 +1961,59 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
           return;
         }
         if (response.writableEnded || (context && context.allowAsync)) {
-          developmentLog("INFO: GET " + fileInfo.path + " session ended or will end by application.");
+          developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
           return;
         }
         wmsg=rtErrorMsg(err);
         response.statusCode=500;
-        response.end(wmsg);
+        response.write(wmsg);
+        response.end();
         serverError(wmsg,err);
-		  }
-        } else if (this.req.method == "OPTIONS") {
-          console.log("OPTIONS REQUEST: " + this.req);
-          response.statusCode = 204;
-          response.setHeader('access-control-allow-headers', '*');
-          response.setHeader('access-control-allow-origin', "*");
-          response.setHeader('access-control-max-age', 86400);
-          response.setHeader('date', new Date());
-          response.setHeader('allow', "GET, HEAD, POST, OPTIONS");
-          response.setHeader('server', version);
-          response.end();
-        } else {
-          response.statusCode = 501;
-          console.log(this.req.method + " request method is not yet supported on the server: " + version);
-          response.end(this.req.method + " request method is not yet supported on the server: " + version);
+      }
+    }
+
+    response.setHeader('server', version);
+    response.setHeader('Content-Type','text/plain');
+
+    if (this.req.method == "POST") {
+      developmentLog("using POST");
+
+      request.on("data", function(data) {
+        queryData += data;
+
+        if (queryData.length > 1e6) {
+          queryData = "";
         }
+      });
+
+      request.on("end", function() {
+        let contentType = (request.headers["content-type"] || "").split(";")[0].trim();
+        let params;
+
+        if (contentType == "application/json") {
+          try {
+            params = JSON.parse(queryData);
+          } catch (err) {
+            response.statusCode = 400;
+            response.end("Bad Request: Invalid JSON data.");
+            serverError("Invalid JSON data received.", err);
+            return;
+          }
+        } else {
+          params = querystring.parse(queryData);
+        }
+
+        runServlet(params);
+      });
+    } else if (this.req.method == "GET" || this.req.method == "HEAD") {
+      let params = querystring.parse(fileInfo.queryString);
+      runServlet(params);
+
+    } else {
+      response.statusCode = 501;
+      console.log(this.req.method + " request method is not yet supported on the server: " + version);
+      response.end(this.req.method + " request method is not yet supported on the server: " + version);
+    }
   };
 }
 // rtErrorMsg() extracts useful information from the error stack

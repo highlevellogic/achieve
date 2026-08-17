@@ -212,7 +212,7 @@ async function runningCase(scenario, options, inspect) {
             const headResult = await request(testCase.message.port, {method: "HEAD", path: "/servlets/lifecycle.jss"});
             await new Promise(resolve => setTimeout(resolve, 25));
             trace = testCase.stdout().substring(start);
-            check("HEAD lifecycle uses GET label", headResult.status === 200 && trace.includes("INFO: GET ") && !trace.includes("INFO: POST "));
+            check("HEAD lifecycle label", headResult.status === 200 && trace.includes("INFO: HEAD ") && !trace.includes("INFO: GET ") && !trace.includes("INFO: POST "));
 
             start = testCase.stdout().length;
             const postResult = await request(testCase.message.port, {method: "POST", path: "/servlets/lifecycle.jss", body: "value=1"});
