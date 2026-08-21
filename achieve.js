@@ -37,12 +37,10 @@ let shutdownComplete = false;
 let shutdownError;
 let shutdownCallbacks = [];
 
+let corsPolicies = new Map();
+
 function getServerInstallationPath() {
-  if (
-    require.main &&
-    typeof require.main.filename === "string" &&
-    require.main.filename.length > 0
-  ) {
+  if (require.main && typeof require.main.filename === "string" && require.main.filename.length > 0) {
     return path.dirname(path.resolve(require.main.filename));
   }
   return path.resolve(process.cwd());
@@ -60,7 +58,7 @@ exports.setMode = function (newMode) {
     throw new TypeError('setMode() requires "development" or "production".');
   }
   mode = newMode;
-}
+};
 
 exports.setLogging = function (...destinations) {
   ensureLoggingConfigurable("setLogging");
@@ -94,7 +92,7 @@ exports.setLogging = function (...destinations) {
     selected[destination] = true;
   }
   logging = selected;
-}
+};
 
 exports.setLogPath = function (newLogRoot) {
   ensureLoggingConfigurable("setLogPath");
@@ -105,7 +103,7 @@ exports.setLogPath = function (newLogRoot) {
   logRoot = path.isAbsolute(candidate)
     ? path.normalize(candidate)
     : path.resolve(serverInstallationPath,candidate);
-}
+};
 
 function padNumber(value,width = 2) {
   return String(value).padStart(width,"0");
@@ -536,7 +534,7 @@ exports.shutdown = function (reason,callback) {
       finishShutdown();
     });
   });
-}
+};
 
 let reqCount = 0;
 let connectionArray;
@@ -563,10 +561,10 @@ exports.setProxy = function (prox) {
   } catch (e) {
     serverError("error: problem with proxy object: " + e.message,e);
   }
-}
+};
 exports.showMimeTypes = function () {
   showMimes=true;
-}
+};
 exports.setCompress = function (on) {
   if (typeof on == "boolean") {
     compress=on;
@@ -577,14 +575,14 @@ exports.setCompress = function (on) {
   } else {
     serverError("ERROR: setCompress(true) requires a boolean argument. (default: false)");
   }
-}
+};
 exports.setNodeEnv = function (env) {
   process.env.NODE_ENV=env;
   serverEvent("CONFIG","NODE_ENV set to " + env);
-}
+};
 exports.setRootDir = function () {
   serverError("ERROR: setRootDir() is no longer supported. Use setAppPath() instead.");
-}
+};
 exports.setAppPath = function (bp) {
   servletResolutionCache.clear();
   servletResolutionAliases.clear();
@@ -596,7 +594,7 @@ exports.setAppPath = function (bp) {
       basePath = newPath;
     }
   } catch (err) {serverError(String(err),err);}
-}
+};
 exports.setCaching = function (b) {
   try {
     if (b && fs.statSync(basePath).mtimeMs === undefined) {
@@ -609,16 +607,84 @@ exports.setCaching = function (b) {
   } catch (err) {
     serverError("ERROR setCaching: " + err,err);
   }
+};
+// CORS
+function checkCorsPolicy(req,res,fileInfo) {
+    let origin=req.headers.origin;
+    let fetchSite=req.headers["sec-fetch-site"];
+
+    if (!origin) return true;
+    if (fetchSite === "same-origin") return true;
+
+    let resourcePath=fileInfo.path.replace(/\\/g,"/");
+    let pos=resourcePath.lastIndexOf("/");
+    let path=resourcePath.substring(0,pos+1);
+    let asset=resourcePath.substring(pos+1);
+
+    if (corsPolicyMatch(origin,path,asset)) {
+        res.setHeader("Access-Control-Allow-Origin",origin);
+        res.appendHeader("Vary","Origin");
+        return true;
+    }
+
+    res.statusCode=403;
+    res.end();
+    return false;
 }
-// CORS - not yet implemented
-exports.allowAccess = function (ad) {
-  let acds;
-  if (ad.length > 0) {
-    corsdomains = ad.split(",");
-  } else {
-    serverWarning("No domains in access list.");
-    return;
-  }
+function normalizeCorsPath(path) {
+    path = path.trim();
+    if (!path || path === "*") return "*";
+    if (!path.startsWith("/")) path = "/" + path;
+    if (!path.endsWith("/")) path += "/";
+    return path;
+}
+exports.allowOrigins = function (origins, paths="*", assets="*") {
+    if (!Array.isArray(origins)) origins = [origins];
+    if (!Array.isArray(paths)) paths = [paths];
+    if (!Array.isArray(assets)) assets = [assets];
+
+    paths = paths.map(normalizeCorsPath);
+    let assetSet = new Set(assets);
+
+    for (let origin of origins) {
+        origin = origin.trim();
+        if (!corsPolicies.has(origin)) corsPolicies.set(origin, new Map());
+
+        let pathMap = corsPolicies.get(origin);
+        for (let path of paths) pathMap.set(path, {assets: assetSet});
+    }
+    developmentLog(corsPolicies);
+};
+function isAssetAllowed(policy, asset) {
+    if (policy.assets.has("*")) return true;
+    return policy.assets.has(asset);
+}
+function corsPolicyMatch(origin, path, asset) {
+    let pathMap = corsPolicies.get(origin);
+    if (!pathMap) pathMap = corsPolicies.get("*");
+    if (!pathMap) return;
+
+    let policy = findPathPolicy(pathMap, path);
+    if (!policy) return;
+
+    if (!isAssetAllowed(policy, asset)) return;
+
+    return policy;
+}
+function findPathPolicy(pathMap, requestPath) {
+    if (pathMap.has(requestPath)) return pathMap.get(requestPath);
+
+    let path = requestPath;
+
+    while (path.length > 1) {
+        let pos = path.lastIndexOf("/", path.length - 2);
+        if (pos < 0) break;
+
+        path = path.substring(0, pos + 1);
+        if (pathMap.has(path)) return pathMap.get(path);
+    }
+
+    return pathMap.get("*");
 }
 function methodNotSupportedMessage(req) {
     return (
@@ -779,44 +845,65 @@ function cachedServlet(basePath,resourceTarget) {
     return servletResolutionCache.get(servletIdentity);
 }
 
-function handleGet (req, res, basePath, resourceTarget) {
+function handleGet(req, res, basePath, resourceTarget) {
     let cached=cachedServlet(basePath,resourceTarget);
     if (cached) {
-      handlePreparedServlet(req,res,cachedServletFileInfo(cached,req,resourceTarget),cached.account,true);
-      return;
+        let fileInfo=cachedServletFileInfo(cached,req,resourceTarget);
+        if (!checkCorsPolicy(req,res,fileInfo)) return;
+        handlePreparedServlet(req,res,fileInfo,cached.account,true);
+        return;
     }
-    let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
-    handleResolvedResource(req, res, fileInfo, true, resourceTarget);
+    let fileInfo=setFileInfo(req,res,basePath,resourceTarget);
+    if (!checkCorsPolicy(req,res,fileInfo)) return;
+    handleResolvedResource(req,res,fileInfo,true,resourceTarget);
 }
 
 function handlePost (req, res, basePath, resourceTarget) {
     let cached=cachedServlet(basePath,resourceTarget);
     if (cached) {
-      handlePreparedServlet(req,res,cachedServletFileInfo(cached,req,resourceTarget),cached.account,true);
+	  let fileInfo=cachedServletFileInfo(cached,req,resourceTarget);
+      if (!checkCorsPolicy(req,res,fileInfo)) return;
+      handlePreparedServlet(req,res,fileInfo,cached.account,true);
       return;
     }
     let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
+	if (!checkCorsPolicy(req,res,fileInfo)) return;
     handleResolvedResource(req, res, fileInfo, true, resourceTarget);
 }
 
 function handleHead (req, res, basePath, resourceTarget) {
     let cached=cachedServlet(basePath,resourceTarget);
     if (cached) {
-      handlePreparedServlet(req,res,cachedServletFileInfo(cached,req,resourceTarget),cached.account,false);
+	  let fileInfo=cachedServletFileInfo(cached,req,resourceTarget);
+      if (!checkCorsPolicy(req,res,fileInfo)) return;
+      handlePreparedServlet(req,res,fileInfo,cached.account,false);
       return;
     }
     let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
+	if (!checkCorsPolicy(req,res,fileInfo)) return;
     handleResolvedResource(req, res, fileInfo, false, resourceTarget);
 }
-function handleOptions (req, res, basePath, resourceTarget) {
+function handleOptions(req,res,basePath,resourceTarget) {
+    if (req.url === "*") {
+        developmentLog("OPTIONS * REQUEST");
+        res.statusCode=204;
+        res.setHeader("Allow","GET, HEAD, POST, OPTIONS");
+        res.setHeader("server",version);
+        res.end();
+        return;
+    }
+
+    let fileInfo=setFileInfo(req,res,basePath,resourceTarget);
+    if (!checkCorsPolicy(req,res,fileInfo)) return;
+
     developmentLog("OPTIONS REQUEST: " + req);
-    res.statusCode = 204;
-    // res.setHeader('access-control-allow-headers', '*');
-    // res.setHeader('access-control-allow-origin', '*');
-    // res.setHeader('access-control-max-age', 86400);
-    res.setHeader('date', new Date());
-    res.setHeader('allow', 'GET, HEAD, POST, OPTIONS');
-    res.setHeader('server', version);
+    res.statusCode=204;
+    if (req.headers.origin && req.headers["access-control-request-method"]) {
+        res.setHeader("Access-Control-Allow-Methods","GET, HEAD, POST, OPTIONS");
+        res.setHeader("Access-Control-Allow-Headers","Content-Type");
+    }
+    res.setHeader("Allow","GET, HEAD, POST, OPTIONS");
+    res.setHeader("server",version);
     res.end();
 }
 
@@ -1120,21 +1207,11 @@ var achieveApp = function (req, res) {
      res.end("Bad Request");
      return;
    }
-   
-/* local and remote differ when outside the lan
-   console.log("localAddress: " + req.socket.localAddress);
-   console.log("remoteAddress: " + req.socket.remoteAddress);
-   console.log("remoteAddress: " + req.socket.remoteAddress);
-*/
-   
-   
- //  res.setHeader('Access-Control-Allow-Headers', '*');
-  // res.setHeader('Access-Control-Allow-Origin', '*');
-   // res.ok = 1;
    req.protocol = this.protocol;
    return dispatchMethod(req, res, basePath, targetInfo.resourceTarget);
  } catch (e) {
    serverError("Catchall error in achieveApp.",e);
+  console.log(e);
    if (res.destroyed || res.writableEnded) return;
    if (res.headersSent) {
      res.destroy();
@@ -1210,7 +1287,7 @@ exports.listen2 = function (ioptions) {
   server.listen(sport);
   return server;
   
-}
+};
 exports.slisten = function (ioptions) {
   if (!canStartListener()) return;
   https = require('https');
@@ -1262,7 +1339,7 @@ exports.slisten = function (ioptions) {
 
   return server;
   
-}
+};
 exports.listen = function (port) {
   if (!canStartListener()) return;
   http = require('http');
@@ -1307,7 +1384,7 @@ exports.listen = function (port) {
     }
   }
   return server;
-}
+};
 // extension offers a way to add functionality to the server, which will be available via the context object.
 // NOT YET IMPLEMENTED
 exports.extension = {};
@@ -1321,7 +1398,7 @@ exports.addExtension = function (name,obj) {
   } else {
     serverError("addExtension() error: First argument must be a valid string for name of the extension.");
   }
-}
+};
 // Supported MIME types, based on file extensions
 // You may add new MIME types.
 exports.addMimeType = function (ext, mime) {
@@ -1340,7 +1417,7 @@ exports.addMimeType = function (ext, mime) {
     if (!mimeType || !mimeForm) serverError("addMimeType(extension,mime) error: Second argument must be a MIME type string such as 'text/html'");
   }
   } catch (err) {serverError("addMimeType() failed.",err);}
-}
+};
 exports.addAVMimeType = function (ext, mime) {
   try {
   ext=ext.trim(); mime=mime.trim();
@@ -1357,7 +1434,7 @@ exports.addAVMimeType = function (ext, mime) {
     if (!mimeType || !mimeForm) serverError("addAVMimeType(extension,mime) error: Second argument must be a MIME type string such as 'text/html'");
   }
   } catch (err) {serverError("addAVMimeType() failed.",err);}
-}
+};
 // "servlet" is not a file extension. It is used by this service to indicate running (not serving) js code.
 // "servlet" is required by this service. Default response MIME type for servlet is plain text, UTF-8
 let mimeList = {
@@ -1586,7 +1663,7 @@ function checkPath (basePath,relativePath,directoryForm) {
           stats = fs.statSync(checkPath);
           action = "serveFile";
         }
-		    return new PathInfo(path.join(relativePath,df),reload,action,stats);
+		return new PathInfo(path.join(relativePath,df),reload,action,stats);
 	    }
 	  }
   }
@@ -2326,7 +2403,7 @@ exports.loadModule = function (moduleName) {
   } catch (err) {
     serverError("loadModule: " + rtErrorMsg(err),err);
   }
-}
+};
 let load = function (filePath) {
   let dirname=this.dirPath;
   let fullPath = path.join(dirname,filePath+".js");
