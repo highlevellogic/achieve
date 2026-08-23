@@ -38,6 +38,7 @@ let shutdownError;
 let shutdownCallbacks = [];
 
 let corsPolicies = new Map();
+let bufferedInputLimit = 1024 * 1024;  // default 1 MiB
 
 function getServerInstallationPath() {
   if (require.main && typeof require.main.filename === "string" && require.main.filename.length > 0) {
@@ -93,7 +94,19 @@ exports.setLogging = function (...destinations) {
   }
   logging = selected;
 };
+// Configure buffered input during startup, before listen(), for predictable request handling.
+exports.setBufferedInputLimit = function(limit) {
+    if (!Number.isSafeInteger(limit) || limit < 1) {
+        throw new RangeError("Buffered input limit must be a positive integer.");
+    }
+    const v8 = require("node:v8");
+    let maxLimit = Math.floor(v8.getHeapStatistics().heap_size_limit * 0.01);
 
+    if (limit > maxLimit) {
+        throw new RangeError("Buffered input limit exceeds Achieve's safe maximum of " + maxLimit + " bytes.");
+    }
+    bufferedInputLimit = limit;
+}
 exports.setLogPath = function (newLogRoot) {
   ensureLoggingConfigurable("setLogPath");
   if (typeof newLogRoot !== "string" || newLogRoot.trim().length === 0) {
@@ -2004,7 +2017,7 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
     let sendBody = this.sendBody;
 	// This service loads the application file and calls exports.servlet(context)
 	  // Extract data sent from the browser for POST or GET
-    let queryData="";
+    let queryChunks=[];
     let wmsg;
     function runServlet(params) {
       let context;
@@ -2013,21 +2026,15 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
         let boundLoader = load.bind({request: request, response: response, dirPath: fileInfo.dirPath   });
         context = new Context(request, response, params, fileInfo.dirPath, boundLoader, fileInfo.proxyOptions, proxies, achieve_proxy);
         let content = myApp.servlet(context);
+
         if (response.writableEnded || context.allowAsync) {
           developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
           return;
-        } else if (content === undefined || content === null) {
-          wmsg="WARNING: Return value from servlet " + fileInfo.path + " is " + content + ".";
-          response.statusCode=500;
-          response.write(wmsg);
-          response.end();
-          serverError(wmsg);
-          return;
         }
+
         response.statusCode=200;
-        if (sendBody) response.write(content);
+        if (sendBody && content !== undefined && content !== null) response.write(content);
         response.end();
-        // response handling
       } catch (err) {
         if (response.headersSent) {
           wmsg=rtErrorMsg(err);
@@ -2052,32 +2059,50 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
     response.setHeader('server', version);
     response.setHeader('Content-Type','text/plain');
 
-    if (this.req.method == "POST") {
-      developmentLog("using POST");
+   if (this.req.method == "POST") {
+    developmentLog("using POST");
 
-      request.on("data", function(data) {
-        queryData += data;
+    let contentType = (request.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
 
-        if (queryData.length > 1e6) {
-          queryData = "";
+    if (contentType != "" &&
+        contentType != "application/json" &&
+        contentType != "application/x-www-form-urlencoded") {
+
+        runServlet({});
+        return;
+    }
+
+    let inputBytes = 0;
+
+    request.on("data", function(data) {
+        inputBytes += data.length;
+
+        if (inputBytes > bufferedInputLimit) {
+            response.statusCode = 413;
+            response.end("Payload Too Large");
+            return;
         }
-      });
 
-      request.on("end", function() {
-        let contentType = (request.headers["content-type"] || "").split(";")[0].trim();
+        queryChunks.push(data);
+    });
+
+    request.on("end", function() {
+        if (response.writableEnded) return;
+
+        let queryData=Buffer.concat(queryChunks,inputBytes).toString("utf8");
         let params;
 
         if (contentType == "application/json") {
-          try {
-            params = JSON.parse(queryData);
-          } catch (err) {
-            response.statusCode = 400;
-            response.end("Bad Request: Invalid JSON data.");
-            serverError("Invalid JSON data received.", err);
-            return;
-          }
+            try {
+                params = JSON.parse(queryData);
+            } catch (err) {
+                response.statusCode = 400;
+                response.end("Bad Request: Invalid JSON data.");
+                serverError("Invalid JSON data received.", err);
+                return;
+            }
         } else {
-          params = querystring.parse(queryData);
+            params = querystring.parse(queryData);
         }
 
         runServlet(params);

@@ -1,0 +1,53 @@
+<html>
+<head>
+ <title>Achieve xml-sax example</title>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACqklEQVQ4T32RW0hUURiF195zzoypo6Z5SY0uDF00rykp5aWHAvGtJCwhL9SURuqQjVCZQQ+JJGZqKt6iNNFJoR4sAiHyRSpRUxOihxJSqqGccWxu55zdi6eOU7be/rXW/8G/N8E6yj2dPqCJdIQwwtRqf4GoA4RZjTOgqv7s6KKyR9cDBKUvDXuF27ereNLWUT6R6pzfeMcmWkf0zQl1/wVc6k0NP9ce+5kyqmvTT2+N3B3aUzYY3ekbKrxrL5mKcpu1YwW3En5caDzk8xfA0H4gxmJdmfNZ1CU35k9eBQAb+ZhB1EIRgqzBANBd/dIkzeyJsy7bBtYAKroyNzt566jua3Zo3bWhBdmXmHRGZQusgpvfIXv37z2cBydpSlpSMn4D7PT7Jw18dMbqmw4oRCg7qA3i6wgvnlT6K8bObLvDUUMBwNCXmMMRL1N9wZhZWTIMxRQQghHLyhJjRDqszB4h3slRzQYOAECgb8h/dQQeYry7ki6EZRGtW2J+Zv9SU/QgUWGTczYis7XqORNdxMEBAFVhm+fyldo875/ipB8LMz+TONdO5qYut43ebimcHgVmAQBELYSsvgFb+xv9SfttUa9tTgtp5e1+e60z3iq4+QpeKybInVOXM7PUAY4PqycQuxIAib0nIhXu5s/ckK2y7pQR+FuM8uwbZTZSUdNFAYCqSIuhL6lJDgkvHWfL2mNKZkPh2JwkkF3yTFUkrSl//AEFAPWXiCGmtZ4v70z3BQCB2muJWnwKD7ks/BMAKO6Kf8HxtHhNaOxNyyszxQ0DQHlPcqrnsix9R1xf6UDsG3kmyvBi/74igXPUgLJxJtApiPyoe5n7xqgQTH1cuZSwo0TiKhtPvP1zLv6hst7EWIlzbgFIDKFSoCQSOxPJRHPe9cdADlN2fwG8FgTEn90+twAAAABJRU5ErkJggg==">
+ <script src="js/xhr2.js"></script>
+ <style>
+ #result {
+  font-size: 1.5em;
+  font-weight: bold;
+ }
+ </style>
+ <script>
+function output (msg="", elementID="result") {
+  document.getElementById(elementID).innerHTML = msg;
+}
+function init () {
+/*
+    IMPORTANT: "Content-type" is set to "application/xml;charset=utf-8" in js/xhr2.js
+
+    This example uses @nodable/sax in servlets/sax.jss. It must be installed.
+    npm install @nodable/sax
+*/
+
+const xml = `<?xml version="1.0"?>
+<catalog>
+  <!-- inventory snapshot -->
+  <book id="bk101" inStock="true">
+    <title>XML Developer's Guide</title>
+    <price>44.95</price>
+    <![CDATA[ raw <stuff> here]]>
+  </book>
+  <book id="bk102" inStock="false">
+    <title>Midnight Rain</title>
+    <price>5.95</price>
+  </book>
+</catalog>`;
+
+  var url = "servlets/sax.jss";
+  fetchData (url,xml,"post");
+}
+window.onload=init;
+</script>
+</head>
+<body>
+  <h1>XML-SAX example</h1>
+  <p>This example runs servlet <code>servlets/sax.jss</code> which uses @nodable/sax to parse the XML.</p>
+  <p>Note that "Content-type" is set to "application/xml;charset=utf-8" and method = POST.</p>
+  <p>Expected result: Result displayed in the server start console.</p>
+<div id="result">Waiting for the servlet response.</div>
+</body>
+</html>

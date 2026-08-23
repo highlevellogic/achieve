@@ -58,6 +58,14 @@ be served as static content. Extensionless requests remain compatible with
 legacy .js servlets. An explicit request for a .js resource remains a static
 JavaScript request.
 
+BUFFERED POST INPUT
+
+Achieve buffers JSON and form-urlencoded POST input, including legacy POST
+input without a Content-Type. The default limit is 1 MiB. Applications that
+need another limit should call setBufferedInputLimit(bytes) during startup,
+before listen(). Other declared media types remain live request streams owned
+by the servlet application.
+
 EXAMPLES
 
 The examples/ directory is executable documentation for developers and
