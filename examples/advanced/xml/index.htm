@@ -19,7 +19,7 @@ function init () {
 /*
     IMPORTANT: "Content-type" is set to "application/xml;charset=utf-8" in js/xhr2.js
 
-    This example uses @nodable/sax in servlets/sax.jss. It must be installed.
+    This example uses @nodable/sax in servlets/sax.jss.mjs. It must be installed.
     npm install @nodable/sax
 */
 
@@ -37,7 +37,7 @@ const xml = `<?xml version="1.0"?>
   </book>
 </catalog>`;
 
-  var url = "servlets/sax.jss";
+  var url = "servlets/sax.jss.mjs";
   fetchData (url,xml,"post");
 }
 window.onload=init;
@@ -45,7 +45,8 @@ window.onload=init;
 </head>
 <body>
   <h1>XML-SAX example</h1>
-  <p>This example runs servlet <code>servlets/sax.jss</code> which uses @nodable/sax to parse the XML.</p>
+  <p>This example runs <code>servlets/sax.jss.mjs</code>, where <code>.jss</code> marks protected Achieve server-side source and <code>.mjs</code> marks the servlet as an ES module.</p>
+  <p><code>@nodable/sax</code> is an application/example dependency, not an Achieve dependency. Run <code>npm install @nodable/sax</code> before using this example.</p>
   <p>Note that "Content-type" is set to "application/xml;charset=utf-8" and method = POST.</p>
   <p>Expected result: Result displayed in the server start console.</p>
 <div id="result">Waiting for the servlet response.</div>

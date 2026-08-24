@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const querystring = require('querystring');
+const { pathToFileURL } = require('node:url');
 // Optional modules. Load only when used.
 
 let http;
@@ -716,6 +717,31 @@ function methodNotSupported(req, res) {
     res.end(message);
 }
 
+function completeServletResolution(req,res,fileInfo,sendBody,servletCacheKey,accountInfo) {
+    if (accountInfo.code == 200) {
+      if (mode === "production") {
+        let servletIdentity=servletPhysicalIdentity(fileInfo.fullPath);
+        servletResolutionCache.set(servletIdentity,{
+          basePath:fileInfo.basePath,
+          path:fileInfo.path,
+          fullPath:fileInfo.fullPath,
+          dirPath:fileInfo.dirPath,
+          suffix:fileInfo.suffix,
+          contentType:fileInfo.contentType,
+          account:accountInfo.account
+        });
+        servletResolutionAliases.set(
+          servletRequestIdentity(fileInfo.basePath,servletCacheKey),
+          servletIdentity
+        );
+      }
+      if (res.destroyed || res.writableEnded) return;
+      return handlePreparedServlet(req,res,fileInfo,accountInfo.account,sendBody);
+    }
+    if (res.destroyed || res.writableEnded) return;
+    reportError(res,accountInfo.account,accountInfo.code,accountInfo.reason,sendBody);
+}
+
 function handleResolvedResource(req, res, fileInfo, sendBody = true, servletCacheKey) {
  // display(fileInfo);
    // If request is a directory, it must have a trailing slash (otherwise resources such as css and js won't be loaded).
@@ -762,28 +788,14 @@ function handleResolvedResource(req, res, fileInfo, sendBody = true, servletCach
    // Otherwise, a JavaScript file should be loaded.
    } else {
 	   // Checks and adds JavaScript file.
-	   let accountInfo = getAccount(res,fileInfo);
-     if (accountInfo.code == 200) {
-	     if (mode === "production") {
-         let servletIdentity=servletPhysicalIdentity(fileInfo.fullPath);
-         servletResolutionCache.set(servletIdentity,{
-           basePath:fileInfo.basePath,
-           path:fileInfo.path,
-           fullPath:fileInfo.fullPath,
-           dirPath:fileInfo.dirPath,
-           suffix:fileInfo.suffix,
-           contentType:fileInfo.contentType,
-           account:accountInfo.account
-         });
-         servletResolutionAliases.set(
-           servletRequestIdentity(fileInfo.basePath,servletCacheKey),
-           servletIdentity
-         );
-       }
-	     return handlePreparedServlet(req,res,fileInfo,accountInfo.account,sendBody);
-	   } else {
-	     reportError(res,accountInfo.account,accountInfo.code,accountInfo.reason,sendBody);
-	   }
+     if (servletModuleType(fileInfo.fullPath) == "module") {
+       getModuleAccount(fileInfo).then(function (accountInfo) {
+         completeServletResolution(req,res,fileInfo,sendBody,servletCacheKey,accountInfo);
+       });
+       return;
+     }
+     let accountInfo = getAccount(res,fileInfo);
+     return completeServletResolution(req,res,fileInfo,sendBody,servletCacheKey,accountInfo);
    }
 }
 
@@ -1423,6 +1435,10 @@ exports.addMimeType = function (ext, mime) {
   if (extType && ext.indexOf('.') == 0) ext = ext.substring(1);
   if (extType && ext.indexOf('/') > -1) extForm=false;
   if (mimeType && mime.indexOf('/') < 1) mimeForm=false;
+  if (extType && ext.toLowerCase() == "jss") {
+    serverError(".jss is reserved for protected Achieve server-side source and cannot be registered as a public MIME type.");
+    return;
+  }
   if (extType && mimeType && extForm && mimeForm) {
     mimeList[ext]=mime;
   } else {
@@ -1455,6 +1471,8 @@ let mimeList = {
   htm: "text/html",
   css: "text/css",
   js: "application/javascript",
+  mjs: "application/javascript",
+  cjs: "application/javascript",
   xml: "application/xml",
   svg: "image/svg+xml",
   jpg: "image/jpeg",
@@ -1593,13 +1611,15 @@ function evaluatePreconditions (req,res,exists,currentETag) {
   }
   return false;
 }
-function Context (req,res,parms,dirPath,load,proxyOptions=false,proxies=false,proxy) {
+function Context (req,res,parms,dirPath,load,loadCJS,loadESM,proxyOptions=false,proxies=false,proxy) {
   this.request = req;
   this.response = res;
   this.parms = parms; // deprecate
   this.params = parms;
   this.dirPath = dirPath;
   this.load = load;
+  this.loadCJS = loadCJS;
+  this.loadESM = loadESM;
   this.proxy = proxy;
   this.proxyOptions = proxyOptions;
   this.proxies = proxies;
@@ -1627,6 +1647,15 @@ function containedRequestPath (boundaryPath,requestPath) {
 
   return candidate;
 }
+function servletModuleType (filePath) {
+  let lowerPath=filePath.toLowerCase();
+  if (lowerPath.endsWith(".jss.mjs")) return "module";
+  if (lowerPath.endsWith(".jss.cjs") || lowerPath.endsWith(".jss")) return "commonjs";
+  return false;
+}
+function protectedServletPath (filePath) {
+  return /\.jss(?:\.|$)/i.test(path.basename(filePath));
+}
 function checkPath (basePath,relativePath,directoryForm) {
   // Build full path.
   let action="";
@@ -1642,7 +1671,9 @@ function checkPath (basePath,relativePath,directoryForm) {
       // Does fullPath exist?
 	    stats = fs.statSync(fullPath); 
     } catch (err) {
-          
+    if (protectedServletPath(fullPath)) {
+      return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
+    }
     stats = fs.statSync(fullPath+".js",{
       throwIfNoEntry:false
     });
@@ -1654,9 +1685,12 @@ function checkPath (basePath,relativePath,directoryForm) {
     }
   // If fullPath points to a file, return the relative path.
   if (stats.isFile()) {
-    if (path.extname(fullPath).toLowerCase() == ".jss") {
+    if (servletModuleType(fullPath)) {
       if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) reload = true;
       return new PathInfo(path.normalize(relativePath),reload,"servlet",stats);
+    }
+    if (protectedServletPath(fullPath)) {
+      return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
     }
     return new PathInfo(path.normalize(relativePath),true,"serveFile",stats);
   }
@@ -1668,7 +1702,7 @@ function checkPath (basePath,relativePath,directoryForm) {
 	  for (let df of defaultFiles) {
       checkPath = path.join(fullPath,df);
 	    if (fs.existsSync(checkPath)) {
-		    if (df == "index.jss" || df == "index.js") {
+		    if (servletModuleType(checkPath) || df == "index.js") {
 		  	  stats = fs.statSync(checkPath);
 			    if (moduleLoadTimes[checkPath] === undefined || moduleLoadTimes[checkPath] < stats.mtimeMs) reload = true;
           action = "servlet";
@@ -1686,6 +1720,8 @@ let defaultFiles = [
   "index.html",
   "index.htm",
   "index.jss",
+  "index.jss.mjs",
+  "index.jss.cjs",
   "index.js"
 ];
 function checkProxies (reqPath) {
@@ -1998,6 +2034,52 @@ function getAccount (res,fileInfo) {
 	return accountInfo;
 }
 
+async function importESMFile (fullPath) {
+  let stats=fs.statSync(fullPath);
+  let moduleUrl=pathToFileURL(path.resolve(fullPath)).href;
+  if (mode !== "production") {
+    moduleUrl += "?achieve-mtime=" + encodeURIComponent(stats.mtimeMs);
+  }
+  return {
+    loadedModule:await import(moduleUrl),
+    mtimeMs:stats.mtimeMs
+  };
+}
+
+async function getModuleAccount (fileInfo) {
+  let startPage=fileInfo.fullPath;
+  let code=200;
+  let reason;
+  let accountRoot=null;
+  let loadedMtime;
+
+  if (!fs.existsSync(startPage)) {
+    return new Account(
+      null,
+      startPage,
+      404,
+      safeSourceIdentity(startPage) + " not found."
+    );
+  }
+
+  try {
+    let importedModule=await importESMFile(startPage);
+    loadedMtime=importedModule.mtimeMs;
+    let moduleNamespace=importedModule.loadedModule;
+    if (typeof moduleNamespace.servlet !== "function") {
+      code=500;
+      reason=safeSourceIdentity(startPage) + " does not have a valid servlet() function.";
+    } else {
+      accountRoot={servlet:moduleNamespace.servlet};
+      moduleLoadTimes[startPage]=loadedMtime;
+    }
+  } catch (err) {
+    code=500;
+    reason="Failed to load module: " + rtErrorMsg(err);
+  }
+  return new Account(accountRoot,startPage,code,reason);
+}
+
 // startObject's init() method runs the code that was loaded by getAccount()
 // It will get parameter values from the request and call the loaded application's init() method.
 function startObject (req,res,fileInfo,myApp,sendBody = true) {
@@ -2023,8 +2105,11 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
       let context;
 
       try {
-        let boundLoader = load.bind({request: request, response: response, dirPath: fileInfo.dirPath   });
-        context = new Context(request, response, params, fileInfo.dirPath, boundLoader, fileInfo.proxyOptions, proxies, achieve_proxy);
+        let loaderState={request:request,response:response,dirPath:fileInfo.dirPath};
+        let boundLoader=load.bind(loaderState);
+        let boundCJSLoader=loadCJS.bind(loaderState);
+        let boundESMLoader=loadESM.bind(loaderState);
+        context = new Context(request, response, params, fileInfo.dirPath, boundLoader, boundCJSLoader, boundESMLoader, fileInfo.proxyOptions, proxies, achieve_proxy);
         let content = myApp.servlet(context);
 
         if (response.writableEnded || context.allowAsync) {
@@ -2429,9 +2514,14 @@ exports.loadModule = function (moduleName) {
     serverError("loadModule: " + rtErrorMsg(err),err);
   }
 };
-let load = function (filePath) {
+function loadCommonJSModule (filePath,allowLegacyName) {
   let dirname=this.dirPath;
-  let fullPath = path.join(dirname,filePath+".js");
+  let modulePath=allowLegacyName ? filePath+".js" : filePath;
+  let moduleType=servletModuleType(modulePath);
+  if (!allowLegacyName && moduleType !== "commonjs") {
+    throw new Error("loadCJS() requires a .jss or .jss.cjs module name.");
+  }
+  let fullPath = path.join(dirname,modulePath);
   let loadedMtime;
   const stats = fs.statSync(fullPath);
 	if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
@@ -2441,6 +2531,21 @@ let load = function (filePath) {
   let loadedModule = require(fullPath);
   if (loadedMtime !== undefined) moduleLoadTimes[fullPath] = loadedMtime;
   return loadedModule;
+}
+let loadCJS = function (filePath) {
+  return loadCommonJSModule.call(this,filePath,false);
+}
+let load = function (filePath) {
+  return loadCommonJSModule.call(this,filePath,true);
+}
+let loadESM = async function (filePath) {
+  if (servletModuleType(filePath) !== "module") {
+    throw new Error("loadESM() requires a .jss.mjs module name.");
+  }
+  let fullPath=path.join(this.dirPath,filePath);
+  let importedModule=await importESMFile(fullPath);
+  moduleLoadTimes[fullPath]=importedModule.mtimeMs;
+  return importedModule.loadedModule;
 }
 /* Modify this to collect a list of files to preload (JSO) - do preloads when server starts
 exports.preload1 = function (loadList) {

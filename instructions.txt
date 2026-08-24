@@ -52,11 +52,17 @@ directory. Use setAppPath(...) to specify a different application directory.
 URL directories such as /accounting, /images, and /servlets are ordinary
 directories inside that one application.
 
-Modern server-side servlets use the .jss suffix, and requests must include
-that suffix explicitly. Servlet source is executed on the server and must not
-be served as static content. Extensionless requests remain compatible with
-legacy .js servlets. An explicit request for a .js resource remains a static
-JavaScript request.
+The .jss marker identifies protected Achieve server-side source. Bare .jss is
+the simple CommonJS servlet form. Use .jss.cjs to label CommonJS explicitly,
+or .jss.mjs for an ES module servlet. Servlet source is executed on the server
+and is never served as static content. Extensionless requests remain
+compatible with legacy .js servlets.
+
+Ordinary .js, .cjs, and .mjs files in the public application tree do not have
+.jss protection and are served as JavaScript resources. Servlet code can use
+session.loadCJS() for protected .jss/.jss.cjs modules and await
+session.loadESM() for protected .jss.mjs modules. The legacy session.load()
+CommonJS helper remains available.
 
 BUFFERED POST INPUT
 
@@ -98,10 +104,10 @@ Representative areas include:
     redirect/      directory redirects
     media/         engineering-only and local large-media cases
     helper/        servlet helper loading and error propagation
-    jss/           .jss routing, reload, precedence, and source protection
+    jss/           servlet routing, reload, precedence, and .jss source protection
     application_directory/   default and configured application-directory verification
 
-The .jss tree deliberately contains invalid or incomplete servlet modules for
+The jss/ tree deliberately contains invalid or incomplete servlet modules for
 syntax-error, runtime-error, missing-export, reload-recovery, and
 source-protection checks. They are regression fixtures, not accidental broken
 files.

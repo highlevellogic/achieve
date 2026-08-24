@@ -13,9 +13,9 @@ This servlet runs async. (session.allowAsync = true;)
 Servlet must handle response and end and must be adequately protected with try-catch.
 */
 
-const { SaxParser } = require('@nodable/sax');
+import { SaxParser } from '@nodable/sax';
 
-exports.servlet = function (session) {
+export function servlet(session) {
 
 // stream handling requires async
 session.allowAsync = true;

@@ -149,9 +149,14 @@ resource paths:
 
 # SERVLET FIXTURES
 
-.jss is the modern protected servlet suffix, and requests must include it
-explicitly. Extensionless requests remain compatible with legacy .js
-servlets; explicit .js requests remain static.
+The .jss marker identifies protected Achieve server-side source. Bare .jss is
+the simple CommonJS servlet form, .jss.cjs is explicit CommonJS, and .jss.mjs
+is ESM. Extensionless requests remain compatible with legacy .js servlets.
+Ordinary .js, .cjs, and .mjs files do not receive .jss source protection.
+
+The servlet_modules verifier covers both compound forms, native ESM imports,
+Context loadCJS()/loadESM(), MIME behavior, development reload, production
+caching, and compound default-file precedence.
 
 Several files under jss/source_protection and jss/lifecycle are deliberately
 invalid, throw errors, or omit the servlet export. They verify safe diagnostics,

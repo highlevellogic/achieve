@@ -61,7 +61,7 @@ function abortXmlRequest(port) {
     return new Promise(function (resolve,reject) {
         const socket=net.connect(port,"127.0.0.1",function () {
             socket.write(
-                "POST /servlets/sax.jss HTTP/1.1\r\n"+
+                "POST /servlets/sax.jss.mjs HTTP/1.1\r\n"+
                 "Host: 127.0.0.1:"+port+"\r\n"+
                 "Content-Type: application/xml;charset=utf-8\r\n"+
                 "Content-Length: 1000\r\n\r\n"+
@@ -182,25 +182,25 @@ async function withFixture(file,port,run) {
     await withFixture("sax-fixture.js",19191,async function () {
         const valid="<?xml version=\"1.0\"?><root><item>one</item><item>two</item></root>";
         let response=await request(19191,{
-            method:"POST",path:"/servlets/sax.jss",headers:{"Content-Type":"application/xml;charset=utf-8"}
+            method:"POST",path:"/servlets/sax.jss.mjs",headers:{"Content-Type":"application/xml;charset=utf-8"}
         },"",[valid.substring(0,17),valid.substring(17,39),valid.substring(39)]);
         check("SAX streamed XML",response.status === 200 && response.body === "completed processing of XML");
 
         response=await request(19191,{
-            method:"POST",path:"/servlets/sax.jss",headers:{"Content-Type":"application/xml;charset=utf-8"}
+            method:"POST",path:"/servlets/sax.jss.mjs",headers:{"Content-Type":"application/xml;charset=utf-8"}
         },"<root><item></root>");
         check("malformed XML is client error",response.status === 400 && response.body.startsWith("XML parse error:"),
             response.status+" "+JSON.stringify(response.body));
 
         response=await request(19191,{
-            method:"POST",path:"/servlets/sax.jss",headers:{"Content-Type":"application/xml;charset=utf-8"}
+            method:"POST",path:"/servlets/sax.jss.mjs",headers:{"Content-Type":"application/xml;charset=utf-8"}
         },"<root/>");
         check("server survives malformed XML",response.status === 200);
 
         await abortXmlRequest(19191);
         await new Promise(resolve => setTimeout(resolve,100));
         response=await request(19191,{
-            method:"POST",path:"/servlets/sax.jss",headers:{"Content-Type":"application/xml;charset=utf-8"}
+            method:"POST",path:"/servlets/sax.jss.mjs",headers:{"Content-Type":"application/xml;charset=utf-8"}
         },"<after-abort/>");
         check("SAX example survives an aborted request stream",response.status === 200);
     });
