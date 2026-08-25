@@ -19,7 +19,7 @@ if (!server) {
 
 process.on("message", function (message) {
     if (message === "shutdown") {
-        achieve.shutdown("servlet module verifier", function (err) {
+        server.close(function (err) {
             process.send({type: "shutdown", error: err ? String(err) : ""});
         });
     }

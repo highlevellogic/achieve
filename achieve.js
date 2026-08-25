@@ -32,11 +32,6 @@ let serverInstallationPath = getServerInstallationPath();
 let logRoot = path.join(serverInstallationPath,"logs");
 let serverLogSink;
 let accessLogSink;
-let activeServers = new Set();
-let shutdownInProgress = false;
-let shutdownComplete = false;
-let shutdownError;
-let shutdownCallbacks = [];
 
 let corsPolicies = new Map();
 let bufferedInputLimit = 1024 * 1024;  // default 1 MiB
@@ -406,149 +401,6 @@ function initializeLogging() {
 
   return true;
 }
-
-function registerListener(server) {
-  server.once("listening",function () {
-    activeServers.add(server);
-  });
-
-  server.once("close",function () {
-    activeServers.delete(server);
-  });
-}
-
-function canStartListener() {
-  if (shutdownInProgress || shutdownComplete) {
-    serverError("Achieve cannot start a listener after shutdown has begun.");
-    return false;
-  }
-
-  return true;
-}
-
-function firstShutdownError(err) {
-  if (err && !shutdownError) shutdownError = err;
-}
-
-function closeActiveServers(callback) {
-  let servers = Array.from(activeServers);
-
-  if (servers.length === 0) {
-    process.nextTick(callback);
-    return;
-  }
-
-  let remaining = servers.length;
-
-  function serverClosed(err) {
-    firstShutdownError(err);
-    remaining--;
-    if (remaining === 0) callback();
-  }
-
-  for (let server of servers) {
-    if (!server.listening) {
-      server.once("close",function () {
-        serverClosed();
-      });
-      continue;
-    }
-
-    try {
-      server.close(serverClosed);
-    } catch (err) {
-      serverClosed(err);
-    }
-  }
-}
-
-function endLogging(callback) {
-  let sinks = [];
-
-  if (serverLogSink && !serverLogSink.hasFailed()) {
-    sinks.push(serverLogSink);
-  }
-
-  if (accessLogSink && !accessLogSink.hasFailed()) {
-    sinks.push(accessLogSink);
-  }
-
-  if (sinks.length === 0) {
-    process.nextTick(callback);
-    return;
-  }
-
-  let remaining = sinks.length;
-
-  function sinkEnded(err) {
-    firstShutdownError(err);
-    remaining--;
-    if (remaining === 0) callback();
-  }
-
-  for (let sink of sinks) {
-    sink.end(sinkEnded);
-  }
-}
-
-function finishShutdown() {
-  shutdownComplete = true;
-  shutdownInProgress = false;
-
-  let callbacks = shutdownCallbacks;
-  shutdownCallbacks = [];
-
-  for (let callback of callbacks) {
-    process.nextTick(function () {
-      callback(shutdownError);
-    });
-  }
-}
-
-exports.shutdown = function (reason,callback) {
-  if (typeof reason === "function") {
-    callback = reason;
-    reason = "application";
-  } else if (reason === undefined) {
-    reason = "application";
-  }
-
-  if (callback !== undefined && typeof callback !== "function") {
-    throw new TypeError("shutdown() callback must be a function.");
-  }
-
-  if (callback) {
-    if (shutdownComplete) {
-      process.nextTick(function () {
-        callback(shutdownError);
-      });
-      return;
-    }
-
-    shutdownCallbacks.push(callback);
-  }
-
-  if (shutdownInProgress || shutdownComplete) return;
-
-  shutdownInProgress = true;
-
-  let safeReason =
-    typeof reason === "string" &&
-    /^[A-Za-z0-9._-]+$/.test(reason)
-      ? reason
-      : "application";
-
-  serverEvent("SHUTDOWN","requested reason=" + safeReason);
-
-  closeActiveServers(function () {
-    serverEvent("SHUTDOWN","listeners closed");
-    serverEvent("SHUTDOWN","completed");
-
-    endLogging(function () {
-      finishShutdown();
-    });
-  });
-};
 
 let reqCount = 0;
 let connectionArray;
@@ -1262,7 +1114,6 @@ function normalizedPort(port) {
   return port;
 }
 exports.listen2 = function (ioptions) {
-  if (!canStartListener()) return;
   http2 = require('http2');
   
   let server;
@@ -1308,13 +1159,11 @@ exports.listen2 = function (ioptions) {
     server = http2.createServer(achieveApp.bind({protocol:"http2.http"}));
   }
   attachStartupLogging(server,ssl ? "http2.https" : "http2.http",sport);
-  registerListener(server);
   server.listen(sport);
   return server;
   
 };
 exports.slisten = function (ioptions) {
-  if (!canStartListener()) return;
   https = require('https');
   
   let server;
@@ -1353,7 +1202,6 @@ exports.slisten = function (ioptions) {
   server = https.createServer(ioptions, achieveApp.bind({protocol:"https"}));
   handleConnectRequests(server);
   attachStartupLogging(server,"https",sport);
-  registerListener(server);
   server.listen(sport);
 /*
   server.on('connection', function (socket) {
@@ -1366,7 +1214,6 @@ exports.slisten = function (ioptions) {
   
 };
 exports.listen = function (port) {
-  if (!canStartListener()) return;
   http = require('http');
     
   let server;
@@ -1395,7 +1242,6 @@ exports.listen = function (port) {
   server = http.createServer(achieveApp.bind({protocol:"http"}));
   handleConnectRequests(server);
   attachStartupLogging(server,"http",port);
-  registerListener(server);
   server.listen(port);
   
   if (showMimes) {

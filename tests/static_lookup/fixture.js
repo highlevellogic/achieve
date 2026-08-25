@@ -39,7 +39,7 @@ process.on("message",function (message) {
         process.send({event:"counts",counts:counts});
     } else if (message.command === "stop") {
         counting=false;
-        achieve.shutdown("static lookup verification complete",function () {
+        server.close(function () {
             process.exit();
         });
     }

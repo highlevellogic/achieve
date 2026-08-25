@@ -39,6 +39,6 @@ process.on("message",function (message) {
         process.send({event:"app-set"});
     } else if (message.command === "stop") {
         counting=false;
-        achieve.shutdown("servlet cache verification complete",function () { process.exit(); });
+        server.close(function () { process.exit(); });
     }
 });

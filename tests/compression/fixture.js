@@ -137,7 +137,7 @@ process.on("message",function (message) {
             send({event: "state", starts: starts});
             break;
         case "stop":
-            achieve.shutdown("compression verifier",function () {
+            server.close(function () {
                 process.exit();
             });
             break;

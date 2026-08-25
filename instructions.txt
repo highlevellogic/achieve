@@ -28,14 +28,6 @@ Then open:
 
     http://localhost:8989/
 
-Press Ctrl-C to stop the development server cleanly. The launcher handles both
-SIGINT and SIGTERM by closing Achieve listeners and draining enabled server and
-access logs before normal process termination. On Node.js 22 and newer, normal
-listener shutdown closes idle HTTP connections. Active, stalled, or upgraded
-connections can still delay shutdown. Existing HTTP/2 sessions may remain
-active and continue opening streams until they close; Achieve 3.0 does not
-track or forcibly close HTTP/2 sessions.
-
 The root page links to executable examples that show how Achieve works. A basic first
 confirmation is:
 

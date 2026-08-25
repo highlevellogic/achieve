@@ -37,24 +37,7 @@ achieve.setCaching(caching);
 achieve.setCompress(compression);
 const server = achieve.listen(port);
 
-let closing = false;
-function close() {
-    if (closing) return;
-    closing = true;
-    if (server && server.listening) {
-        server.close(function () {
-            removeTree(applicationPath);
-            process.exit();
-        });
-    } else {
-        removeTree(applicationPath);
-        process.exit();
-    }
-}
-
 server.on("listening", function () { console.log("CONDITIONAL_READY " + port + " " + applicationPath); });
-process.on("SIGINT", close);
-process.on("SIGTERM", close);
 process.on("exit", function () {
     removeTree(applicationPath);
 });

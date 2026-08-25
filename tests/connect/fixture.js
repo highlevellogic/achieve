@@ -51,7 +51,7 @@ server.once("listening",function () {
 
 process.on("message",function (message) {
     if (message !== "shutdown") return;
-    achieve.shutdown("CONNECT verifier",function (err) {
+    server.close(function (err) {
         send({type:"stopped",error:err ? err.message : undefined});
         if (process.connected) process.disconnect();
     });

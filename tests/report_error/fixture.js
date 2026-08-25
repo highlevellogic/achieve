@@ -25,7 +25,7 @@ process.on("message",function (message) {
         process.send({event:"count",moduleResolveCount:moduleResolveCount});
     } else if (message.command === "stop") {
         counting=false;
-        achieve.shutdown("reportError verification complete",function () {
+        server.close(function () {
             process.exit();
         });
     }

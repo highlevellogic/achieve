@@ -13,7 +13,7 @@ server.on("listening",function () {
 
 process.on("message",function (message) {
     if (message.command === "stop") {
-        achieve.shutdown("request input verification complete",function () {
+        server.close(function () {
             process.exit();
         });
     }

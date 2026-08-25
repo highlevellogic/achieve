@@ -14,8 +14,6 @@ node start.js
 
 The development launcher serves the executable documentation under `examples/` at `http://localhost:8989/`. Windows and Unix-like convenience launchers are also provided as `runw.bat` and `runl.sh`.
 
-Pressing Ctrl-C or sending `SIGTERM` asks Achieve to stop accepting new connections, finish existing requests, and drain enabled server and access logs before the process terminates normally. On the supported Node.js 22+ baseline, normal listener shutdown closes idle HTTP connections. Active, stalled, or upgraded connections can still delay shutdown. Existing HTTP/2 sessions may remain active and continue opening streams until they close; Achieve 3.0 does not track or forcibly close HTTP/2 sessions.
-
 An Achieve application directory contains static resources and server-side servlets. The `.jss` marker identifies protected Achieve server-side source: bare `.jss` is the simple CommonJS servlet form, `.jss.cjs` explicitly identifies CommonJS, and `.jss.mjs` identifies an ES module. Extensionless requests remain compatible with legacy `.js` servlets. Ordinary `.js`, `.cjs`, and `.mjs` files in the public application tree do not have `.jss` protection and are served as JavaScript resources.
 
 Achieve uses the server project's root directory as its default application directory. Use `setAppPath()` to specify a different application directory. URL directories such as `/accounting/`, `/images/`, and `/servlets/` remain ordinary directories inside that one application.

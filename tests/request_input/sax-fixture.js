@@ -12,7 +12,7 @@ server.on("listening",function () {
 
 process.on("message",function (message) {
     if (message.command === "stop") {
-        achieve.shutdown("SAX input verification complete",function () {
+        server.close(function () {
             process.exit();
         });
     }
