@@ -1,0 +1,1 @@
+exports.servlet=function () { throw new Error("registered fixture failure"); };

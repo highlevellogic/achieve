@@ -21,6 +21,7 @@ if (process.env.NODE_ENV === undefined) process.env.NODE_ENV = 'production';
 let moduleLoadTimes = {};
 let servletResolutionCache = new Map();
 let servletResolutionAliases = new Map();
+let registeredMethods = new Map();
 
 let mode = "development";
 let logging = {
@@ -461,6 +462,24 @@ exports.setAppPath = function (bp) {
     }
   } catch (err) {serverError(String(err),err);}
 };
+const achieveOwnedMethods = new Set(["GET","HEAD","POST","OPTIONS","CONNECT"]);
+const advertisedBuiltInMethods = ["GET","HEAD","POST","OPTIONS"];
+const httpTokenPattern = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+exports.registerMethod = function (method,servletPath) {
+  if (typeof method !== "string" || method.length === 0) throw new TypeError("registerMethod() requires a nonempty method string.");
+  if (!httpTokenPattern.test(method)) throw new TypeError("registerMethod() requires a valid HTTP method token.");
+  if (achieveOwnedMethods.has(method.toUpperCase())) throw new RangeError(method + " is implemented by Achieve and cannot be registered.");
+  if (registeredMethods.has(method)) throw new RangeError(method + " is already registered.");
+  if (typeof servletPath !== "string" || servletPath.length === 0) throw new TypeError("registerMethod() requires a nonempty servlet path string.");
+  if (servletPath.indexOf("?") !== -1 || servletPath.indexOf("#") !== -1 ||
+      path.posix.isAbsolute(servletPath) || path.win32.isAbsolute(servletPath) ||
+      !servletModuleType(servletPath)) {
+    throw new TypeError("registerMethod() requires a relative .jss, .jss.cjs, or .jss.mjs servlet path.");
+  }
+  let fullPath=containedRequestPath(basePath,servletPath);
+  if (!fullPath) throw new TypeError("registerMethod() servlet path must remain beneath the application path.");
+  registeredMethods.set(method,path.relative(basePath,fullPath));
+};
 exports.setCaching = function (b) {
   try {
     if (b && fs.statSync(basePath).mtimeMs === undefined) {
@@ -475,19 +494,19 @@ exports.setCaching = function (b) {
   }
 };
 // CORS
-function checkCorsPolicy(req,res,fileInfo) {
+function checkCorsPolicyPath(req,res,resourcePath) {
     let origin=req.headers.origin;
     let fetchSite=req.headers["sec-fetch-site"];
 
     if (!origin) return true;
     if (fetchSite === "same-origin") return true;
 
-    let resourcePath=fileInfo.path.replace(/\\/g,"/");
+    resourcePath=resourcePath.replace(/\\/g,"/");
     let pos=resourcePath.lastIndexOf("/");
-    let path=resourcePath.substring(0,pos+1);
+    let requestPath=resourcePath.substring(0,pos+1);
     let asset=resourcePath.substring(pos+1);
 
-    if (corsPolicyMatch(origin,path,asset)) {
+    if (corsPolicyMatch(origin,requestPath,asset)) {
         res.setHeader("Access-Control-Allow-Origin",origin);
         res.appendHeader("Vary","Origin");
         return true;
@@ -496,6 +515,14 @@ function checkCorsPolicy(req,res,fileInfo) {
     res.statusCode=403;
     res.end();
     return false;
+}
+function checkCorsPolicy(req,res,fileInfo) {
+    return checkCorsPolicyPath(req,res,fileInfo.path);
+}
+function checkCorsTarget(req,res,resourceTarget) {
+    let queryStart=resourceTarget.indexOf("?");
+    let resourcePath=queryStart === -1 ? resourceTarget : resourceTarget.substring(0,queryStart);
+    return checkCorsPolicyPath(req,res,resourcePath);
 }
 function normalizeCorsPath(path) {
     path = path.trim();
@@ -708,6 +735,58 @@ function handlePreparedServlet(req,res,fileInfo,account,sendBody) {
     } catch (err) {}
 }
 
+function registeredHandlerFileInfo(req,basePath,servletPath) {
+    let fullPath=containedRequestPath(basePath,servletPath);
+    if (!fullPath || !servletModuleType(fullPath)) throw new Error("Invalid registered handler path: " + servletPath);
+    let stats=fs.statSync(fullPath);
+    if (!stats.isFile()) throw new Error("Registered handler is not a file: " + servletPath);
+    let reload=moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs;
+    return new FileInfo(basePath,servletPath,fullPath,path.dirname(fullPath),"servlet",req.headers,
+      mimeList.servlet,"",false,false,false,reload,"",false,"");
+}
+function registeredHandlerFailure(req,res,servletPath,detail,error) {
+    serverError("Registered " + req.method + " handler " + servletPath + " failed: " + detail,error);
+    if (res.destroyed || res.writableEnded) return;
+    if (res.headersSent) return res.destroy();
+    reportError(res,null,500,"Registered method handler is unavailable.");
+}
+function invokeRegisteredServlet(req,res,fileInfo,account) {
+    res.setHeader('server',version);
+    res.setHeader('Content-Type','text/plain');
+    invokeServlet(req,res,fileInfo,account,{},true);
+}
+function completeRegisteredHandlerResolution(req,res,fileInfo,accountInfo) {
+    if (accountInfo.code != 200) return registeredHandlerFailure(req,res,fileInfo.path,accountInfo.reason);
+    if (mode === "production") {
+      servletResolutionCache.set(servletPhysicalIdentity(fileInfo.fullPath),{
+        basePath:fileInfo.basePath,path:fileInfo.path,fullPath:fileInfo.fullPath,
+        dirPath:fileInfo.dirPath,suffix:fileInfo.suffix,contentType:fileInfo.contentType,
+        account:accountInfo.account
+      });
+    }
+    if (!res.destroyed && !res.writableEnded) invokeRegisteredServlet(req,res,fileInfo,accountInfo.account);
+}
+function handleRegisteredMethod(req,res,basePath,resourceTarget) {
+    if (!checkCorsTarget(req,res,resourceTarget)) return;
+    let servletPath=registeredMethods.get(req.method);
+    let fileInfo;
+    try {
+      fileInfo=registeredHandlerFileInfo(req,basePath,servletPath);
+    } catch (err) {
+      return registeredHandlerFailure(req,res,servletPath,rtErrorMsg(err),err);
+    }
+    if (mode === "production") {
+      let cached=servletResolutionCache.get(servletPhysicalIdentity(fileInfo.fullPath));
+      if (cached) return invokeRegisteredServlet(req,res,fileInfo,cached.account);
+    }
+    if (servletModuleType(fileInfo.fullPath) == "module") {
+      getModuleAccount(fileInfo).then(function (accountInfo) {
+        completeRegisteredHandlerResolution(req,res,fileInfo,accountInfo);
+      });
+      return;
+    }
+    completeRegisteredHandlerResolution(req,res,fileInfo,getAccount(res,fileInfo));
+}
 function cachedServlet(basePath,resourceTarget) {
     if (mode !== "production") return;
     let servletIdentity=servletResolutionAliases.get(
@@ -755,11 +834,15 @@ function handleHead (req, res, basePath, resourceTarget) {
 	if (!checkCorsPolicy(req,res,fileInfo)) return;
     handleResolvedResource(req, res, fileInfo, false, resourceTarget);
 }
+function advertisedMethods() {
+    return advertisedBuiltInMethods.concat(Array.from(registeredMethods.keys())).join(", ");
+}
 function handleOptions(req,res,basePath,resourceTarget) {
+    let allow=advertisedMethods();
     if (req.url === "*") {
         developmentLog("OPTIONS * REQUEST");
         res.statusCode=204;
-        res.setHeader("Allow","GET, HEAD, POST, OPTIONS");
+        res.setHeader("Allow",allow);
         res.setHeader("server",version);
         res.end();
         return;
@@ -771,10 +854,10 @@ function handleOptions(req,res,basePath,resourceTarget) {
     developmentLog("OPTIONS REQUEST: " + req);
     res.statusCode=204;
     if (req.headers.origin && req.headers["access-control-request-method"]) {
-        res.setHeader("Access-Control-Allow-Methods","GET, HEAD, POST, OPTIONS");
+        res.setHeader("Access-Control-Allow-Methods",allow);
         res.setHeader("Access-Control-Allow-Headers","Content-Type");
     }
-    res.setHeader("Allow","GET, HEAD, POST, OPTIONS");
+    res.setHeader("Allow",allow);
     res.setHeader("server",version);
     res.end();
 }
@@ -797,12 +880,8 @@ function dispatchMethod(req, res, basePath, resourceTarget) {
             handleOptions(req, res, basePath, resourceTarget);
             break;
 
-        case "PUT":
-        case "DELETE":
-        case "CONNECT":
-        case "TRACE":
-        case "PATCH":
         default:
+            if (registeredMethods.has(req.method)) return handleRegisteredMethod(req,res,basePath,resourceTarget);
             return methodNotSupported(req, res);
     }
 }
@@ -1911,126 +1990,98 @@ async function getModuleAccount (fileInfo) {
   return new Account(accountRoot,startPage,code,reason);
 }
 
-// startObject's init() method runs the code that was loaded by getAccount()
-// It will get parameter values from the request and call the loaded application's init() method.
+// Invoke a loaded servlet with an already prepared parameter object.
+function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
+  let context;
+  let wmsg;
+  try {
+    let loaderState={request:request,response:response,dirPath:fileInfo.dirPath};
+    let boundLoader=load.bind(loaderState);
+    let boundCJSLoader=loadCJS.bind(loaderState);
+    let boundESMLoader=loadESM.bind(loaderState);
+    context=new Context(request,response,params,fileInfo.dirPath,boundLoader,boundCJSLoader,boundESMLoader,fileInfo.proxyOptions,proxies,achieve_proxy);
+    let content=myApp.servlet(context);
+    if (response.writableEnded || context.allowAsync) {
+      developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
+      return;
+    }
+    response.statusCode=200;
+    if (sendBody && content !== undefined && content !== null) response.write(content);
+    response.end();
+  } catch (err) {
+    if (response.headersSent) {
+      wmsg=rtErrorMsg(err);
+      serverError(wmsg,err);
+      if (!response.writableEnded && !response.destroyed) response.destroy();
+      return;
+    }
+    if (response.writableEnded || (context && context.allowAsync)) {
+      developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
+      return;
+    }
+    wmsg=rtErrorMsg(err);
+    response.statusCode=500;
+    response.write(wmsg);
+    response.end();
+    serverError(wmsg,err);
+  }
+}
+// startObject parses parameters for Achieve-owned methods before invoking a servlet.
 function startObject (req,res,fileInfo,myApp,sendBody = true) {
-  this.req = req;
-  this.res = res;
-  this.fileInfo = fileInfo;
-  this.myApp = myApp;
-  this.sendBody = sendBody;
-  this.load = load;
-  // this.init() is called to extract data from request, run the application, and send response
-  this.init = function () {
-	let request = this.req;
-	let response = this.res;
-  let fileInfo = this.fileInfo;
-  let load = this.load;
-    let myApp = this.myApp;
-    let sendBody = this.sendBody;
-	// This service loads the application file and calls exports.servlet(context)
-	  // Extract data sent from the browser for POST or GET
+  this.req=req;
+  this.res=res;
+  this.fileInfo=fileInfo;
+  this.myApp=myApp;
+  this.sendBody=sendBody;
+  this.init=function () {
+    let request=this.req;
+    let response=this.res;
+    let fileInfo=this.fileInfo;
+    let myApp=this.myApp;
+    let sendBody=this.sendBody;
     let queryChunks=[];
-    let wmsg;
-    function runServlet(params) {
-      let context;
-
-      try {
-        let loaderState={request:request,response:response,dirPath:fileInfo.dirPath};
-        let boundLoader=load.bind(loaderState);
-        let boundCJSLoader=loadCJS.bind(loaderState);
-        let boundESMLoader=loadESM.bind(loaderState);
-        context = new Context(request, response, params, fileInfo.dirPath, boundLoader, boundCJSLoader, boundESMLoader, fileInfo.proxyOptions, proxies, achieve_proxy);
-        let content = myApp.servlet(context);
-
-        if (response.writableEnded || context.allowAsync) {
-          developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
-          return;
-        }
-
-        response.statusCode=200;
-        if (sendBody && content !== undefined && content !== null) response.write(content);
-        response.end();
-      } catch (err) {
-        if (response.headersSent) {
-          wmsg=rtErrorMsg(err);
-          serverError(wmsg,err);
-          if (!response.writableEnded && !response.destroyed) {
-            response.destroy();
-          }
-          return;
-        }
-        if (response.writableEnded || (context && context.allowAsync)) {
-          developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
-          return;
-        }
-        wmsg=rtErrorMsg(err);
-        response.statusCode=500;
-        response.write(wmsg);
-        response.end();
-        serverError(wmsg,err);
-      }
-    }
-
-    response.setHeader('server', version);
+    response.setHeader('server',version);
     response.setHeader('Content-Type','text/plain');
-
-   if (this.req.method == "POST") {
-    developmentLog("using POST");
-
-    let contentType = (request.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
-
-    if (contentType != "" &&
-        contentType != "application/json" &&
-        contentType != "application/x-www-form-urlencoded") {
-
-        runServlet({});
+    if (request.method == "POST") {
+      developmentLog("using POST");
+      let contentType=(request.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
+      if (contentType != "" && contentType != "application/json" &&
+          contentType != "application/x-www-form-urlencoded") {
+        invokeServlet(request,response,fileInfo,myApp,{},sendBody);
         return;
-    }
-
-    let inputBytes = 0;
-
-    request.on("data", function(data) {
+      }
+      let inputBytes=0;
+      request.on("data",function (data) {
         inputBytes += data.length;
-
         if (inputBytes > bufferedInputLimit) {
-            response.statusCode = 413;
-            response.end("Payload Too Large");
-            return;
+          response.statusCode=413;
+          response.end("Payload Too Large");
+          return;
         }
-
         queryChunks.push(data);
-    });
-
-    request.on("end", function() {
+      });
+      request.on("end",function () {
         if (response.writableEnded) return;
-
         let queryData=Buffer.concat(queryChunks,inputBytes).toString("utf8");
         let params;
-
         if (contentType == "application/json") {
-            try {
-                params = JSON.parse(queryData);
-            } catch (err) {
-                response.statusCode = 400;
-                response.end("Bad Request: Invalid JSON data.");
-                serverError("Invalid JSON data received.", err);
-                return;
-            }
+          try {
+            params=JSON.parse(queryData);
+          } catch (err) {
+            response.statusCode=400;
+            response.end("Bad Request: Invalid JSON data.");
+            serverError("Invalid JSON data received.",err);
+            return;
+          }
         } else {
-            params = querystring.parse(queryData);
+          params=querystring.parse(queryData);
         }
-
-        runServlet(params);
+        invokeServlet(request,response,fileInfo,myApp,params,sendBody);
       });
-    } else if (this.req.method == "GET" || this.req.method == "HEAD") {
-      let params = querystring.parse(fileInfo.queryString);
-      runServlet(params);
-
+    } else if (request.method == "GET" || request.method == "HEAD") {
+      invokeServlet(request,response,fileInfo,myApp,querystring.parse(fileInfo.queryString),sendBody);
     } else {
-      response.statusCode = 501;
-      console.log(this.req.method + " request method is not yet supported on the server: " + version);
-      response.end(this.req.method + " request method is not yet supported on the server: " + version);
+      methodNotSupported(request,response);
     }
   };
 }
