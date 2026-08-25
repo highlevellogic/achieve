@@ -7,6 +7,7 @@ const { pathToFileURL } = require('node:url');
 
 let http;
 let https;
+let http2;
 let zlib;
 let streamPipeline;
 let compressionJobs = new Set();
@@ -403,7 +404,6 @@ function initializeLogging() {
 }
 
 let reqCount = 0;
-let connectionArray;
    // basePath is the root directory for applications. (Like webapps on Tomcat or htdocs on Apache httpd.)
    // The default is the directory of the entry point or main module for the application.
    // It can be reset by the app developer using .setAppPath(appDir);
@@ -628,12 +628,7 @@ function handleResolvedResource(req, res, fileInfo, sendBody = true, servletCach
 		reportError(res,fileInfo.fullPath,500,"Error attempting to serve " + safeSourceIdentity(fileInfo.fullPath),sendBody);
 	 }
    } else if (fileInfo.audioVisual) {
-     // Bugs related to streaming video over http2.
-     if (false /*this.protocol == "http2.https" */) {
-       reportError(res,fileInfo.fullPath,500,"Video streaming not supported on HTTP2.",sendBody);
-     } else {
-       stream(req,res,fileInfo,sendBody);
-     }
+     stream(req,res,fileInfo,sendBody);
    // If file does not exist, return 404 File not found error.
    } else if (fileInfo.noSuchFile) {
 	   reportError(res,fileInfo.fullPath,404,"File not found: " + fileInfo.fullPath,sendBody);
@@ -1084,7 +1079,6 @@ var achieveApp = function (req, res) {
      res.end("Bad Request");
      return;
    }
-   req.protocol = this.protocol;
    return dispatchMethod(req, res, basePath, targetInfo.resourceTarget);
  } catch (e) {
    serverError("Catchall error in achieveApp.",e);
@@ -1154,9 +1148,9 @@ exports.listen2 = function (ioptions) {
   if (!initializeLogging()) return;
 
   if (ssl) {
-    server = http2.createSecureServer(ioptions, achieveApp.bind({protocol:"http2.https"}));
+    server = http2.createSecureServer(ioptions, achieveApp);
   } else {
-    server = http2.createServer(achieveApp.bind({protocol:"http2.http"}));
+    server = http2.createServer(achieveApp);
   }
   attachStartupLogging(server,ssl ? "http2.https" : "http2.http",sport);
   server.listen(sport);
@@ -1167,7 +1161,6 @@ exports.slisten = function (ioptions) {
   https = require('https');
   
   let server;
-  let tlsOptions;
   let sport;
 
   try {
@@ -1199,17 +1192,10 @@ exports.slisten = function (ioptions) {
   if (!bCachingCheck) exports.setCaching(bCaching);
   if (!initializeLogging()) return;
   
-  server = https.createServer(ioptions, achieveApp.bind({protocol:"https"}));
+  server = https.createServer(ioptions, achieveApp);
   handleConnectRequests(server);
   attachStartupLogging(server,"https",sport);
   server.listen(sport);
-/*
-  server.on('connection', function (socket) {
-    console.log("*********** CONNECTION : " + JSON.stringify(socket));
-    connectionArray = socket;
-  });
-*/
-
   return server;
   
 };
@@ -1239,7 +1225,7 @@ exports.listen = function (port) {
   if (!bCachingCheck) exports.setCaching(bCaching);
   if (!initializeLogging()) return;
   
-  server = http.createServer(achieveApp.bind({protocol:"http"}));
+  server = http.createServer(achieveApp);
   handleConnectRequests(server);
   attachStartupLogging(server,"http",port);
   server.listen(port);
@@ -1600,7 +1586,6 @@ developmentLog("req.url: " + req.url);
      if (proxyRequest) {
        proxyOptions = proxyRequest.options;
        proxyOptions.url = requestUrl = proxyRequest.url;
-     //  proxyOptions.connectionArray = connectionArray;
        achieve_proxy = _this.loadModule('achieve-proxy');
      } else {
        // console.log("proxyRequest not true: " + proxyRequest);
