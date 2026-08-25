@@ -17,11 +17,6 @@ const achieve=require("../../achieve");
 achieve.setMode(process.env.ACHIEVE_CACHE_MODE);
 achieve.setLogging(false);
 achieve.setAppPath(process.env.ACHIEVE_CACHE_APP);
-achieve.setProxy({
-    "/proxyTarget.jss": {
-        host:"127.0.0.1"
-    }
-});
 const server=achieve.listen(Number(process.env.ACHIEVE_CACHE_PORT));
 server.on("listening",function () { process.send({event:"ready"}); });
 

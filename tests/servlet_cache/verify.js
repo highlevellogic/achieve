@@ -25,10 +25,6 @@ const helloA=path.join(appA,"hello.jss");
 const helloB=path.join(appB,"hello.jss");
 write(helloA,servlet("A1"));
 write(helloB,servlet("B"));
-write(path.join(appA,"proxyTarget.jss"),
-    "exports.servlet=function (context) { return JSON.stringify({"+
-    "path:context.proxyOptions.path,query:context.params}); };\n");
-
 function assert(condition,message) {
     if (!condition) throw new Error(message);
 }
@@ -107,23 +103,6 @@ async function stop(child) {
         assert(aliasCounts.statSync === 0 && aliasCounts.existsSync === 0,
             "Servlet aliases performed duplicate discovery: "+JSON.stringify(aliasCounts));
 
-        response=await request(24400,"/proxyTarget.jss?a=1");
-        assert(response.status === 200 &&
-            response.body === '{"path":"?a=1","query":{}}',
-            "Initial proxied servlet request had incorrect request state: "+response.body);
-        await command(child,"count-start","count-started",{});
-        response=await request(24400,"/proxyTarget.jss?a=2");
-        assert(response.status === 200 &&
-            response.body === '{"path":"?a=2","query":{}}',
-            "Cached proxied servlet retained the first query: "+response.body);
-        response=await request(24400,"/proxyTarget.jss");
-        assert(response.status === 200 &&
-            response.body === '{"path":"","query":{}}',
-            "Cached proxied servlet retained stale query text: "+response.body);
-        const proxyCounts=(await command(child,"count-stop","counts",{})).counts;
-        assert(!proxyCounts.paths.some(value => value.includes("proxyTarget")),
-            "Cached proxied servlet performed discovery: "+JSON.stringify(proxyCounts));
-
         write(helloA,servlet("A2"),true);
         response=await request(24400,"/hello.jss?value=stable");
         assert(response.status === 200 && response.body === "A1:stable",
@@ -172,7 +151,6 @@ async function stop(child) {
         console.log("PASS servlet cache verification");
         console.log("STEADY_STATE_COUNTS "+JSON.stringify(steadyCounts));
         console.log("ALIAS_COUNTS "+JSON.stringify(aliasCounts));
-        console.log("PROXY_COUNTS "+JSON.stringify(proxyCounts));
     } finally {
         if (child && child.exitCode === null) await stop(child);
         fs.rmSync(testRoot,{recursive:true,force:true});

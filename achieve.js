@@ -417,18 +417,6 @@ let reqCount = 0;
    let nv = nodeVersion();
    let etagString = nv + shortVersion;
    let defaultCharSet="utf-8";
-   let proxies=false;
-   let achieve_proxy=false;
-   let _this = this;
-
-exports.setProxy = function (prox) {
-  if (!proxies) proxies = {};
-  try {
-    for (var key in prox) proxies[key.replace(/\\/g,"/")] = prox[key];
-  } catch (e) {
-    serverError("error: problem with proxy object: " + e.message,e);
-  }
-};
 exports.showMimeTypes = function () {
   showMimes=true;
 };
@@ -686,29 +674,13 @@ function servletPhysicalIdentity(fullPath) {
 }
 
 function servletRequestIdentity(basePath,resourceTarget) {
-    let proxyRequest=proxies && checkProxies(resourceTarget);
-    let resourcePath=servletResourcePath(
-      proxyRequest ? proxyRequest.url : resourceTarget
-    );
-    let identity=containedRequestPath(basePath,resourcePath);
+    let identity=containedRequestPath(basePath,servletResourcePath(resourceTarget));
     if (!identity) return false;
     return servletPhysicalIdentity(identity);
 }
 
-function prepareProxyRequest(resourceTarget) {
-    if (!proxies) return false;
-    let proxyRequest=checkProxies(resourceTarget);
-    if (proxyRequest) {
-      proxyRequest.options.url=proxyRequest.url;
-      achieve_proxy = _this.loadModule('achieve-proxy');
-    }
-    return proxyRequest;
-}
-
 function cachedServletFileInfo(cached,req,resourceTarget) {
-    let proxyRequest=prepareProxyRequest(resourceTarget);
-    let currentTarget=proxyRequest ? proxyRequest.url : resourceTarget;
-    let queryStart=currentTarget.indexOf("?");
+    let queryStart=resourceTarget.indexOf("?");
     return new FileInfo(
       cached.basePath,
       cached.path,
@@ -717,17 +689,15 @@ function cachedServletFileInfo(cached,req,resourceTarget) {
       cached.suffix,
       req.headers,
       cached.contentType,
-      queryStart === -1 ? "" : currentTarget.substring(queryStart+1),
+      queryStart === -1 ? "" : resourceTarget.substring(queryStart+1),
       false,
       false,
       false,
       false,
       "",
-      false,
-      proxyRequest ? proxyRequest.options : ""
+      false
     );
 }
-
 function handlePreparedServlet(req,res,fileInfo,account,sendBody) {
     if (evaluatePreconditions(req,res,true)) return;
     try {
@@ -742,7 +712,7 @@ function registeredHandlerFileInfo(req,basePath,servletPath) {
     if (!stats.isFile()) throw new Error("Registered handler is not a file: " + servletPath);
     let reload=moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs;
     return new FileInfo(basePath,servletPath,fullPath,path.dirname(fullPath),"servlet",req.headers,
-      mimeList.servlet,"",false,false,false,reload,"",false,"");
+      mimeList.servlet,"",false,false,false,reload,"",false);
 }
 function registeredHandlerFailure(req,res,servletPath,detail,error) {
     serverError("Registered " + req.method + " handler " + servletPath + " failed: " + detail,error);
@@ -1417,7 +1387,7 @@ function reportError (res,account,statusCode,reason,sendBody = true) {
     res.end();
   }
 }
-function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag,audioVisual,proxyOptions,notAcceptable = false) {
+function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag,audioVisual,notAcceptable = false) {
   this.basePath = basePath;
   this.path = path;
   this.fullPath = fullPath;
@@ -1432,7 +1402,6 @@ function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,que
   this.reload = reload;
   this.etag = etag;
   this.audioVisual = audioVisual;
-  this.proxyOptions = proxyOptions;
   this.notAcceptable = notAcceptable;
 }
 function hasEntityTagPrecondition (req) {
@@ -1522,7 +1491,7 @@ function evaluatePreconditions (req,res,exists,currentETag) {
   }
   return false;
 }
-function Context (req,res,parms,dirPath,load,loadCJS,loadESM,proxyOptions=false,proxies=false,proxy) {
+function Context (req,res,parms,dirPath,load,loadCJS,loadESM) {
   this.request = req;
   this.response = res;
   this.parms = parms; // deprecate
@@ -1531,9 +1500,6 @@ function Context (req,res,parms,dirPath,load,loadCJS,loadESM,proxyOptions=false,
   this.load = load;
   this.loadCJS = loadCJS;
   this.loadESM = loadESM;
-  this.proxy = proxy;
-  this.proxyOptions = proxyOptions;
-  this.proxies = proxies;
   this.rtErrorMsg = rtErrorMsg;
   this.allowAsync = false;
 }
@@ -1635,20 +1601,6 @@ let defaultFiles = [
   "index.jss.cjs",
   "index.js"
 ];
-function checkProxies (reqPath) {
-  let proxyRequest = false;
-  Object.keys(proxies).forEach(proxy => {
-    if (reqPath.startsWith(proxy)) {
-      proxyRequest = {};
-      proxyRequest.options = {};
-      proxyRequest.url = proxy;
-      Object.assign(proxyRequest.options, proxies[proxy]);
-      proxyRequest.options.path = reqPath.substring(proxy.length);
-      return proxyRequest;
-    }
-  });
-  return proxyRequest;
-}
 function setFileInfo (req, res, basePath, requestUrl) {
    let serveFile=true;
    let headers=req.headers;
@@ -1656,20 +1608,9 @@ function setFileInfo (req, res, basePath, requestUrl) {
    if (!headers['accept-encoding']) headers['accept-encoding'] = '';  // gzip, etc. 
    let reload=false;
    let thisBasePath=basePath;
-   let proxyOptions="";
    let audioVisual = false;
    let notAcceptable = false;
 developmentLog("req.url: " + req.url);
-   if (proxies) {
-     let proxyRequest = checkProxies(requestUrl);
-     if (proxyRequest) {
-       proxyOptions = proxyRequest.options;
-       proxyOptions.url = requestUrl = proxyRequest.url;
-       achieve_proxy = _this.loadModule('achieve-proxy');
-     } else {
-       // console.log("proxyRequest not true: " + proxyRequest);
-     }
-   }
    let queryStart = requestUrl.indexOf("?");
    let uncheckedPath = queryStart === -1
      ? requestUrl
@@ -1679,9 +1620,9 @@ developmentLog("req.url: " + req.url);
      : requestUrl.substring(queryStart + 1);
     // checkPath returns path request after performing various checks, (See checkPath() for details.)
    let checkedPath = checkPath(thisBasePath,uncheckedPath,uncheckedPath.endsWith("/"));
-   if (checkedPath.action == "noSuchFile") return new FileInfo(thisBasePath,requestUrl,checkedPath.filePath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
+   if (checkedPath.action == "noSuchFile") return new FileInfo(thisBasePath,requestUrl,checkedPath.filePath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual);
    // If null, redirect in FileInfo object is set to true. (Needs redirect to add trailing slash.)
-   if (checkedPath.action == "redirect") return new FileInfo(thisBasePath,requestUrl,fullPath,dirPath,suffix,headers,contentType,queryString,false,true,false,reload,etag,audioVisual,proxyOptions);
+   if (checkedPath.action == "redirect") return new FileInfo(thisBasePath,requestUrl,fullPath,dirPath,suffix,headers,contentType,queryString,false,true,false,reload,etag,audioVisual);
    let currentPath = checkedPath.filePath;
    suffix = path.extname(currentPath).substring(1) || "";
    fullPath = path.join(thisBasePath,currentPath);
@@ -1731,7 +1672,7 @@ developmentLog("req.url: " + req.url);
         etag = representationETag(checkedPath.stats.mtimeMs,etagCoding);
       }
     }
-    return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual,proxyOptions,notAcceptable);
+    return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual,notAcceptable);
 }
 function removeCompressionTemp (tempPath,callback) {
   fs.unlink(tempPath,function (err) {
@@ -1999,7 +1940,7 @@ function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
     let boundLoader=load.bind(loaderState);
     let boundCJSLoader=loadCJS.bind(loaderState);
     let boundESMLoader=loadESM.bind(loaderState);
-    context=new Context(request,response,params,fileInfo.dirPath,boundLoader,boundCJSLoader,boundESMLoader,fileInfo.proxyOptions,proxies,achieve_proxy);
+    context=new Context(request,response,params,fileInfo.dirPath,boundLoader,boundCJSLoader,boundESMLoader);
     let content=myApp.servlet(context);
     if (response.writableEnded || context.allowAsync) {
       developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
