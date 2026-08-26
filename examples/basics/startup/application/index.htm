@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Achieve Startup example</title>
+</head>
+<body>
+    <main>
+        <h1>Startup: an Achieve application</h1>
+        <p>This example demonstrates a normal startup file and a separate application directory containing public resources and protected servlets.</p>
+        <p>From the repository directory, start Node from this example's directory:</p>
+        <pre><code>cd examples/basics/startup
+node startup.mjs</code></pre>
+        <p>Then open <a href="http://localhost:8989/"><code>http://localhost:8989/</code></a>. If the examples catalog is already using port 8989, stop it before starting this focused application.</p>
+        <p>The first line of <code>startup.mjs</code> loads Achieve using modern ESM syntax. Achieve also supports CommonJS startup files.</p>
+        <p><code>setAppPath("./application")</code> selects this <code>application/</code> directory. The relative path starts from the directory where Node is started, so run this example from <code>examples/basics/startup</code>. <code>listen()</code> then starts the server.</p>
+        <p><code>setAppPath()</code> is optional, but recommended: it lets an application live wherever its developer chooses and makes the relationship between URL paths and application directories explicit. Strictly, only loading Achieve and calling <code>listen()</code> are required.</p>
+        <p>Intermediate examples introduce more Achieve configuration options.</p>
+        <p>Expected result: this page loads, and the <a href="servlets/hello.jss">hello servlet</a> returns a response from server-side code.</p>
+    </main>
+</body>
+</html>
