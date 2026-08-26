@@ -168,14 +168,6 @@ class FakeServer extends EventEmitter {
 
     check("stats is function-local after requests",Object.hasOwn(global,"stats"),false);
 
-    const originalMainModulePath=require.main.paths[0];
-    require.main.paths[0]=path.join(__dirname,"load_module");
-    try {
-        achieve.loadModule("audit");
-    } finally {
-        require.main.paths[0]=originalMainModulePath;
-    }
-    check("loadModule uses local stats",Object.hasOwn(global,"stats"),false);
 
     const httpPorts=[];
     const httpsPorts=[];

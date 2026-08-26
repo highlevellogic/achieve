@@ -173,7 +173,7 @@ regression is needed. Without it, that filename exercises missing-resource
 behavior. The confirmed regression used a 276,134,947-byte file with
 Range: bytes=276103168-.
 
-The .gz files under examples/confirm and tests/helper are intentional compression fixtures.
+The .gz file under tests/helper is an intentional compression fixture.
 They expand exactly to their neighboring source files and are not globally
 ignored.
 

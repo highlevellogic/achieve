@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const querystring = require('querystring');
+const { createRequire } = require('node:module');
 const { pathToFileURL } = require('node:url');
 // Optional modules. Load only when used.
 
@@ -30,7 +31,9 @@ let logging = {
   access: false
 };
 let loggingConfigurationLocked = false;
-let serverInstallationPath = getServerInstallationPath();
+let serverEntryPath = getServerEntryPath();
+let serverInstallationPath = path.dirname(serverEntryPath);
+let applicationRequire = createRequire(serverEntryPath);
 let logRoot = path.join(serverInstallationPath,"logs");
 let serverLogSink;
 let accessLogSink;
@@ -38,11 +41,14 @@ let accessLogSink;
 let corsPolicies = new Map();
 let bufferedInputLimit = 1024 * 1024;  // default 1 MiB
 
-function getServerInstallationPath() {
+function getServerEntryPath() {
   if (require.main && typeof require.main.filename === "string" && require.main.filename.length > 0) {
-    return path.dirname(path.resolve(require.main.filename));
+    return path.resolve(require.main.filename);
   }
-  return path.resolve(process.cwd());
+  if (typeof process.argv[1] === "string" && process.argv[1].length > 0) {
+    return path.resolve(process.argv[1]);
+  }
+  return path.join(path.resolve(process.cwd()),"achieve-entry.js");
 }
 
 function ensureLoggingConfigurable(functionName) {
@@ -1131,7 +1137,6 @@ var achieveApp = function (req, res) {
    return dispatchMethod(req, res, basePath, targetInfo.resourceTarget);
  } catch (e) {
    serverError("Catchall error in achieveApp.",e);
-  console.log(e);
    if (res.destroyed || res.writableEnded) return;
    if (res.headersSent) {
      res.destroy();
@@ -2323,16 +2328,14 @@ function output (response,ext,charset,mimeType) {
 // To provide servlet characteristics to locally installed node modules
 // including achieve itself
 exports.loadModule = function (moduleName) {
-  let fullPath;
-  let localModulePath = require.main.paths[0];
   try {
-    fullPath = path.normalize(localModulePath +'/'+moduleName+'/'+moduleName+'.js');
+    let fullPath = applicationRequire.resolve(moduleName);
     const stats = fs.statSync(fullPath);
-	  if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
-	    delete require.cache[require.resolve(fullPath)];
-      moduleLoadTimes[fullPath] = stats.mtimeMs; // new Date().getTime();
-	  }
-    return require(moduleName);
+    if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
+      delete require.cache[fullPath];
+      moduleLoadTimes[fullPath] = stats.mtimeMs;
+    }
+    return applicationRequire(moduleName);
   } catch (err) {
     serverError("loadModule: " + rtErrorMsg(err),err);
   }
@@ -2370,49 +2373,6 @@ let loadESM = async function (filePath) {
   moduleLoadTimes[fullPath]=importedModule.mtimeMs;
   return importedModule.loadedModule;
 }
-/* Modify this to collect a list of files to preload (JSO) - do preloads when server starts
-exports.preload1 = function (loadList) {
-  if (loadList.length > 0) {
-    loadList = loadList.split(",");
-  } else {
-    console.log("No files in preload list.");
-    return;
-  }
-  for (let lf of loadList) {
-    try {
-      require(lf);
-    } catch (err) {
-      console.log(lf + " failed to load.");
-    }
-  }
-}
-// use checkPath() first to get complete file information, including the right application directory
-let preload = function (filePath) {
-  if (path.extname(filePath) != ".js") filePath = filePath+".js";
-  let fullPath = path.join(basePath,filePath);
-  try {
-    stats = fs.statSync(fullPath);
-  	if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
-	    delete require.cache[require.resolve(fullPath)];
-	  }
-    moduleLoadTimes[fullPath] = new Date().getTime();
-    let temp = require(fullPath);
-    console.log("preloaded: " + fullPath);
-    return temp;
-  } catch (err) {
-    var stop1 = err.stack.indexOf(err.message);
-	  var stop = err.stack.substring(0,stop1).lastIndexOf('\n');
-	  var errDescription = err.stack.substring(basePath.length,stop).replace(/\\/g,"/");
-	  reason = "Failed to load module: " + err.message + " \nreason: " + errDescription;
-	  console.log(reason);
-  } 
-}
-*/
-/*
-let blank = {
-  init: function () {return "";}
-}
-*/
 const Base64 = {
   _Rixits:"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/",
   fromNumber : function(residual) {

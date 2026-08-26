@@ -187,9 +187,9 @@ async function runningCase(scenario, options, inspect) {
             check("development request trace is visible", testCase.stdout().includes("GET") && testCase.stdout().includes("req.url:"));
             check("default server logging creates no files", serverLogFiles(defaultRoot).length === 0);
             check("configuration locks after startup", Object.values(testCase.message.checks).every(Boolean));
-            const getResult = await request(testCase.message.port, {path: "/get/servlets/hello.jss"});
-            const headResult = await request(testCase.message.port, {method: "HEAD", path: "/head/servlets/hello.jss"});
-            const postResult = await request(testCase.message.port, {method: "POST", path: "/post/servlets/hello.jss", body: "value=1"});
+            const getResult = await request(testCase.message.port, {path: "/basics/get/servlets/hello.jss"});
+            const headResult = await request(testCase.message.port, {method: "HEAD", path: "/basics/head/servlets/hello.jss"});
+            const postResult = await request(testCase.message.port, {method: "POST", path: "/basics/post/servlets/hello.jss", body: "value=1"});
             const containmentResult = await request(testCase.message.port, {path: "/..%2fpackage.json"});
             check("GET .jss regression", getResult.status === 200 && getResult.body.toString().includes("Hello World"));
             check("HEAD regression", headResult.status === 200 && headResult.body.length === 0);
@@ -439,7 +439,7 @@ async function runningCase(scenario, options, inspect) {
             injectStreamErrorCategory: "access"
         }, async function (testCase) {
             const before = accessRecords(accessRuntimeRoot).length;
-            const response = await request(testCase.message.port, {path: "/get/servlets/hello.jss?after=failure"});
+            const response = await request(testCase.message.port, {path: "/basics/get/servlets/hello.jss?after=failure"});
             await new Promise(resolve => setTimeout(resolve, 75));
             const after = accessRecords(accessRuntimeRoot).length;
             const serverLog = fs.readFileSync(serverLogFiles(accessRuntimeRoot)[0], "utf8");
