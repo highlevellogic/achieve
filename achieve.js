@@ -23,6 +23,7 @@ let moduleLoadTimes = {};
 let servletResolutionCache = new Map();
 let servletResolutionAliases = new Map();
 let registeredMethods = new Map();
+let routeMap;
 
 let mode = "development";
 let logging = {
@@ -456,6 +457,74 @@ exports.setAppPath = function (bp) {
     }
   } catch (err) {serverError(String(err),err);}
 };
+function duplicateTopLevelJsonKey(source) {
+  let depth=0;
+  let seen=new Set();
+  for (let i=0; i<source.length; i++) {
+    if (source[i] === "{") {
+      depth++;
+      continue;
+    }
+    if (source[i] === "}") {
+      depth--;
+      continue;
+    }
+    if (source[i] !== '"') continue;
+    let start=i;
+    for (i++; i<source.length; i++) {
+      if (source[i] === "\\") {
+        i++;
+      } else if (source[i] === '"') {
+        break;
+      }
+    }
+    if (depth !== 1) continue;
+    let next=i+1;
+    while (/\s/.test(source[next])) next++;
+    if (source[next] !== ":") continue;
+    let key=JSON.parse(source.substring(start,i+1));
+    if (seen.has(key)) return key;
+    seen.add(key);
+  }
+}
+function validRoutePath(value) {
+  if (typeof value !== "string" || value.length === 0 || value.charAt(0) !== "/") return false;
+  if (value.indexOf("?") !== -1 || value.indexOf("#") !== -1 || value.indexOf("\\") !== -1 || value.indexOf("\0") !== -1) return false;
+  if (path.posix.normalize(value) !== value) return false;
+  return !value.split("/").some(part => part === "." || part === "..");
+}
+exports.setRouteMap = function (routeMapPath) {
+  if (typeof routeMapPath !== "string" || routeMapPath.length === 0) {
+    throw new TypeError("setRouteMap() requires a nonempty route-map file path.");
+  }
+  let source;
+  try {
+    source=fs.readFileSync(path.resolve(routeMapPath),"utf8");
+  } catch (err) {
+    throw new Error("setRouteMap() could not read the route-map file.");
+  }
+  let configured;
+  try {
+    configured=JSON.parse(source);
+  } catch (err) {
+    throw new SyntaxError("setRouteMap() requires valid JSON.");
+  }
+  if (configured === null || Array.isArray(configured) || typeof configured !== "object") {
+    throw new TypeError("setRouteMap() requires a JSON object.");
+  }
+  let duplicate=duplicateTopLevelJsonKey(source);
+  if (duplicate !== undefined) throw new SyntaxError("setRouteMap() contains a duplicate public route: " + duplicate);
+  let entries=Object.entries(configured);
+  if (entries.length === 0) throw new TypeError("setRouteMap() requires at least one route.");
+  let validated=new Map();
+  for (let [publicPath,targetPath] of entries) {
+    if (!validRoutePath(publicPath)) throw new TypeError("setRouteMap() contains an invalid public route: " + publicPath);
+    if (!validRoutePath(targetPath)) throw new TypeError("setRouteMap() contains an invalid mapped target for: " + publicPath);
+    if (!containedRequestPath(basePath,targetPath)) throw new TypeError("setRouteMap() mapped targets must remain beneath the application path.");
+    validated.set(publicPath,targetPath);
+  }
+  routeMap=validated;
+};
 const achieveOwnedMethods = new Set(["GET","HEAD","POST","OPTIONS","CONNECT"]);
 const advertisedBuiltInMethods = ["GET","HEAD","POST","OPTIONS"];
 const httpTokenPattern = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
@@ -772,48 +841,61 @@ function cachedServlet(basePath,resourceTarget) {
     return servletResolutionCache.get(servletIdentity);
 }
 
-function handleGet(req, res, basePath, resourceTarget) {
+function mappedResourceTarget(resourceTarget) {
+    if (routeMap === undefined || typeof resourceTarget !== "string") return;
+    let queryStart=resourceTarget.indexOf("?");
+    let publicPath=queryStart === -1 ? resourceTarget : resourceTarget.substring(0,queryStart);
+    let targetPath=routeMap.get(publicPath);
+    if (targetPath === undefined) return;
+    return queryStart === -1 ? targetPath : targetPath + resourceTarget.substring(queryStart);
+}
+function checkResourceCors(req,res,fileInfo,publicTarget) {
+    return publicTarget === undefined
+      ? checkCorsPolicy(req,res,fileInfo)
+      : checkCorsTarget(req,res,publicTarget);
+}
+function handleGet(req, res, basePath, resourceTarget, publicTarget) {
     let cached=cachedServlet(basePath,resourceTarget);
     if (cached) {
         let fileInfo=cachedServletFileInfo(cached,req,resourceTarget);
-        if (!checkCorsPolicy(req,res,fileInfo)) return;
+        if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
         handlePreparedServlet(req,res,fileInfo,cached.account,true);
         return;
     }
     let fileInfo=setFileInfo(req,res,basePath,resourceTarget);
-    if (!checkCorsPolicy(req,res,fileInfo)) return;
+    if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
     handleResolvedResource(req,res,fileInfo,true,resourceTarget);
 }
 
-function handlePost (req, res, basePath, resourceTarget) {
+function handlePost (req, res, basePath, resourceTarget, publicTarget) {
     let cached=cachedServlet(basePath,resourceTarget);
     if (cached) {
 	  let fileInfo=cachedServletFileInfo(cached,req,resourceTarget);
-      if (!checkCorsPolicy(req,res,fileInfo)) return;
+      if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
       handlePreparedServlet(req,res,fileInfo,cached.account,true);
       return;
     }
     let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
-	if (!checkCorsPolicy(req,res,fileInfo)) return;
+	if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
     handleResolvedResource(req, res, fileInfo, true, resourceTarget);
 }
 
-function handleHead (req, res, basePath, resourceTarget) {
+function handleHead (req, res, basePath, resourceTarget, publicTarget) {
     let cached=cachedServlet(basePath,resourceTarget);
     if (cached) {
 	  let fileInfo=cachedServletFileInfo(cached,req,resourceTarget);
-      if (!checkCorsPolicy(req,res,fileInfo)) return;
+      if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
       handlePreparedServlet(req,res,fileInfo,cached.account,false);
       return;
     }
     let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
-	if (!checkCorsPolicy(req,res,fileInfo)) return;
+	if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
     handleResolvedResource(req, res, fileInfo, false, resourceTarget);
 }
 function advertisedMethods() {
     return advertisedBuiltInMethods.concat(Array.from(registeredMethods.keys())).join(", ");
 }
-function handleOptions(req,res,basePath,resourceTarget) {
+function handleOptions(req,res,basePath,resourceTarget,publicTarget) {
     let allow=advertisedMethods();
     if (req.url === "*") {
         developmentLog("OPTIONS * REQUEST");
@@ -825,7 +907,7 @@ function handleOptions(req,res,basePath,resourceTarget) {
     }
 
     let fileInfo=setFileInfo(req,res,basePath,resourceTarget);
-    if (!checkCorsPolicy(req,res,fileInfo)) return;
+    if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
 
     developmentLog("OPTIONS REQUEST: " + req);
     res.statusCode=204;
@@ -839,21 +921,30 @@ function handleOptions(req,res,basePath,resourceTarget) {
 }
 
 function dispatchMethod(req, res, basePath, resourceTarget) {
+    let mappedTarget;
     switch (req.method) {
         case "GET":
-            handleGet(req, res, basePath, resourceTarget);
+            mappedTarget=mappedResourceTarget(resourceTarget);
+            handleGet(req,res,basePath,mappedTarget === undefined ? resourceTarget : mappedTarget,
+              mappedTarget === undefined ? undefined : resourceTarget);
             break;
 
         case "POST":
-            handlePost(req, res, basePath, resourceTarget);
+            mappedTarget=mappedResourceTarget(resourceTarget);
+            handlePost(req,res,basePath,mappedTarget === undefined ? resourceTarget : mappedTarget,
+              mappedTarget === undefined ? undefined : resourceTarget);
             break;
 
         case "HEAD":
-            handleHead(req, res, basePath, resourceTarget);
+            mappedTarget=mappedResourceTarget(resourceTarget);
+            handleHead(req,res,basePath,mappedTarget === undefined ? resourceTarget : mappedTarget,
+              mappedTarget === undefined ? undefined : resourceTarget);
             break;
 
         case "OPTIONS":
-            handleOptions(req, res, basePath, resourceTarget);
+            mappedTarget=mappedResourceTarget(resourceTarget);
+            handleOptions(req,res,basePath,mappedTarget === undefined ? resourceTarget : mappedTarget,
+              mappedTarget === undefined ? undefined : resourceTarget);
             break;
 
         default:
