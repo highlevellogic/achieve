@@ -1,22 +1,19 @@
 const fs=require("node:fs");
 const path=require("node:path");
-
-const routePath=path.join(__dirname,"routes.json");
-const firstRoutePath=path.join(__dirname,"routes-first.json");
-const realReadFileSync=fs.readFileSync;
-let routeReads=0;
-fs.readFileSync=function (filePath,...args) {
-    const resolved=typeof filePath === "string" ? path.resolve(filePath) : "";
-    if (resolved === routePath || resolved === firstRoutePath) routeReads++;
-    return realReadFileSync.call(this,filePath,...args);
-};
+const routes=require("./routes.cjs");
 
 const achieve=require("../../achieve");
 achieve.setLogging(false);
 achieve.setMode(process.env.ACHIEVE_ROUTE_MODE || "development");
 achieve.setAppPath(path.join(__dirname,"application"));
-achieve.setRouteMap(firstRoutePath);
-achieve.setRouteMap(routePath);
+achieve.setRouteMap({"/replaced":"/mapped/static.txt"});
+achieve.setRouteMap(routes);
+try {
+    achieve.setRouteMap({"/invalid":"../outside.txt"});
+    throw new Error("Invalid route-map reconfiguration was accepted.");
+} catch (error) {
+    if (!/invalid mapped target/.test(error.message)) throw error;
+}
 achieve.allowOrigins("https://route-map.example","/public/","allowed");
 achieve.registerMethod("DELETE","servlets/delete.jss");
 
@@ -44,9 +41,8 @@ if (protocol === "http") {
 }
 
 server.on("listening",function () {
-    if (process.send) process.send({event:"ready",routeReads:routeReads});
+    if (process.send) process.send({event:"ready"});
 });
 process.on("message",function (message) {
-    if (message.command === "state") process.send({event:"state",routeReads:routeReads});
     if (message.command === "stop") server.close(function () { process.exit(); });
 });

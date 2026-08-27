@@ -1,0 +1,19 @@
+module.exports = {
+    "/static":"/mapped/static.txt",
+    "/servlet":"/servlets/identity.jss",
+    "/query":"/servlets/identity.jss",
+    "/post":"/servlets/identity.jss",
+    "/cjs":"/servlets/common.jss.cjs",
+    "/esm":"/servlets/module.jss.mjs",
+    "/directory":"/directory/",
+    "/video":"/media/sample.mp4",
+    "/missing":"/does-not-exist.txt",
+    "/options":"/mapped/static.txt",
+    "/public/allowed":"/internal/denied.txt",
+    "/public/denied":"/internal/allowed.txt",
+    "/source-check":"/servlets/identity.jss",
+    "/protected-source":"/servlets/identity.jss.txt",
+    "/registered-target":"/mapped/static.txt",
+    "/alias-one":"/servlets/identity.jss",
+    "/alias-two":"/servlets/identity.jss"
+};

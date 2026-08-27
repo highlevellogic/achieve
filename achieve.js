@@ -457,63 +457,17 @@ exports.setAppPath = function (bp) {
     }
   } catch (err) {serverError(String(err),err);}
 };
-function duplicateTopLevelJsonKey(source) {
-  let depth=0;
-  let seen=new Set();
-  for (let i=0; i<source.length; i++) {
-    if (source[i] === "{") {
-      depth++;
-      continue;
-    }
-    if (source[i] === "}") {
-      depth--;
-      continue;
-    }
-    if (source[i] !== '"') continue;
-    let start=i;
-    for (i++; i<source.length; i++) {
-      if (source[i] === "\\") {
-        i++;
-      } else if (source[i] === '"') {
-        break;
-      }
-    }
-    if (depth !== 1) continue;
-    let next=i+1;
-    while (/\s/.test(source[next])) next++;
-    if (source[next] !== ":") continue;
-    let key=JSON.parse(source.substring(start,i+1));
-    if (seen.has(key)) return key;
-    seen.add(key);
-  }
-}
 function validRoutePath(value) {
   if (typeof value !== "string" || value.length === 0 || value.charAt(0) !== "/") return false;
   if (value.indexOf("?") !== -1 || value.indexOf("#") !== -1 || value.indexOf("\\") !== -1 || value.indexOf("\0") !== -1) return false;
   if (path.posix.normalize(value) !== value) return false;
   return !value.split("/").some(part => part === "." || part === "..");
 }
-exports.setRouteMap = function (routeMapPath) {
-  if (typeof routeMapPath !== "string" || routeMapPath.length === 0) {
-    throw new TypeError("setRouteMap() requires a nonempty route-map file path.");
+exports.setRouteMap = function (configured) {
+  if (configured === null || typeof configured !== "object" ||
+      (Object.getPrototypeOf(configured) !== Object.prototype && Object.getPrototypeOf(configured) !== null)) {
+    throw new TypeError("setRouteMap() requires a plain object.");
   }
-  let source;
-  try {
-    source=fs.readFileSync(path.resolve(routeMapPath),"utf8");
-  } catch (err) {
-    throw new Error("setRouteMap() could not read the route-map file.");
-  }
-  let configured;
-  try {
-    configured=JSON.parse(source);
-  } catch (err) {
-    throw new SyntaxError("setRouteMap() requires valid JSON.");
-  }
-  if (configured === null || Array.isArray(configured) || typeof configured !== "object") {
-    throw new TypeError("setRouteMap() requires a JSON object.");
-  }
-  let duplicate=duplicateTopLevelJsonKey(source);
-  if (duplicate !== undefined) throw new SyntaxError("setRouteMap() contains a duplicate public route: " + duplicate);
   let entries=Object.entries(configured);
   if (entries.length === 0) throw new TypeError("setRouteMap() requires at least one route.");
   let validated=new Map();
