@@ -1049,7 +1049,79 @@ function validHostValue(hostValue) {
     .test(hostValue);
 }
 
-function validHttp11Host(req) {
+function normalizedHttp2Authority(authority,scheme) {
+  if (
+    typeof authority !== "string" ||
+    authority.length === 0 ||
+    !validHostValue(authority)
+  ) return false;
+
+  let host = authority;
+  let port;
+  if (authority.charAt(0) === "[") {
+    let hostEnd = authority.indexOf("]") + 1;
+    host = authority.substring(0,hostEnd);
+    if (authority.length > hostEnd) port = authority.substring(hostEnd + 1);
+  } else {
+    let portStart = authority.lastIndexOf(":");
+    if (portStart !== -1) {
+      host = authority.substring(0,portStart);
+      port = authority.substring(portStart + 1);
+    }
+  }
+  if (host.length === 0) return false;
+
+  if (
+    host.charAt(0) === "[" &&
+    require("net").isIP(host.substring(1,host.length - 1)) === 6
+  ) {
+    host = new URL("http://" + host).hostname;
+  } else {
+    host = host.replace(/%([0-9A-F]{2})/gi,function (encoding,hex) {
+      let character = String.fromCharCode(parseInt(hex,16));
+      return /^[A-Za-z0-9._~-]$/.test(character)
+        ? character
+        : "%" + hex.toUpperCase();
+    }).toLowerCase();
+  }
+
+  if (port !== undefined) {
+    port = port.replace(/^0+(?=\d)/,"");
+    let normalizedScheme = String(scheme).toLowerCase();
+    let defaultPort = normalizedScheme === "http"
+      ? "80"
+      : normalizedScheme === "https" ? "443" : undefined;
+    if (port === "" || defaultPort !== undefined && port === defaultPort) {
+      port = undefined;
+    }
+  }
+  return host + (port === undefined ? "" : ":" + port);
+}
+
+function validRequestAuthority(req) {
+  if (req.httpVersion === "2.0") {
+    let authority = req.headers[":authority"];
+    let host = req.headers.host;
+    if (authority === undefined && host === undefined) return false;
+
+    let scheme = req.headers[":scheme"];
+    let normalizedAuthority = authority === undefined
+      ? undefined
+      : normalizedHttp2Authority(authority,scheme);
+    let normalizedHost = host === undefined
+      ? undefined
+      : normalizedHttp2Authority(host,scheme);
+    if (
+      normalizedAuthority === false ||
+      normalizedHost === false
+    ) return false;
+    return (
+      normalizedAuthority === undefined ||
+      normalizedHost === undefined ||
+      normalizedAuthority === normalizedHost
+    );
+  }
+
   if (req.httpVersion !== "1.1") return true;
 
   let hostCount = 0;
@@ -1116,7 +1188,7 @@ function handleConnectRequests(server) {
 
     try {
       let targetInfo = requestTarget(req);
-      if (!targetInfo || !validHttp11Host(req)) {
+      if (!targetInfo || !validRequestAuthority(req)) {
         endResponse(
           400,
           "Bad Request",
@@ -1218,7 +1290,7 @@ var achieveApp = function (req, res) {
  //  let urlParsed = url.parse(req.headers.referer, true);
    developmentLog("url: " + req.url + ", origin: " + req.socket.remoteAddress);
    let targetInfo = requestTarget(req);
-   if (!targetInfo || !validHttp11Host(req)) {
+   if (!targetInfo || !validRequestAuthority(req)) {
      res.statusCode=400;
      res.setHeader('Content-Type','text/plain;charset=utf-8');
      res.end("Bad Request");
