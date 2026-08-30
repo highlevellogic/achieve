@@ -89,24 +89,12 @@ function request(port,requestPath) {
     });
 }
 
-function legacyBase64(residual) {
-    const digits="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/";
-    let result="";
-    while (true) {
-        const digit=residual % 64;
-        result=digits.charAt(digit)+result;
-        residual=Math.floor(residual / 64);
-        if (residual == 0) break;
-    }
-    return result;
-}
-
 function expectedETag(filePath,coding) {
-    const mtimeMs=fs.statSync(filePath).mtimeMs;
+    const stats=fs.statSync(filePath);
     const nodeVersion=process.versions.node.split(".").join("");
     const version=require("../../package.json").version;
-    const rawValue=parseInt(Math.floor(mtimeMs)+nodeVersion+version);
-    return '"'+legacyBase64(rawValue)+'-'+coding+'"';
+    const rawValue=String(stats.mtimeMs)+":"+String(stats.size)+":"+nodeVersion+version;
+    return '"'+Buffer.from(rawValue).toString("base64url")+'-'+coding+'"';
 }
 
 class FakeServer extends EventEmitter {
@@ -138,7 +126,7 @@ class FakeServer extends EventEmitter {
         check("default application is entry-point directory",normal.body.trim(),"modernization default application");
         check("normal request completes",normal.state,"complete");
         check(
-            "legacy ETag output is unchanged",
+            "metadata ETag output uses current inputs",
             normal.headers.etag,
             expectedETag(path.join(__dirname,"resource.txt"),"i")
         );

@@ -141,6 +141,7 @@ async function staticTests(server) {
     check("gzip ETag suffix", /-g"$/.test(gzipTag), gzipTag);
     check("deflate ETag suffix", /-d"$/.test(deflateTag), deflateTag);
     check("representation ETags distinct", new Set([identityTag, gzipTag, deflateTag]).size === 3);
+    check("representation ETags remain strong entity tags", [identityTag, gzipTag, deflateTag].every(tag => /^"[^"]+"$/.test(tag) && !tag.startsWith("W/")));
     check("gzip Content-Encoding", gzip.headers["content-encoding"] === "gzip");
     check("deflate Content-Encoding", deflate.headers["content-encoding"] === "deflate");
     check("Vary identity", identity.headers.vary === "Accept-Encoding");
@@ -247,11 +248,41 @@ async function mediaTests(server) {
 
 async function sourceChangeTest(server, oldTag) {
     const resourcePath = path.join(server.applicationPath, "static", "resource.txt");
-    fs.writeFileSync(resourcePath, "Modified temporary conditional fixture.\n");
-    const future = new Date(Date.now() + 2000);
-    fs.utimesSync(resourcePath, future, future);
+    const sameSizeFirst = "A".repeat(64);
+    const sameSizeSecond = "B".repeat(64);
+    const secondBase = Math.floor(Date.now() / 1000) + 2;
+
+    fs.writeFileSync(resourcePath, sameSizeFirst);
+    fs.utimesSync(resourcePath, secondBase + 0.1231, secondBase + 0.1231);
+    const firstStats = fs.statSync(resourcePath);
+    const first = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "identity"}});
+
+    fs.writeFileSync(resourcePath, sameSizeSecond);
+    fs.utimesSync(resourcePath, secondBase + 0.1238, secondBase + 0.1238);
+    const secondStats = fs.statSync(resourcePath);
     const changed = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "identity"}});
-    check("source modification changes ETag", Boolean(changed.headers.etag) && changed.headers.etag !== oldTag, changed.headers.etag);
+    check(
+        "sub-millisecond fixture timestamps are distinguishable within one millisecond",
+        firstStats.mtimeMs !== secondStats.mtimeMs && Math.floor(firstStats.mtimeMs) === Math.floor(secondStats.mtimeMs),
+        JSON.stringify({first:firstStats.mtimeMs,second:secondStats.mtimeMs})
+    );
+    check(
+        "same-size sub-millisecond source change changes strong ETag",
+        /^"[^"]+"$/.test(changed.headers.etag) && !changed.headers.etag.startsWith("W/") && changed.headers.etag !== first.headers.etag,
+        changed.headers.etag
+    );
+
+    const preservedMtimeSeconds = secondStats.mtimeMs / 1000;
+    fs.writeFileSync(resourcePath, sameSizeSecond + "larger");
+    fs.utimesSync(resourcePath, preservedMtimeSeconds, preservedMtimeSeconds);
+    const sizeStats = fs.statSync(resourcePath);
+    const sizeChanged = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "identity"}});
+    check(
+        "file size participates in strong ETag identity",
+        sizeStats.mtimeMs === secondStats.mtimeMs && /^"[^"]+"$/.test(sizeChanged.headers.etag) && sizeChanged.headers.etag !== changed.headers.etag,
+        sizeChanged.headers.etag
+    );
+
     const oldValidator = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "identity", "If-None-Match": oldTag}});
     check("old validator after source change", oldValidator.status === 200);
 }
