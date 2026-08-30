@@ -2591,7 +2591,8 @@ const Base64 = {
     return result;
   }
 }
-function parseSingleByteRange(rangeHeader, fileSize) {
+const maximumByteRanges = 16;
+function parseByteRange(rangeHeader, fileSize) {
   if (rangeHeader === undefined) {
     return { classification: "full" };
   }
@@ -2607,60 +2608,69 @@ function parseSingleByteRange(rangeHeader, fileSize) {
     return { classification: "unknown-unit" };
   }
 
-  var rangeValue = range.substring(separator + 1);
-  if (rangeValue.indexOf(",") !== -1) {
-    return { classification: "multiple-ranges" };
+  var rangeValues = range.substring(separator + 1).split(",");
+  if (rangeValues.length > maximumByteRanges) {
+    return { classification: "excessive" };
   }
 
-  var match = /^(\d*)-(\d*)$/.exec(rangeValue);
-  if (!match || (!match[1] && !match[2])) {
-    return { classification: "malformed" };
-  }
+  var selectedRange;
+  var rangeCount = 0;
+  for (var rangeIndex = 0; rangeIndex < rangeValues.length; rangeIndex++) {
+    var rangeValue = rangeValues[rangeIndex].trim();
+    if (!rangeValue) continue;
+    rangeCount++;
 
-  if (!match[1]) {
-    var suffixLength = Number(match[2]);
-    if (!Number.isSafeInteger(suffixLength)) {
+    var match = /^(\d*)-(\d*)$/.exec(rangeValue);
+    if (!match || (!match[1] && !match[2])) {
       return { classification: "malformed" };
     }
-    if (suffixLength === 0 || fileSize === 0) {
-      return { classification: "unsatisfiable" };
+
+    if (!match[1]) {
+      var suffixLength = Number(match[2]);
+      if (!Number.isSafeInteger(suffixLength)) {
+        return { classification: "malformed" };
+      }
+      if (suffixLength === 0 || fileSize === 0) continue;
+
+      if (!selectedRange) {
+        var suffixStart = Math.max(fileSize - suffixLength, 0);
+        selectedRange = {
+          classification: "partial",
+          start: suffixStart,
+          end: fileSize - 1,
+          contentLength: fileSize - suffixStart
+        };
+      }
+      continue;
     }
 
-    var suffixStart = Math.max(fileSize - suffixLength, 0);
-    return {
-      classification: "partial",
-      start: suffixStart,
-      end: fileSize - 1,
-      contentLength: fileSize - suffixStart
-    };
-  }
-
-  var start = Number(match[1]);
-  if (!Number.isSafeInteger(start)) {
-    return { classification: "malformed" };
-  }
-  if (start >= fileSize) {
-    return { classification: "unsatisfiable" };
-  }
-
-  var end = fileSize - 1;
-  if (match[2]) {
-    end = Number(match[2]);
-    if (!Number.isSafeInteger(end)) {
+    var start = Number(match[1]);
+    if (!Number.isSafeInteger(start)) {
       return { classification: "malformed" };
     }
-    if (end < start) {
-      return { classification: "unsatisfiable" };
+
+    var end = fileSize - 1;
+    if (match[2]) {
+      end = Number(match[2]);
+      if (!Number.isSafeInteger(end) || end < start) {
+        return { classification: "malformed" };
+      }
     }
-    end = Math.min(end, fileSize - 1);
+    if (start >= fileSize) continue;
+
+    if (!selectedRange) {
+      end = Math.min(end, fileSize - 1);
+      selectedRange = {
+        classification: "partial",
+        start: start,
+        end: end,
+        contentLength: (end - start) + 1
+      };
+    }
   }
 
-  return {
-    classification: "partial",
-    start: start,
-    end: end,
-    contentLength: (end - start) + 1
-  };
+  if (rangeCount === 0) return { classification: "malformed" };
+  return selectedRange || { classification: "unsatisfiable" };
 }
 let stream = function(req, res, fileInfo, sendBody = true) {
   var fileName = fileInfo.fullPath;
@@ -2709,9 +2719,14 @@ let stream = function(req, res, fileInfo, sendBody = true) {
   ) {
     rangeHeader=undefined;
   }
-  var rangeInfo = parseSingleByteRange(rangeHeader, stats.size);
-  if (rangeInfo.classification === "malformed") {
-    var message = "Malformed byte Range request.";
+  var rangeInfo = parseByteRange(rangeHeader, stats.size);
+  if (
+    rangeInfo.classification === "malformed" ||
+    rangeInfo.classification === "excessive"
+  ) {
+    var message = rangeInfo.classification === "excessive"
+      ? "Too many byte ranges requested."
+      : "Malformed byte Range request.";
     closeFileInfoDescriptor(fileInfo);
     res.writeHead(400, {
       "Content-Type": "text/plain;charset=utf-8",
@@ -2720,13 +2735,8 @@ let stream = function(req, res, fileInfo, sendBody = true) {
     res.end(message);
     return;
   }
-  if (
-    rangeInfo.classification === "unsatisfiable" ||
-    rangeInfo.classification === "multiple-ranges"
-  ) {
-    var rangeErrorMessage = rangeInfo.classification === "multiple-ranges"
-      ? "Multiple byte ranges are not supported."
-      : "Requested byte range is not satisfiable.";
+  if (rangeInfo.classification === "unsatisfiable") {
+    var rangeErrorMessage = "Requested byte range is not satisfiable.";
     closeFileInfoDescriptor(fileInfo);
     res.writeHead(416, {
       "Accept-Ranges": "bytes",
