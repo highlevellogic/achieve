@@ -664,13 +664,23 @@ function handleResolvedResource(req, res, fileInfo, sendBody = true, servletCach
    // Files are served using the serveFile object in this application.
    } else if (fileInfo.notAcceptable) {
      reportError(res,fileInfo.fullPath,406,"No acceptable representation is available.",sendBody);
+   } else if (fileInfo.openError) {
+     let statusCode=fileInfo.openError.code === "ENOENT" ? 404 : 500;
+     let reason=statusCode === 404
+       ? "File not found: " + fileInfo.fullPath
+       : "Error attempting to open " + safeSourceIdentity(fileInfo.fullPath) + ": " + rtErrorMsg(fileInfo.openError);
+     reportError(res,fileInfo.fullPath,statusCode,reason,sendBody);
    } else if (fileInfo.serveFile) {
      try {
-		 if (evaluatePreconditions(req,res,true,fileInfo.etag)) return;
-		 new ServeFile(req,res,fileInfo,sendBody).init();
-	 } catch (err) {
-		reportError(res,fileInfo.fullPath,500,"Error attempting to serve " + safeSourceIdentity(fileInfo.fullPath),sendBody);
-	 }
+       if (evaluatePreconditions(req,res,true,fileInfo.etag)) {
+         closeFileInfoDescriptor(fileInfo);
+         return;
+       }
+       new ServeFile(req,res,fileInfo,sendBody).init();
+     } catch (err) {
+       closeFileInfoDescriptor(fileInfo);
+       reportError(res,fileInfo.fullPath,500,"Error attempting to serve " + safeSourceIdentity(fileInfo.fullPath),sendBody);
+     }
    } else if (fileInfo.audioVisual) {
      stream(req,res,fileInfo,sendBody);
    // If file does not exist, return 404 File not found error.
@@ -804,9 +814,17 @@ function mappedResourceTarget(resourceTarget) {
     return queryStart === -1 ? targetPath : targetPath + resourceTarget.substring(queryStart);
 }
 function checkResourceCors(req,res,fileInfo,publicTarget) {
-    return publicTarget === undefined
-      ? checkCorsPolicy(req,res,fileInfo)
-      : checkCorsTarget(req,res,publicTarget);
+    let allowed;
+    try {
+      allowed=publicTarget === undefined
+        ? checkCorsPolicy(req,res,fileInfo)
+        : checkCorsTarget(req,res,publicTarget);
+    } catch (err) {
+      closeFileInfoDescriptor(fileInfo);
+      throw err;
+    }
+    if (!allowed) closeFileInfoDescriptor(fileInfo);
+    return allowed;
 }
 function handleGet(req, res, basePath, resourceTarget, publicTarget) {
     let cached=cachedServlet(basePath,resourceTarget);
@@ -862,6 +880,7 @@ function handleOptions(req,res,basePath,resourceTarget,publicTarget) {
 
     let fileInfo=setFileInfo(req,res,basePath,resourceTarget);
     if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
+    closeFileInfoDescriptor(fileInfo);
 
     developmentLog("OPTIONS REQUEST: " + req);
     res.statusCode=204;
@@ -1463,7 +1482,7 @@ function reportError (res,account,statusCode,reason,sendBody = true) {
     res.end();
   }
 }
-function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag,audioVisual,notAcceptable = false) {
+function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag,audioVisual,notAcceptable = false,fileDescriptor,stats,openError) {
   this.basePath = basePath;
   this.path = path;
   this.fullPath = fullPath;
@@ -1479,6 +1498,19 @@ function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,que
   this.etag = etag;
   this.audioVisual = audioVisual;
   this.notAcceptable = notAcceptable;
+  this.fileDescriptor = fileDescriptor;
+  this.stats = stats;
+  this.openError = openError;
+}
+function closeFileInfoDescriptor (fileInfo) {
+  if (fileInfo.fileDescriptor === undefined) return;
+  let fileDescriptor=fileInfo.fileDescriptor;
+  fileInfo.fileDescriptor=undefined;
+  try {
+    fs.closeSync(fileDescriptor);
+  } catch (err) {
+    serverError("Error closing " + safeSourceIdentity(fileInfo.fullPath) + ": " + rtErrorMsg(err),err);
+  }
 }
 function hasEntityTagPrecondition (req) {
   return (
@@ -1681,6 +1713,7 @@ function setFileInfo (req, res, basePath, requestUrl) {
    let serveFile=true;
    let headers=req.headers;
    let fullPath="", suffix="", queryString="", contentType="",dirPath="",etag="";
+   let fileDescriptor, representationStats, openError, etagCoding="i";
    if (!headers['accept-encoding']) headers['accept-encoding'] = '';  // gzip, etc. 
    let reload=false;
    let thisBasePath=basePath;
@@ -1725,7 +1758,7 @@ developmentLog("req.url: " + req.url);
      }
    }
    if (serveFile) {
-     let etagCoding="i";
+
      // For compression
      if (compress && (contentType.indexOf("text") == 0 || contentType.indexOf("application") == 0)) {
        res.setHeader("Vary","Accept-Encoding");
@@ -1744,11 +1777,33 @@ developmentLog("req.url: " + req.url);
         }
         if (etagCoding == "i" && enc.identityQuality == 0) notAcceptable = true;
       }
-      if (!notAcceptable && (bCaching || hasEntityTagPrecondition(req))) {
-        etag = representationETag(checkedPath.stats.mtimeMs,checkedPath.stats.size,etagCoding);
+    }
+    if (!notAcceptable && (serveFile || audioVisual)) {
+      let representationPath=path.join(thisBasePath,currentPath);
+      try {
+        fileDescriptor=fs.openSync(representationPath,"r");
+        representationStats=fs.fstatSync(fileDescriptor);
+        if (!representationStats.isFile()) {
+          let err=new Error("Selected representation is not a regular file.");
+          err.code="EISDIR";
+          throw err;
+        }
+      } catch (err) {
+        openError=err;
+        if (fileDescriptor !== undefined) {
+          try {
+            fs.closeSync(fileDescriptor);
+          } catch (closeError) {
+            serverError("Error closing " + safeSourceIdentity(representationPath) + ": " + rtErrorMsg(closeError),closeError);
+          }
+          fileDescriptor=undefined;
+        }
+      }
+      if (!openError && serveFile && (bCaching || hasEntityTagPrecondition(req))) {
+        etag = representationETag(representationStats.mtimeMs,representationStats.size,etagCoding);
       }
     }
-    return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual,notAcceptable);
+    return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual,notAcceptable,fileDescriptor,representationStats,openError);
 }
 function removeCompressionTemp (tempPath,callback) {
   fs.unlink(tempPath,function (err) {
@@ -2339,6 +2394,7 @@ function ServeFile (req,res,fileInfo,sendBody = true) {
    if (fileInfo.etag) res.setHeader('etag', fileInfo.etag);
    res.statusCode = 200;
    if (!sendBody) {
+     closeFileInfoDescriptor(fileInfo);
      response.end();
      return;
    }
@@ -2359,20 +2415,24 @@ function ServeFile (req,res,fileInfo,sendBody = true) {
    }
 
    try {
-     readStream = fs.createReadStream(filePath);
+     readStream = fs.createReadStream(filePath,{
+       fd:fileInfo.fileDescriptor,
+       autoClose:true,
+       start:0
+     });
+     fileInfo.fileDescriptor=undefined;
    } catch (err) {
+     closeFileInfoDescriptor(fileInfo);
      streamError(err);
      return;
    }
 
    readStream.on('error',streamError);
-   readStream.on('open',function () {
-     if (response.destroyed || response.writableEnded) {
-       readStream.destroy();
-       return;
-     }
-     readStream.pipe(response);
-   });
+   if (response.destroyed || response.writableEnded) {
+     readStream.destroy();
+     return;
+   }
+   readStream.pipe(response);
    response.on('close',function () {
      if (!response.writableEnded) {
        readStream.destroy();
@@ -2534,166 +2594,167 @@ let stream = function(req, res, fileInfo, sendBody = true) {
   var fileName = fileInfo.fullPath;
   var displayedFileName = fileName ? safeSourceIdentity(fileName) : fileName;
   if(!fileName) {
+    closeFileInfoDescriptor(fileInfo);
     reportError(res, fileName, 404, "File not found: " + displayedFileName, sendBody);
     return;
   }
 
-  fs.stat(fileName, function(err, stats) {
-    if (err) {
-      if (err.code === 'ENOENT') {
-        reportError(res, fileName, 404, "File not found: " + displayedFileName, sendBody);
-        return;
-      }
-      reportError(
-        res,
-        fileName,
-        500,
-        "Error attempting to stream " + displayedFileName + ": " + rtErrorMsg(err),
-        sendBody
-      );
-      return;
-    }
-
+  var stats=fileInfo.stats;
     var mediaETag="";
-    var evaluateIfRange = (
-      req.method === "GET" &&
-      req.headers.range !== undefined &&
-      req.headers['if-range'] !== undefined
-    );
-    if (
-      bCaching ||
-      hasEntityTagPrecondition(req) ||
-      evaluateIfRange
-    ) {
-      mediaETag=representationETag(stats.mtimeMs,stats.size,"i");
-      res.setHeader("ETag",mediaETag);
-    }
-    if (evaluatePreconditions(req,res,true,mediaETag)) return;
+  var evaluateIfRange = (
+    req.method === "GET" &&
+    req.headers.range !== undefined &&
+    req.headers['if-range'] !== undefined
+  );
+  if (
+    bCaching ||
+    hasEntityTagPrecondition(req) ||
+    evaluateIfRange
+  ) {
+    mediaETag=representationETag(stats.mtimeMs,stats.size,"i");
+    res.setHeader("ETag",mediaETag);
+  }
+  if (evaluatePreconditions(req,res,true,mediaETag)) {
+    closeFileInfoDescriptor(fileInfo);
+    return;
+  }
 
-    if (!err && !sendBody) {
-      res.writeHead(200, {
-        "Accept-Ranges": "bytes",
-        "Content-Length": stats.size,
-        "Content-Type": fileInfo.contentType
-      });
-      res.end();
-      return;
-    }
-
-    var rangeHeader = req.method === "GET" ? req.headers.range : undefined;
-    if (
-      evaluateIfRange &&
-      !entityTagFieldMatches(req.headers['if-range'],mediaETag,false)
-    ) {
-      rangeHeader=undefined;
-    }
-    var rangeInfo = parseSingleByteRange(rangeHeader, stats.size);
-    if (rangeInfo.classification === "malformed") {
-      var message = "Malformed byte Range request.";
-      res.writeHead(400, {
-        "Content-Type": "text/plain;charset=utf-8",
-        "Content-Length": Buffer.byteLength(message, "utf8")
-      });
-      res.end(message);
-      return;
-    }
-    if (
-      rangeInfo.classification === "unsatisfiable" ||
-      rangeInfo.classification === "multiple-ranges"
-    ) {
-      var rangeErrorMessage = rangeInfo.classification === "multiple-ranges"
-        ? "Multiple byte ranges are not supported."
-        : "Requested byte range is not satisfiable.";
-      res.writeHead(416, {
-        "Accept-Ranges": "bytes",
-        "Content-Range": "bytes */" + stats.size,
-        "Content-Type": "text/plain;charset=utf-8",
-        "Content-Length": Buffer.byteLength(rangeErrorMessage, "utf8")
-      });
-      res.end(rangeErrorMessage);
-      return;
-    }
-
-    var start;
-    var end;
-    var total = 0;
-    var contentRange = false;
-    var contentLength = 0;
-
-    if (rangeInfo.classification === "partial")
-    {
-      start = rangeInfo.start;
-      total = stats.size;
-      end = rangeInfo.end;
-      contentRange = true;
-      contentLength = rangeInfo.contentLength;
-    }
-    else
-    {
-      contentLength = stats.size;
-    }
-
-    var responseCode = 200;
-    var responseHeader =
-    {
+  if (!sendBody) {
+    closeFileInfoDescriptor(fileInfo);
+    res.writeHead(200, {
       "Accept-Ranges": "bytes",
-      "Content-Length": contentLength,
+      "Content-Length": stats.size,
       "Content-Type": fileInfo.contentType
-    };
-    if(contentRange)
-    {
-      responseCode = 206;
-      responseHeader["Content-Range"] = "bytes " + start + "-" + end + "/" + total;
+    });
+    res.end();
+    return;
+  }
+
+  var rangeHeader = req.method === "GET" ? req.headers.range : undefined;
+  if (
+    evaluateIfRange &&
+    !entityTagFieldMatches(req.headers['if-range'],mediaETag,false)
+  ) {
+    rangeHeader=undefined;
+  }
+  var rangeInfo = parseSingleByteRange(rangeHeader, stats.size);
+  if (rangeInfo.classification === "malformed") {
+    var message = "Malformed byte Range request.";
+    closeFileInfoDescriptor(fileInfo);
+    res.writeHead(400, {
+      "Content-Type": "text/plain;charset=utf-8",
+      "Content-Length": Buffer.byteLength(message, "utf8")
+    });
+    res.end(message);
+    return;
+  }
+  if (
+    rangeInfo.classification === "unsatisfiable" ||
+    rangeInfo.classification === "multiple-ranges"
+  ) {
+    var rangeErrorMessage = rangeInfo.classification === "multiple-ranges"
+      ? "Multiple byte ranges are not supported."
+      : "Requested byte range is not satisfiable.";
+    closeFileInfoDescriptor(fileInfo);
+    res.writeHead(416, {
+      "Accept-Ranges": "bytes",
+      "Content-Range": "bytes */" + stats.size,
+      "Content-Type": "text/plain;charset=utf-8",
+      "Content-Length": Buffer.byteLength(rangeErrorMessage, "utf8")
+    });
+    res.end(rangeErrorMessage);
+    return;
+  }
+
+  var start;
+  var end;
+  var total = 0;
+  var contentRange = false;
+  var contentLength = 0;
+
+  if (rangeInfo.classification === "partial")
+  {
+    start = rangeInfo.start;
+    total = stats.size;
+    end = rangeInfo.end;
+    contentRange = true;
+    contentLength = rangeInfo.contentLength;
+  }
+  else
+  {
+    contentLength = stats.size;
+  }
+
+  var responseCode = 200;
+  var responseHeader =
+  {
+    "Accept-Ranges": "bytes",
+    "Content-Length": contentLength,
+    "Content-Type": fileInfo.contentType
+  };
+  if(contentRange)
+  {
+    responseCode = 206;
+    responseHeader["Content-Range"] = "bytes " + start + "-" + end + "/" + total;
+  }
+  if (!contentRange && stats.size === 0) {
+    closeFileInfoDescriptor(fileInfo);
+    res.writeHead(responseCode, responseHeader);
+    res.end();
+    return;
+  }
+
+  var readStream;
+  try {
+    if (contentRange) {
+      readStream = fs.createReadStream(fileName, {
+        fd:fileInfo.fileDescriptor,
+        autoClose:true,
+        start:start,
+        end:end
+      });
+    } else {
+      readStream = fs.createReadStream(fileName, {
+        fd:fileInfo.fileDescriptor,
+        autoClose:true,
+        start:0
+      });
     }
-    if (!contentRange && stats.size === 0) {
-      res.writeHead(responseCode, responseHeader);
-      res.end();
+    fileInfo.fileDescriptor=undefined;
+  } catch (err) {
+    closeFileInfoDescriptor(fileInfo);
+    var statusCode = err.code === "ENOENT" ? 404 : 500;
+    var reason = statusCode === 404
+      ? "File not found: " + displayedFileName
+      : "Error attempting to stream " + displayedFileName + ": " + rtErrorMsg(err);
+    reportError(res, fileName, statusCode, reason, sendBody);
+    return;
+  }
+
+  readStream.on("error", function(err) {
+    if (res.destroyed) {
       return;
     }
-
-    var stream;
-    try {
-      if (contentRange) {
-        stream = fs.createReadStream(fileName, { start: start, end: end });
-      } else {
-        stream = fs.createReadStream(fileName);
-      }
-    } catch (err) {
+    if (!res.headersSent) {
       var statusCode = err.code === "ENOENT" ? 404 : 500;
       var reason = statusCode === 404
         ? "File not found: " + displayedFileName
         : "Error attempting to stream " + displayedFileName + ": " + rtErrorMsg(err);
       reportError(res, fileName, statusCode, reason, sendBody);
-      return;
+    } else {
+      serverError("Error streaming " + displayedFileName + ": " + rtErrorMsg(err),err);
+      res.destroy();
     }
-
-    stream.on("error", function(err) {
-      if (res.destroyed) {
-        return;
-      }
-      if (!res.headersSent) {
-        var statusCode = err.code === "ENOENT" ? 404 : 500;
-        var reason = statusCode === 404
-          ? "File not found: " + displayedFileName
-          : "Error attempting to stream " + displayedFileName + ": " + rtErrorMsg(err);
-        reportError(res, fileName, statusCode, reason, sendBody);
-      } else {
-        serverError("Error streaming " + displayedFileName + ": " + rtErrorMsg(err),err);
-        res.destroy();
-      }
-    });
-    stream.on("open", function() {
-      if (res.destroyed) {
-        stream.destroy();
-        return;
-      }
-      res.writeHead(responseCode, responseHeader);
-      stream.pipe(res);
-    });
-    res.on("close", function() {
-      if (!res.writableEnded) {
-        stream.destroy();
-      }
-    });
+  });
+  if (res.destroyed) {
+    readStream.destroy();
+    return;
+  }
+  res.writeHead(responseCode, responseHeader);
+  readStream.pipe(res);
+  res.on("close", function() {
+    if (!res.writableEnded) {
+      readStream.destroy();
+    }
   });
 };

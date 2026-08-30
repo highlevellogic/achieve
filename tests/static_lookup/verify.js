@@ -87,7 +87,7 @@ async function command(child,name,event) {
         let response=await request("/tiny.txt",{"Accept-Encoding":"identity"});
         const counts=(await command(child,"count-stop","counts")).counts;
         assert(response.status === 200 && response.body === staticBody,
-            "Static file did not serve correctly.");
+            "Static file did not serve correctly: "+JSON.stringify({status:response.status,body:response.body,headers:response.headers}));
         assert(response.headers["content-type"] === "text/plain",
             "Static content type changed.");
         assert(response.headers.etag,"Static ETag is missing.");
@@ -95,8 +95,14 @@ async function command(child,name,event) {
             "Static request did not perform exactly one statSync: "+JSON.stringify(counts));
         assert(counts.existsSync === 0,
             "Static request retained existsSync: "+JSON.stringify(counts));
+        assert(counts.openSync === 1,
+            "Static request did not open the final representation exactly once: "+JSON.stringify(counts));
+        assert(counts.fstatSync === 1,
+            "Static request did not inspect the opened representation exactly once: "+JSON.stringify(counts));
         assert(counts.createReadStream === 1,
-            "Static request did not stream the physical file: "+JSON.stringify(counts));
+            "Static request did not stream the opened physical file: "+JSON.stringify(counts));
+        assert(counts.paths.some(value => value.startsWith("createReadStream:") && value.includes("tiny.txt")),
+            "Static request did not retain its selected representation identity: "+JSON.stringify(counts));
 
         response=await request("/directory");
         assert(response.status === 301 && response.headers.location === "/directory/",

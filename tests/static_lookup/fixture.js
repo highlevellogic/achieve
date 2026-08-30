@@ -1,9 +1,9 @@
 const fs=require("node:fs");
 
 let counting=false;
-let counts={statSync:0,existsSync:0,createReadStream:0,
+let counts={statSync:0,existsSync:0,openSync:0,fstatSync:0,createReadStream:0,
     discoveryStatSync:0,discoveryExistsSync:0,paths:[],discoveryPaths:[]};
-for (const name of ["statSync","existsSync","createReadStream"]) {
+for (const name of ["statSync","existsSync","openSync","fstatSync","createReadStream"]) {
     const original=fs[name];
     fs[name]=function (...args) {
         if (counting) {
@@ -30,7 +30,7 @@ server.on("listening",function () { process.send({event:"ready"}); });
 
 process.on("message",function (message) {
     if (message.command === "count-start") {
-        counts={statSync:0,existsSync:0,createReadStream:0,
+        counts={statSync:0,existsSync:0,openSync:0,fstatSync:0,createReadStream:0,
             discoveryStatSync:0,discoveryExistsSync:0,paths:[],discoveryPaths:[]};
         counting=true;
         process.send({event:"count-started"});
