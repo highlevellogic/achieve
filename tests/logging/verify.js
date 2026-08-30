@@ -179,11 +179,66 @@ async function runningCase(scenario, options, inspect) {
         check("zero-argument logging throws", invalid.message.checks.zero);
         check("mixed logging form throws", invalid.message.checks.mixed);
         check("unknown destination throws", invalid.message.checks.unknown);
+        for (const [scenario,label] of [
+            ["startup-http","HTTP"],
+            ["startup-https","HTTPS"],
+            ["startup-http2","HTTP2 (insecure)"],
+            ["startup-http2s","HTTP2 (secure)"]
+        ]) {
+            const startupCase=await startCase(scenario,{
+                appPath:path.join(__dirname,"application")
+            });
+            try {
+                const output=startupCase.stdout();
+                check(
+                    label+" startup identifies protocol, port, and Node version",
+                    output.includes(
+                        "HLL Achieve v3.0.0-dev.0 "+label+
+                        " is running on port "+startupCase.message.port+
+                        ". (Node.js version "+process.version+")"
+                    )
+                );
+            } finally {
+                await stopCase(startupCase);
+            }
+        }
+
+        const configuredStartup=await startCase("startup-config",{
+            appPath:path.join(__dirname,"application")
+        });
+        try {
+            const output=configuredStartup.stdout();
+            for (const line of [
+                "Path to server entry: ",
+                "Path to application base: "+path.join(__dirname,"application"),
+                "Mode: production",
+                "Node environment: startup-test",
+                "Browser caching: on",
+                "Static compression: on",
+                "Buffered input limit: 2048 bytes",
+                "Console logging: on",
+                "Server logging: off",
+                "Access logging: off",
+                "Path to logs: ",
+                "MIME type listing: off",
+                "MIME types: ",
+                "Audiovisual MIME types: ",
+                "Default character set: utf-8",
+                "CORS policies: https://startup.example / [resource.txt]",
+                "Route mappings: /public -> /resource.txt",
+                "Registered methods: PURGE -> servlets",
+                "Extensions: startup"
+            ]) {
+                check("configured startup reports "+line,output.includes(line));
+            }
+        } finally {
+            await stopCase(configuredStartup);
+        }
 
         const defaultRoot = path.join(temporaryPath, "default");
         await runningCase("default", {logPath: defaultRoot}, async function (testCase) {
-            check("default mode is development", testCase.stdout().includes("mode=development"));
-            check("default console logging is on", testCase.stdout().includes("logging console=on server=off access=off"));
+            check("default mode is development", testCase.stdout().includes("Mode: development"));
+            check("default console logging is on", testCase.stdout().includes("Console logging: on") && testCase.stdout().includes("Server logging: off") && testCase.stdout().includes("Access logging: off"));
             check("development request trace is visible", testCase.stdout().includes("GET") && testCase.stdout().includes("req.url:"));
             check("default server logging creates no files", serverLogFiles(defaultRoot).length === 0);
             check("configuration locks after startup", Object.values(testCase.message.checks).every(Boolean));
@@ -303,7 +358,7 @@ async function runningCase(scenario, options, inspect) {
 
         const productionRoot = path.join(temporaryPath, "production");
         await runningCase("production", {logPath: productionRoot}, async function (testCase) {
-            check("production mode reported", testCase.stdout().includes("mode=production"));
+            check("production mode reported", testCase.stdout().includes("Mode: production"));
             check("production request trace suppressed", !testCase.stdout().includes("req.url:") && !testCase.stdout().includes("using GET"));
         });
 
@@ -313,14 +368,14 @@ async function runningCase(scenario, options, inspect) {
             check("server directory and daily file created", files.length === 1);
             check("local daily filename", files.length === 1 && /^\d{4}-\d{2}-\d{2}\.log$/.test(path.basename(files[0])));
             const log = files.length ? fs.readFileSync(files[0], "utf8") : "";
-            const events = [" START ", " CONFIG ", " CONFIG ", " LISTEN "];
+            const events = [" START ", " CONFIG Path to server entry:", " CONFIG Path to application base:", " CONFIG Mode:", " CONFIG Browser caching:"];
             let position = -1;
             const ordered = events.every(event => {
                 position = log.indexOf(event, position + 1);
                 return position !== -1;
             });
             check("startup records append in order", ordered, log);
-            check("startup configuration persisted", log.includes("mode=development") && log.includes("appPath=") && log.includes("caching="));
+            check("startup configuration persisted", log.includes("Mode: development") && log.includes("Path to application base:") && log.includes("Browser caching:"));
             check("timestamp includes numeric offset", /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}/m.test(log));
             check("development request trace absent from server file", !log.includes("req.url:") && !log.includes("using GET"));
             check("setAppPath did not move explicit log root", files.every(file => file.startsWith(serverRoot)));
@@ -341,11 +396,11 @@ async function runningCase(scenario, options, inspect) {
                 }
                 if (scenario === "all") {
                     const log = fs.readFileSync(serverLogFiles(root)[0], "utf8");
-                    check("setLogging(true) enables all selections", log.includes("console=on server=on access=on"));
+                    check("setLogging(true) enables all selections", log.includes("Console logging: on") && log.includes("Server logging: on") && log.includes("Access logging: on"));
                 }
                 if (scenario === "selective") {
                     const log = fs.readFileSync(serverLogFiles(root)[0], "utf8");
-                    check("rest list is declarative", log.includes("console=off server=on access=on"));
+                    check("rest list is declarative", log.includes("Console logging: off") && log.includes("Server logging: on") && log.includes("Access logging: on"));
                 }
                 if (scenario === "invalid-preserves") {
                     check("invalid call leaves prior state", testCase.message.checks.invalidPreservesThrew && serverLogFiles(root).length === 1);

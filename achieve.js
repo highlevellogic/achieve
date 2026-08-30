@@ -1141,24 +1141,50 @@ function handleConnectRequests(server) {
 
 function attachStartupLogging(server,protocol,port) {
   server.once("listening",function () {
-    serverEvent("START",version + " mode=" + mode);
-    serverEvent(
-      "CONFIG",
-      "logging console=" + (logging.console ? "on" : "off") +
-      " server=" + (logging.server ? "on" : "off") +
-      " access=" + (logging.access ? "on" : "off") +
-      (logging.server || logging.access ? " logRoot=" + logRoot : "")
-    );
-    serverEvent(
-      "CONFIG",
-      "appPath=" + basePath
-    );
-    serverEvent(
-      "CONFIG",
-      "caching=" + (bCaching ? "on" : "off") +
-      " compression=" + (compress ? "on" : "off")
-    );
-    serverEvent("LISTEN","protocol=" + protocol + " port=" + port);
+    let serverName = protocol === "http"
+      ? "HTTP"
+      : protocol === "https"
+        ? "HTTPS"
+        : protocol === "http2.https"
+          ? "HTTP2 (secure)"
+          : "HTTP2 (insecure)";
+    let corsRules=[];
+    for (let [origin,pathMap] of corsPolicies) {
+      for (let [corsPath,policy] of pathMap) {
+        corsRules.push(origin + " " + corsPath + " [" + Array.from(policy.assets).join(", ") + "]");
+      }
+    }
+    let routes=routeMap
+      ? Array.from(routeMap,function ([publicPath,targetPath]) {
+          return publicPath + " -> " + targetPath;
+        })
+      : [];
+    let methods=Array.from(registeredMethods,function ([method,servletPath]) {
+      return method + " -> " + servletPath;
+    });
+    let extensionNames=Object.keys(exports.extension);
+
+    serverEvent("START","\n" + version + " " + serverName + " is running on port " + port + ". (Node.js version " + process.version + ")");
+    serverEvent("CONFIG","Path to server entry: " + serverEntryPath);
+    serverEvent("CONFIG","Path to application base: " + basePath);
+    serverEvent("CONFIG","Mode: " + mode);
+    serverEvent("CONFIG","Node environment: " + process.env.NODE_ENV);
+    serverEvent("CONFIG","Browser caching: " + (bCaching ? "on" : "off"));
+    serverEvent("CONFIG","Static compression: " + (compress ? "on" : "off"));
+    serverEvent("CONFIG","Buffered input limit: " + bufferedInputLimit + " bytes");
+    serverEvent("CONFIG","Console logging: " + (logging.console ? "on" : "off"));
+    serverEvent("CONFIG","Server logging: " + (logging.server ? "on" : "off"));
+    serverEvent("CONFIG","Access logging: " + (logging.access ? "on" : "off"));
+    serverEvent("CONFIG","Path to logs: " + logRoot);
+    serverEvent("CONFIG","MIME type listing: " + (showMimes ? "on" : "off"));
+    serverEvent("CONFIG","MIME types: " + Object.keys(mimeList).length + " configured");
+    serverEvent("CONFIG","Audiovisual MIME types: " + Object.keys(avMimeList).length + " configured");
+    serverEvent("CONFIG","Default character set: " + defaultCharSet);
+    serverEvent("CONFIG","CORS policies: " + (corsRules.length ? corsRules.join("; ") : "none"));
+    serverEvent("CONFIG","Route mappings: " + (routes.length ? routes.join("; ") : "none"));
+    serverEvent("CONFIG","Registered methods: " + (methods.length ? methods.join(", ") : "none"));
+    serverEvent("CONFIG","Extensions: " + (extensionNames.length ? extensionNames.join(", ") : "none"));
+    if (logging.console) console.log("");
   });
   server.on("error",function (err) {
     serverError(protocol + " listener error on port " + port + ": " + err.message,err);

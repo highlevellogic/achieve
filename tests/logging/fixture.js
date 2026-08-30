@@ -109,11 +109,35 @@ if (scenario === "production") {
     achieve.setLogging("server", "access");
 }
 
+if (scenario === "startup-config") {
+    achieve.setMode("production");
+    achieve.setNodeEnv("startup-test");
+    achieve.setBufferedInputLimit(2048);
+    achieve.setCaching(true);
+    achieve.setCompress(true);
+    achieve.setRouteMap({"/public":"/resource.txt"});
+    achieve.registerMethod("PURGE","servlets/lifecycle.jss");
+    achieve.allowOrigins("https://startup.example","/","resource.txt");
+    achieve.addExtension("startup",{});
+    achieve.addMimeType("startup","application/x-startup");
+    achieve.addAVMimeType("startup-media","video/x-startup");
+}
 achieve.setAppPath(process.env.ACHIEVE_APP_PATH);
-const server = scenario === "access-http2"
-    ? achieve.listen2(port)
-    : achieve.listen(port);
-
+let server;
+if (scenario === "access-http2" || scenario === "startup-http2") {
+    server=achieve.listen2(port);
+} else if (scenario === "startup-https" || scenario === "startup-http2s") {
+    const options={
+        key:fs.readFileSync(path.join(__dirname,"test-key.pem")),
+        cert:fs.readFileSync(path.join(__dirname,"test-cert.pem"))
+    };
+    options[scenario === "startup-https" ? "httpsPort" : "http2Port"]=port;
+    server=scenario === "startup-https"
+        ? achieve.slisten(options)
+        : achieve.listen2(options);
+} else {
+    server=achieve.listen(port);
+}
 if (scenario === "init-failure" || scenario === "access-init-failure") {
     setTimeout(function () {
         send({
