@@ -959,16 +959,8 @@ function rawPathContainsBackslash(target) {
 }
 
 function absoluteAuthorityHost(authority) {
+  if (authority.indexOf("@") !== -1) return false;
   let hostValue = authority;
-  let userinfoEnd = authority.indexOf("@");
-  if (userinfoEnd !== -1) {
-    if (authority.indexOf("@",userinfoEnd + 1) !== -1) return false;
-    let userinfo = authority.substring(0,userinfoEnd);
-    if (!/^(?:[A-Za-z0-9._~!$&'()*+,;=:]|%[0-9A-F]{2})*$/i.test(userinfo)) {
-      return false;
-    }
-    hostValue = authority.substring(userinfoEnd + 1);
-  }
 
   if (!validHostValue(hostValue)) return false;
   if (hostValue.charAt(0) === "[") return hostValue;

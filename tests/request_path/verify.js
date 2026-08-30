@@ -159,8 +159,7 @@ function directRequest(server,target) {
             "http://[::1]/foo/bar",
             "http://[::1]:8080/foo/bar",
             "http://[v1.a]/foo/bar",
-            "http://[v1.a]:99999/foo/bar",
-            "http://user:pass@example.com/foo/bar"
+            "http://[v1.a]:99999/foo/bar"
         ]) {
             result=await rawRequest(target);
             check("absolute-form authority accepted " + JSON.stringify(target),
@@ -236,6 +235,11 @@ function directRequest(server,target) {
             result.headers["content-type"] === "text/plain;charset=utf-8" &&
             result.body === "Bad Request",
             result.status + " " + result.headers["content-type"] + " " + result.body);
+
+        result=await rawRequest("http://user:pass@example.com/foo/bar");
+        check("absolute-form userinfo is rejected",
+            result.status === 400 && !result.raw.includes("nested resource"),
+            result.status);
 
         result=await request("/servlets/hello.jss?x=query");
         check("jss servlet and query",result.status === 200 && result.body === "hello query");
