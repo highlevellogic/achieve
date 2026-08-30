@@ -2195,9 +2195,19 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
         return;
       }
       let inputBytes=0;
+      let inputFailed=false;
+      function discardBufferedInput() {
+        inputFailed=true;
+        queryChunks.length=0;
+        inputBytes=0;
+      }
+      request.on("aborted",discardBufferedInput);
+      request.on("error",discardBufferedInput);
       request.on("data",function (data) {
+        if (inputFailed) return;
         inputBytes += data.length;
         if (inputBytes > bufferedInputLimit) {
+          discardBufferedInput();
           response.statusCode=413;
           response.end("Payload Too Large");
           return;
@@ -2205,7 +2215,7 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
         queryChunks.push(data);
       });
       request.on("end",function () {
-        if (response.writableEnded) return;
+        if (inputFailed || response.writableEnded) return;
         let queryData=Buffer.concat(queryChunks,inputBytes).toString("utf8");
         let params;
         if (contentType == "application/json") {
