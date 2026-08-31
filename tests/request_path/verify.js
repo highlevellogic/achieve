@@ -129,8 +129,8 @@ function directRequest(server,target) {
             result.status);
 
         result=await rawRequest("/foo#bar");
-        check("origin-form raw fragment is not rewritten",
-            result.status === 404 && !result.raw.includes("nested resource"),
+        check("origin-form raw fragment is rejected",
+            result.status === 400 && !result.raw.includes("nested resource"),
             result.status);
 
         result=await request("/accounting/index.html");

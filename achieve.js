@@ -1287,6 +1287,18 @@ var achieveApp = function (req, res) {
    // Get information about the requested file or application.
  //  let urlParsed = url.parse(req.headers.referer, true);
    developmentLog("url: " + req.url + ", origin: " + req.socket.remoteAddress);
+   if (/#|%(?![0-9A-Fa-f]{2})/.test(req.url)) {
+     if (req.httpVersion === "2.0") {
+       // A nonzero reset emits an expected stream error; it is not a server failure.
+       req.stream.once("error",function () {});
+       req.stream.close(http2.constants.NGHTTP2_PROTOCOL_ERROR);
+     } else {
+       res.statusCode=400;
+       res.setHeader('Content-Type','text/plain;charset=utf-8');
+       res.end("Bad Request");
+     }
+     return;
+   }
    let targetInfo = requestTarget(req);
    if (!targetInfo || !validRequestAuthority(req)) {
      res.statusCode=400;
