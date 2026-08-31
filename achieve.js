@@ -672,14 +672,19 @@ function handleResolvedResource(req, res, fileInfo, sendBody = true, servletCach
      reportError(res,fileInfo.fullPath,statusCode,reason,sendBody);
    } else if (fileInfo.serveFile) {
      try {
-       if (evaluatePreconditions(req,res,true,fileInfo.etag)) {
+       let modified=staticModificationTime(res,fileInfo.stats);
+       if (evaluatePreconditions(req,res,true,fileInfo.etag,modified)) {
          closeFileInfoDescriptor(fileInfo);
          return;
        }
+       setLastModified(res,modified);
        new ServeFile(req,res,fileInfo,sendBody).init();
      } catch (err) {
        closeFileInfoDescriptor(fileInfo);
-       if (!res.headersSent) res.removeHeader('Content-Length');
+       if (!res.headersSent) {
+         res.removeHeader('Content-Length');
+         res.removeHeader('Last-Modified');
+       }
        reportError(res,fileInfo.fullPath,500,"Error attempting to serve " + safeSourceIdentity(fileInfo.fullPath),sendBody);
      }
    } else if (fileInfo.audioVisual) {
@@ -1633,13 +1638,61 @@ function entityTagFieldMatches (fieldValue,currentETag,weakComparison) {
   }
   return false;
 }
-function evaluatePreconditions (req,res,exists,currentETag) {
+// Use one origination time for Date, the future-mtime clamp, and comparisons.
+// The opened representation's original stats remain untouched (notably for ETags).
+function staticModificationTime (res,stats) {
+  let now=Date.now();
+  res.setHeader('Date',new Date(now).toUTCString());
+  return Math.floor(Math.min(stats.mtimeMs,now)/1000);
+}
+function setLastModified (res,modified) {
+  if (bCaching && modified !== undefined) {
+    res.setHeader('Last-Modified',new Date(modified*1000).toUTCString());
+  }
+}
+// Accept the three HTTP-date forms, not Date.parse's non-HTTP extensions/lists.
+function parseHTTPDate (value) {
+  if (typeof value !== 'string') return undefined;
+  let match=/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d{2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4}) (\d{2}):(\d{2}):(\d{2}) GMT$/.exec(value);
+  let obsolete=false;
+  if (!match) {
+    match=/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), (\d{2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{2}) (\d{2}):(\d{2}):(\d{2}) GMT$/.exec(value);
+    obsolete=!!match;
+  }
+  if (!match) {
+    let asc=/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) ( \d|\d{2}) (\d{2}):(\d{2}):(\d{2}) (\d{4})$/.exec(value);
+    if (!asc) return undefined;
+    match=[asc[0],asc[1],asc[3],asc[2],asc[7],asc[4],asc[5],asc[6]];
+  }
+  let day=Number(match[2]),month=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(match[3]);
+  let year=Number(match[4]),hour=Number(match[5]),minute=Number(match[6]),second=Number(match[7]);
+  if (hour>23 || minute>59 || second>60 || day<1) return undefined;
+  let date=new Date(0);
+  if (obsolete) year+=Math.floor(new Date(Date.now()).getUTCFullYear()/100)*100;
+  date.setUTCFullYear(year,month,day);
+  date.setUTCHours(hour,minute,Math.min(second,59),0);
+  if (obsolete) {
+    let limit=new Date(Date.now());
+    limit.setUTCFullYear(limit.getUTCFullYear()+50);
+    if (date>limit) { year-=100; date.setUTCFullYear(year); }
+  }
+  if (date.getUTCFullYear()!==year || date.getUTCMonth()!==month || date.getUTCDate()!==day) return undefined;
+  return date.getTime()/1000+(second===60 ? 1 : 0);
+}
+function evaluatePreconditions (req,res,exists,currentETag,modified) {
   let ifMatch=req.headers['if-match'];
   if (ifMatch !== undefined) {
     let ifMatchResult = ifMatch.trim() === "*"
       ? exists
       : entityTagFieldMatches(ifMatch,currentETag,false);
     if (!ifMatchResult) {
+      res.statusCode=412;
+      res.end();
+      return true;
+    }
+  } else if (modified !== undefined) {
+    let unmodified=parseHTTPDate(req.headers['if-unmodified-since']);
+    if (unmodified !== undefined && modified>unmodified) {
       res.statusCode=412;
       res.end();
       return true;
@@ -1654,10 +1707,20 @@ function evaluatePreconditions (req,res,exists,currentETag) {
     if (ifNoneMatchResult) {
       if (req.method === "GET" || req.method === "HEAD") {
         if (currentETag) res.setHeader("ETag",currentETag);
+        setLastModified(res,modified);
         res.statusCode=304;
       } else {
         res.statusCode=412;
       }
+      res.end();
+      return true;
+    }
+  } else if (modified !== undefined && (req.method === 'GET' || req.method === 'HEAD')) {
+    let since=parseHTTPDate(req.headers['if-modified-since']);
+    if (since !== undefined && modified<=since) {
+      if (currentETag) res.setHeader('ETag',currentETag);
+      setLastModified(res,modified);
+      res.statusCode=304;
       res.end();
       return true;
     }
@@ -2483,6 +2546,7 @@ function ServeFile (req,res,fileInfo,sendBody = true) {
      }
      if (!response.headersSent) {
        response.removeHeader('Content-Length');
+       response.removeHeader('Last-Modified');
        response.setHeader('content-type', 'text/plain;charset=utf-8');
        response.statusCode = 500;
        response.end("Error attempting to serve " + safeSourceIdentity(filePath));
@@ -2702,12 +2766,14 @@ let stream = function(req, res, fileInfo, sendBody = true) {
     mediaETag=representationETag(stats.mtimeMs,stats.size,"i");
     res.setHeader("ETag",mediaETag);
   }
-  if (evaluatePreconditions(req,res,true,mediaETag)) {
+  var modified=staticModificationTime(res,stats);
+  if (evaluatePreconditions(req,res,true,mediaETag,modified)) {
     closeFileInfoDescriptor(fileInfo);
     return;
   }
 
   if (!sendBody) {
+    setLastModified(res,modified);
     closeFileInfoDescriptor(fileInfo);
     res.writeHead(200, {
       "Accept-Ranges": "bytes",
@@ -2786,6 +2852,7 @@ let stream = function(req, res, fileInfo, sendBody = true) {
     responseHeader["Content-Range"] = "bytes " + start + "-" + end + "/" + total;
   }
   if (!contentRange && stats.size === 0) {
+    setLastModified(res,modified);
     closeFileInfoDescriptor(fileInfo);
     res.writeHead(responseCode, responseHeader);
     res.end();
@@ -2838,6 +2905,7 @@ let stream = function(req, res, fileInfo, sendBody = true) {
     readStream.destroy();
     return;
   }
+  setLastModified(res,modified);
   res.writeHead(responseCode, responseHeader);
   readStream.pipe(res);
   res.on("close", function() {
