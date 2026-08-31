@@ -679,6 +679,7 @@ function handleResolvedResource(req, res, fileInfo, sendBody = true, servletCach
        new ServeFile(req,res,fileInfo,sendBody).init();
      } catch (err) {
        closeFileInfoDescriptor(fileInfo);
+       if (!res.headersSent) res.removeHeader('Content-Length');
        reportError(res,fileInfo.fullPath,500,"Error attempting to serve " + safeSourceIdentity(fileInfo.fullPath),sendBody);
      }
    } else if (fileInfo.audioVisual) {
@@ -2467,7 +2468,8 @@ function ServeFile (req,res,fileInfo,sendBody = true) {
    res.setHeader('server', version);
    if (fileInfo.etag) res.setHeader('etag', fileInfo.etag);
    res.statusCode = 200;
-   if (!sendBody) {
+   res.setHeader('Content-Length', fileInfo.stats.size);
+   if (!sendBody || fileInfo.stats.size === 0) {
      closeFileInfoDescriptor(fileInfo);
      response.end();
      return;
@@ -2480,6 +2482,7 @@ function ServeFile (req,res,fileInfo,sendBody = true) {
        return;
      }
      if (!response.headersSent) {
+       response.removeHeader('Content-Length');
        response.setHeader('content-type', 'text/plain;charset=utf-8');
        response.statusCode = 500;
        response.end("Error attempting to serve " + safeSourceIdentity(filePath));
@@ -2492,7 +2495,8 @@ function ServeFile (req,res,fileInfo,sendBody = true) {
      readStream = fs.createReadStream(filePath,{
        fd:fileInfo.fileDescriptor,
        autoClose:true,
-       start:0
+       start:0,
+       end:fileInfo.stats.size - 1
      });
      fileInfo.fileDescriptor=undefined;
    } catch (err) {
