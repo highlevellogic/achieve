@@ -67,6 +67,21 @@ malformed-JSON recovery, the intentional absence of parsed data on
 `session.request.get` and `session.request.post`, and the current OPTIONS
 status and response headers.
 
+Run the request-input verifier, including its test-local streaming SAX
+servlet, with:
+
+    node tests/request_input/verify.js
+
+The SAX fixture uses the development-only @nodable/sax dependency and does
+not depend on the Advanced XML teaching example.
+
+Run package self-reference verification with:
+
+    node tests/package_self_reference/verify.js
+
+Its local ESM startup fixture imports `achieve` by package name, starts the
+server, and serves a real request without depending on the Startup example.
+
 # APPLICATION-DIRECTORY FIXTURES
 
 Achieve uses the server project's root directory as its default application

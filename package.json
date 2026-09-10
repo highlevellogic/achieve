@@ -31,6 +31,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@nodable/sax": "^1.2.1",
     "achieve_rooms": "^2.0.0",
     "soap": "^1.11.0",
     "ws": "^8.21.3"

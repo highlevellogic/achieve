@@ -3,7 +3,7 @@ const achieve=require("../../achieve");
 
 achieve.setMode("production");
 achieve.setLogging(false);
-achieve.setAppPath(path.join(__dirname,"..","..","examples","advanced","xml"));
+achieve.setAppPath(path.join(__dirname,"sax-application"));
 
 const server=achieve.listen(Number(process.env.ACHIEVE_REQUEST_INPUT_PORT));
 server.on("listening",function () {

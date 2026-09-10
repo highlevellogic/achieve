@@ -10,7 +10,7 @@ const repositoryPath=path.join(__dirname,"..","..");
 const achievePath=path.join(repositoryPath,"achieve.js");
 const esmProbePath=path.join(__dirname,"esm-probe.mjs");
 const spawnProbePath=path.join(__dirname,"spawn-probe.cjs");
-const startupDirectory=path.join(repositoryPath,"examples","basics","startup");
+const startupDirectory=__dirname;
 const startupPath=path.join(startupDirectory,"startup.mjs");
 const temporaryPath=fs.mkdtempSync(path.join(os.tmpdir(),"achieve-package-reference-"));
 
@@ -62,9 +62,9 @@ async function liveStartupTest() {
         }
         assert(response,"Startup example did not begin serving.\n"+stdout+stderr);
         assert.strictEqual(response.status,200);
-        assert(response.body.includes("Achieve Startup example"));
+        assert(response.body.includes("Achieve package self-reference fixture"));
         assert.strictEqual(stderr,"");
-        pass("actual three-line Startup example serves from documented directory");
+        pass("test-local ESM startup serves through package self-reference");
     } finally {
         if (child.exitCode === null) {
             child.kill();
