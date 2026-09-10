@@ -2293,7 +2293,9 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
     response.setHeader('Content-Type','text/plain');
     if (request.method == "POST") {
       developmentLog("using POST");
-      let contentType=(request.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
+      let contentTypeHeader=request.headers["content-type"];
+      let contentType=(contentTypeHeader || "").split(";")[0].trim().toLowerCase();
+      if (contentTypeHeader === undefined) serverWarning("WARNING: POST request has no Content-Type; Achieve is treating the input as application/x-www-form-urlencoded.");
       if (contentType != "" && contentType != "application/json" &&
           contentType != "application/x-www-form-urlencoded") {
         invokeServlet(request,response,fileInfo,myApp,{},sendBody);
