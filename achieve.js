@@ -24,6 +24,7 @@ let servletResolutionCache = new Map();
 let servletResolutionAliases = new Map();
 let registeredMethods = new Map();
 let routeMap;
+let pathMap;
 
 let mode = "development";
 let logging = {
@@ -479,6 +480,26 @@ exports.setRouteMap = function (configured) {
   }
   routeMap=validated;
 };
+exports.setPathMap = function (configured) {
+  if (configured === null || typeof configured !== "object" ||
+      (Object.getPrototypeOf(configured) !== Object.prototype && Object.getPrototypeOf(configured) !== null)) {
+    throw new TypeError("setPathMap() requires a plain object.");
+  }
+  let entries=Object.entries(configured);
+  if (entries.length === 0) throw new TypeError("setPathMap() requires at least one path mapping.");
+  let validated=new Map();
+  for (let [publicPath,targetPath] of entries) {
+    if (!validRoutePath(publicPath) || publicPath === "/" || !publicPath.endsWith("/")) {
+      throw new TypeError("setPathMap() contains an invalid public path (a non-root directory path ending in / is required): " + publicPath);
+    }
+    if (!validRoutePath(targetPath) || !targetPath.endsWith("/")) {
+      throw new TypeError("setPathMap() contains an invalid mapped target (a directory path ending in / is required) for: " + publicPath);
+    }
+    if (!containedRequestPath(basePath,targetPath)) throw new TypeError("setPathMap() mapped targets must remain beneath the application path.");
+    validated.set(publicPath,targetPath);
+  }
+  pathMap=validated;
+};
 const achieveOwnedMethods = new Set(["GET","HEAD","POST","OPTIONS","CONNECT"]);
 const advertisedBuiltInMethods = ["GET","HEAD","POST","OPTIONS"];
 const httpTokenPattern = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
@@ -812,10 +833,20 @@ function cachedServlet(basePath,resourceTarget) {
 }
 
 function mappedResourceTarget(resourceTarget) {
-    if (routeMap === undefined || typeof resourceTarget !== "string") return;
+    if (typeof resourceTarget !== "string") return;
     let queryStart=resourceTarget.indexOf("?");
     let publicPath=queryStart === -1 ? resourceTarget : resourceTarget.substring(0,queryStart);
-    let targetPath=routeMap.get(publicPath);
+    let targetPath=routeMap === undefined ? undefined : routeMap.get(publicPath);
+    if (targetPath === undefined && pathMap !== undefined) {
+      let matchingSource;
+      for (let [sourcePath,mappedPath] of pathMap) {
+        if (publicPath.startsWith(sourcePath) &&
+            (matchingSource === undefined || sourcePath.length > matchingSource.length)) {
+          matchingSource=sourcePath;
+          targetPath=mappedPath + publicPath.substring(sourcePath.length);
+        }
+      }
+    }
     if (targetPath === undefined) return;
     return queryStart === -1 ? targetPath : targetPath + resourceTarget.substring(queryStart);
 }
@@ -1248,6 +1279,11 @@ function attachStartupLogging(server,protocol,port) {
           return publicPath + " -> " + targetPath;
         })
       : [];
+    let paths=pathMap
+      ? Array.from(pathMap,function ([publicPath,targetPath]) {
+          return publicPath + " -> " + targetPath;
+        })
+      : [];
     let methods=Array.from(registeredMethods,function ([method,servletPath]) {
       return method + " -> " + servletPath;
     });
@@ -1271,6 +1307,7 @@ function attachStartupLogging(server,protocol,port) {
     serverEvent("CONFIG","Default character set: " + defaultCharSet);
     serverEvent("CONFIG","CORS policies: " + (corsRules.length ? corsRules.join("; ") : "none"));
     serverEvent("CONFIG","Route mappings: " + (routes.length ? routes.join("; ") : "none"));
+    serverEvent("CONFIG","Path mappings: " + (paths.length ? paths.join("; ") : "none"));
     serverEvent("CONFIG","Registered methods: " + (methods.length ? methods.join(", ") : "none"));
     serverEvent("CONFIG","Extensions: " + (extensionNames.length ? extensionNames.join(", ") : "none"));
     if (logging.console) console.log("");
