@@ -1,0 +1,6 @@
+import achieve from "achieve";
+import { examplesPath,mainPort } from "./example-config.mjs";
+
+achieve.setAppPath(examplesPath);
+achieve.setMode("production");
+achieve.listen(mainPort);

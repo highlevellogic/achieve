@@ -29,5 +29,10 @@
   "engines": {
     "node": ">=22"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "achieve_rooms": "^2.0.0",
+    "soap": "^1.11.0",
+    "ws": "^8.21.3"
+  }
 }
