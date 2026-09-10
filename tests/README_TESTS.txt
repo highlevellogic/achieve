@@ -125,7 +125,7 @@ returning the full current representation.
 
 # HEAD REGRESSION EXPECTATIONS
 
-The public example under examples/head/ introduces HEAD with a simple servlet
+The public example under ../achieve_examples/intermediate/head/ introduces HEAD with a simple servlet
 request. Engineering HEAD verification should cover the broader server-managed
 resource paths:
 
@@ -158,7 +158,7 @@ check fails.
 
 # MEDIA AND COMPRESSION FIXTURES
 
-The tracked fixture is examples/media/media/mov_bbb.mp4. It is the short Big
+The tracked fixture is ../achieve_examples/basics/media/media/mov_bbb.mp4. It is the short Big
 Buck Bunny MP4 used by W3Schools HTML video examples. This copy was downloaded
 from W3Schools. Original film credit:
 Big Buck Bunny / Blender Foundation / Peach Open Movie. Achieve uses it only
@@ -227,5 +227,5 @@ Keep verification simple enough that a developer can quickly understand:
 * how PASS or FAIL is determined.
 
 Avoid adding unnecessary test-framework complexity. Friendly teaching and
-browser exploration belong under examples/; exact verification and failure
+browser exploration belong under ../achieve_examples/; exact verification and failure
 fixtures belong here.

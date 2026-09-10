@@ -7,7 +7,7 @@ const path = require("path");
 
 const repositoryPath = path.join(__dirname, "..", "..");
 const achieveModule = path.join(repositoryPath, "achieve.js");
-const applicationPath = path.join(repositoryPath, "examples");
+let applicationPath;
 const fixturePath = path.join(__dirname, "fixture.js");
 let nextPort = 19030;
 let failures = 0;
@@ -171,6 +171,7 @@ async function runningCase(scenario, options, inspect) {
 }
 
 (async function () {
+    ({examplesPath:applicationPath}=await import("../../example-config.mjs"));
     const temporaryPath = fs.mkdtempSync(path.join(os.tmpdir(), "achieve-logging-"));
     try {
         const invalid = await startCase("invalid-api");
@@ -243,7 +244,7 @@ async function runningCase(scenario, options, inspect) {
             check("default server logging creates no files", serverLogFiles(defaultRoot).length === 0);
             check("configuration locks after startup", Object.values(testCase.message.checks).every(Boolean));
             const getResult = await request(testCase.message.port, {path: "/basics/get/servlets/hello.jss"});
-            const headResult = await request(testCase.message.port, {method: "HEAD", path: "/basics/head/servlets/hello.jss"});
+            const headResult = await request(testCase.message.port, {method: "HEAD", path: "/intermediate/head/servlets/hello.jss"});
             const postResult = await request(testCase.message.port, {method: "POST", path: "/basics/post/servlets/hello.jss", body: "value=1"});
             const containmentResult = await request(testCase.message.port, {path: "/..%2fpackage.json"});
             check("GET .jss regression", getResult.status === 200 && getResult.body.toString().includes("Hello World"));

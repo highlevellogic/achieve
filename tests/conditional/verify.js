@@ -43,7 +43,7 @@ function request(port, options) {
 
 function startServer(port, caching, compression) {
     return new Promise((resolve, reject) => {
-        const child = childProcess.spawn(process.execPath, [path.join(__dirname, "..", "..", "examples", "conditional", "server.js")], {
+        const child = childProcess.spawn(process.execPath, [path.join(__dirname, "fixture.js")], {
             cwd: path.join(__dirname, "..", ".."),
             env: Object.assign({}, process.env, {
                 ACHIEVE_CONDITIONAL_PORT: String(port),
