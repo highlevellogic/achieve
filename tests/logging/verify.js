@@ -227,8 +227,7 @@ async function runningCase(scenario, options, inspect) {
                 "Default character set: utf-8",
                 "CORS policies: https://startup.example / [resource.txt]",
                 "Route mappings: /public -> /resource.txt",
-                "Registered methods: PURGE -> servlets",
-                "Extensions: startup"
+                "Registered methods: PURGE -> servlets"
             ]) {
                 check("configured startup reports "+line,output.includes(line));
             }

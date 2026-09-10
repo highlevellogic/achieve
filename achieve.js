@@ -1287,8 +1287,6 @@ function attachStartupLogging(server,protocol,port) {
     let methods=Array.from(registeredMethods,function ([method,servletPath]) {
       return method + " -> " + servletPath;
     });
-    let extensionNames=Object.keys(exports.extension);
-
     serverEvent("START","\n" + version + " " + serverName + " is running on port " + port + ". (Node.js version " + process.version + ")");
     serverEvent("CONFIG","Path to server entry: " + serverEntryPath);
     serverEvent("CONFIG","Path to application base: " + basePath);
@@ -1309,7 +1307,6 @@ function attachStartupLogging(server,protocol,port) {
     serverEvent("CONFIG","Route mappings: " + (routes.length ? routes.join("; ") : "none"));
     serverEvent("CONFIG","Path mappings: " + (paths.length ? paths.join("; ") : "none"));
     serverEvent("CONFIG","Registered methods: " + (methods.length ? methods.join(", ") : "none"));
-    serverEvent("CONFIG","Extensions: " + (extensionNames.length ? extensionNames.join(", ") : "none"));
     if (logging.console) console.log("");
   });
   server.on("error",function (err) {
@@ -1504,20 +1501,6 @@ exports.listen = function (port) {
     }
   }
   return server;
-};
-// extension offers a way to add functionality to the server, which will be available via the context object.
-// NOT YET IMPLEMENTED
-exports.extension = {};
-exports.addExtension = function (name,obj) {
-  if (obj === undefined || name.length < 1) {
-    serverError("addExtension() error: Two arguments required. First is a string representing the name of the extension. The second is the value of the extension.");
-  }
-  var nameType=true;
-  if (typeof name == "string") {
-    this.extension[name]=obj;
-  } else {
-    serverError("addExtension() error: First argument must be a valid string for name of the extension.");
-  }
 };
 // Supported MIME types, based on file extensions
 // You may add new MIME types.

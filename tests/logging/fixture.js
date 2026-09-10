@@ -118,7 +118,6 @@ if (scenario === "startup-config") {
     achieve.setRouteMap({"/public":"/resource.txt"});
     achieve.registerMethod("PURGE","servlets/lifecycle.jss");
     achieve.allowOrigins("https://startup.example","/","resource.txt");
-    achieve.addExtension("startup",{});
     achieve.addMimeType("startup","application/x-startup");
     achieve.addAVMimeType("startup-media","video/x-startup");
 }
