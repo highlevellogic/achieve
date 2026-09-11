@@ -4,6 +4,10 @@
   "description": "A modern high-performance, developer-friendly web server.",
   "main": "achieve",
   "exports": "./achieve.js",
+  "files": [
+    "achieve.js",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "check": "node --check achieve.js"
   },
