@@ -2429,7 +2429,37 @@ function isInternalRuntimeSource (sourcePath) {
   );
 }
 
-function runtimeStackFrame (stackLine) {
+function displayedRuntimeSource (sourcePath) {
+  return sourcePath.replace(/\?achieve-mtime=[^:]*(:\d+:\d+)$/,"$1");
+}
+
+function isApplicationRuntimeSource (sourcePath) {
+  var source = displayedRuntimeSource(sourcePath);
+  var location = source.match(/(:\d+:\d+)$/);
+  if (!location) return false;
+  source = source.substring(0,source.length-location[1].length);
+  if (source.toLowerCase().indexOf("file:///") === 0) {
+    source = source.substring(7);
+    try {
+      source = decodeURIComponent(source);
+    } catch (decodeError) {
+    }
+    if (/^\/[A-Za-z]:\//.test(source)) source = source.substring(1);
+  }
+  source = source.replace(/\\/g,"/");
+  if (source.toLowerCase().indexOf("/node_modules/") !== -1) return false;
+
+  var normalizedRoot = basePath.replace(/\\/g,"/").replace(/\/$/,"");
+  var compareSource = source;
+  var compareRoot = normalizedRoot;
+  if (/^[A-Za-z]:\//.test(source) || source.indexOf("//") === 0) {
+    compareSource = source.toLowerCase();
+    compareRoot = normalizedRoot.toLowerCase();
+  }
+  return compareSource.indexOf(compareRoot + "/") === 0;
+}
+
+function runtimeStackFrame (stackLine,applicationOnly = false) {
   var line = stackLine.trim();
   if (line.indexOf("at ") !== 0) return "";
 
@@ -2444,8 +2474,9 @@ function runtimeStackFrame (stackLine) {
 
   if (!/[^\s]:\d+:\d+$/.test(sourcePath)) return "";
   if (isInternalRuntimeSource(sourcePath)) return "";
+  if (applicationOnly && !isApplicationRuntimeSource(sourcePath)) return "";
 
-  var sourceIdentity = safeSourceIdentity(sourcePath);
+  var sourceIdentity = safeSourceIdentity(displayedRuntimeSource(sourcePath));
   if (sourceIdentity === "[path]") return "";
   return sourceIdentity;
 }
@@ -2500,6 +2531,10 @@ function rtErrorMsg (err,shortPath="",code=500) {
     if (/^[A-Za-z_$][A-Za-z0-9_$]*Error:/.test(part1) || /^Error:/.test(part1)) {
       var headline = sanitizeDeveloperErrorText(part1);
       var stackLines = normalizedStack.substring(firstLineEnd+1).split('\n');
+      for (var stackLine of stackLines) {
+        var applicationFrame = runtimeStackFrame(stackLine,true);
+        if (applicationFrame) return headline + " " + applicationFrame;
+      }
       for (var stackLine of stackLines) {
         var usefulFrame = runtimeStackFrame(stackLine);
         if (usefulFrame) return headline + " " + usefulFrame;
