@@ -9,29 +9,20 @@ Install Node.js 22 or newer. Use a currently supported even-numbered LTS
 release for production. Node.js 24 LTS is the preferred current choice for new
 installations and development. Achieve has no runtime dependencies.
 
-STARTING THE DEVELOPMENT SERVER
+STARTING THE EXAMPLE SERVERS
 
-From the repository directory, run:
+Executable examples are maintained in the sibling achieve_examples repository.
+Achieve startup and configuration files remain in this repository. The current
+ESM example startup modules import Achieve by package self-reference, use
+example-config.mjs to locate the examples application, and select it with
+setAppPath(examplesPath). Set ACHIEVE_EXAMPLES_PATH to override the sibling
+location.
 
-    node start.js
-
-start.js configures examples/ as the application directory and starts HTTP on
-port 8989. It uses paths relative to the repository and contains no
-machine-specific application path.
-
-Thin convenience launchers are also available:
-
-    runw.bat       Windows
-    sh runl.sh     Unix-like systems
-
-Then open:
+Run a startup module from this repository, following the command for the desired
+demonstration in ../achieve_examples/README.md. The normal examples landing page
+is:
 
     http://localhost:8989/
-
-The root page links to executable examples that show how Achieve works. A basic first
-confirmation is:
-
-    http://localhost:8989/confirm/
 
 APPLICATIONS AND SERVLETS
 
@@ -66,28 +57,15 @@ by the servlet application.
 
 EXAMPLES
 
-The examples/ directory is executable documentation for developers and
-students. The ordinary server provides confirmation, GET, HEAD, POST, and
-media examples from its landing page.
-
-Two examples use focused launchers because they require their own server
-configuration:
-
-    node examples/conditional/server.js
-        open http://localhost:8991/
-
-    node examples/application_directory/server.js
-        open http://localhost:8990/
-
-The conditional example enables caching and compression. The application
-directory example shows setAppPath() selecting one application containing an
-ordinary nested directory.
+The sibling achieve_examples repository is executable documentation for
+developers and students. Its application content is served by startup modules
+in this repository; it does not contain or own Achieve server startup files.
 
 ENGINEERING TESTS
 
 The tests/ directory contains regression verification, protocol assertions,
 edge cases, intentionally broken servlets, and support fixtures. It is not the
-ordinary beginner application served by start.js.
+ordinary beginner application in the sibling examples repository.
 
 Representative areas include:
 
@@ -96,7 +74,7 @@ Representative areas include:
     redirect/      directory redirects
     media/         engineering-only and local large-media cases
     helper/        servlet helper loading and error propagation
-    jss/           servlet routing, reload, precedence, and .jss source protection
+    jss/           .jss/.jss.cjs/.jss.mjs routing, reload, precedence, and source protection
     application_directory/   default and configured application-directory verification
 
 The jss/ tree deliberately contains invalid or incomplete servlet modules for

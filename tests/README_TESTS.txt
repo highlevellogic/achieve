@@ -4,10 +4,10 @@ The tests directory contains engineering verification, protocol assertions,
 edge cases, intentionally broken servlets, and support fixtures used during
 Achieve development.
 
-Executable documentation for developers and students is under examples/.
-Start the ordinary examples with `node start.js`, then open:
-
-    http://localhost:8989/
+Executable documentation for developers and students is in the sibling
+../achieve_examples/ repository. Achieve startup and configuration files remain
+in this repository and select that application with setAppPath(). See the
+sibling repository's README for its current startup commands.
 
 LOGGING
 
@@ -47,8 +47,8 @@ The principal areas are:
 * redirect: directory redirects;
 * media: engineering-only and local large-media regression material;
 * helper: helper-module loading, reload, and error propagation;
-* jss: .jss routing, defaults, precedence, live reload, legacy compatibility,
-  and source protection;
+* jss: .jss, .jss.cjs, and .jss.mjs routing, defaults, precedence, live reload,
+  legacy compatibility, and source protection;
 * request_path: one-application routing, containment, and raw-backslash
   rejection;
 * application_directory: default and configured application-directory
@@ -88,35 +88,19 @@ Achieve uses the server project's root directory as its default application
 directory. Use setAppPath() to select a different application directory. URL
 directories never select another application or containment boundary.
 
-Start the focused browser demonstration with:
-
-node examples/application_directory/server.js
-
-Then open:
-
-http://localhost:8990/
-
 Run the focused automated verification with:
 
 node tests/application_directory/verify.js
 
-The browser demonstration shows ordinary directories inside one configured
-application. The verifier proves the default directory, setAppPath() override,
-and the inert diagnostic behavior of obsolete setRootDir().
+The verifier is self-contained and proves the default directory, setAppPath()
+override, and the inert diagnostic behavior of obsolete setRootDir().
 
 # CONDITIONAL-REQUEST TESTS
 
-The conditional browser example provides a friendly introduction to ETags and
-preconditions. The verifier under tests/ provides exact request-header and
-status verification.
-
-Start its focused browser server with:
-
-node examples/conditional/server.js
-
-Then open:
-
-http://localhost:8991/
+The conditional teaching example in ../achieve_examples/intermediate/conditional/
+provides a friendly introduction to ETags and preconditions. The verifier under
+tests/ is self-contained and provides exact request-header and status
+verification.
 
 The page displays status, ETag, Content-Encoding, Vary, and PASS/FAIL results
 for static If-None-Match and If-Match requests, their precedence, servlet
@@ -170,6 +154,13 @@ invalid, throw errors, or omit the servlet export. They verify safe diagnostics,
 failed-load recovery, cache behavior, and the rule that .jss source never falls
 back to static delivery. Do not repair them merely because a standalone syntax
 check fails.
+
+Run the focused servlet runtime-error location verifier with:
+
+    node tests/servlet_errors/verify.js
+
+It checks application-frame-first reporting for CommonJS and ESM servlets and
+helpers, sanitized error output, fallback frames, and server recovery.
 
 # MEDIA AND COMPRESSION FIXTURES
 
