@@ -103,6 +103,15 @@ function updateFile(filePath, content) {
     fs.utimesSync(filePath, future, future);
 }
 
+async function expectLoaderFailure(port,kind,message,fileName) {
+    const result=await request(port,"/servlets/loader-errors.jss.cjs?kind="+kind);
+    assert.strictEqual(result.status,500,kind+" status");
+    assert(result.body.includes(message),kind+" message: "+result.body);
+    if (fileName) assert(new RegExp(fileName.replace(/\./g,"\\.")+":\\d+:\\d+$").test(result.body),result.body);
+    assert(!result.body.includes("?achieve-mtime="),result.body);
+    assert(!result.body.includes("C:\\projects"),result.body);
+}
+
 function prepareApplication(applicationPath) {
     fs.cpSync(sourceApplication, applicationPath, {recursive: true});
     fs.cpSync(
@@ -168,8 +177,17 @@ async function verifyProduction(applicationPath) {
         assert.strictEqual(result.status, 200);
         assert.strictEqual(
             result.body,
-            "loadCJS explicit|loadCJS shorthand|legacy load|loadESM one"
+            "explicit CJS|bare JSS|legacy load|documented .js load|ESM one|undefined|undefined"
         );
+
+        await expectLoaderFailure(port,"cjs-evaluation","CJS helper evaluation failure","servlets/error-evaluation.jss.cjs");
+        await expectLoaderFailure(port,"cjs-call","CJS helper call failure","servlets/error-call.jss");
+        await expectLoaderFailure(port,"esm-evaluation","ESM helper evaluation failure","servlets/error-evaluation.jss.mjs");
+        await expectLoaderFailure(port,"esm-call","ESM helper call failure","servlets/error-call.jss.mjs");
+        await expectLoaderFailure(port,"unsupported","load() supports extensionless legacy names, .js, .jss, .jss.cjs, and .jss.mjs module filenames.");
+        result=await request(port,"/servlets/hello.jss?name=healthy");
+        assert.strictEqual(result.status,200);
+        assert.strictEqual(result.body,"COMMONJS shorthand healthy");
 
         result = await request(port, "/servlets/legacy-servlet");
         assert.strictEqual(result.status, 200);
@@ -213,20 +231,31 @@ async function verifyDevelopment(applicationPath) {
 
         result = await request(port, "/servlets/loader.jss.cjs");
         assert.strictEqual(result.status, 200);
-        assert(result.body.endsWith("loadESM one"));
+        assert.strictEqual(result.body,"explicit CJS|bare JSS|legacy load|documented .js load|ESM one|undefined|undefined");
 
         updateFile(
             path.join(applicationPath, "servlets", "loaded.jss.cjs"),
-            "exports.value = \"loadCJS explicit two\";\n"
+            "exports.value = \"explicit CJS two\";\n"
+        );
+        updateFile(
+            path.join(applicationPath, "servlets", "loaded.jss"),
+            "exports.value = \"bare JSS two\";\n"
+        );
+        updateFile(
+            path.join(applicationPath, "servlets", "legacy.js"),
+            "exports.value = \"legacy load two\";\n"
+        );
+        updateFile(
+            path.join(applicationPath, "servlets", "documented.js"),
+            "exports.value = \"documented .js load two\";\n"
         );
         updateFile(
             path.join(applicationPath, "servlets", "loaded.jss.mjs"),
-            "export const value = \"loadESM two\";\n"
+            "export const value = \"ESM two\";\n"
         );
         result = await request(port, "/servlets/loader.jss.cjs");
         assert.strictEqual(result.status, 200);
-        assert(result.body.startsWith("loadCJS explicit two"));
-        assert(result.body.endsWith("loadESM two"));
+        assert.strictEqual(result.body,"explicit CJS two|bare JSS two|legacy load two|documented .js load two|ESM two|undefined|undefined");
     } finally {
         await stopServer(child);
     }

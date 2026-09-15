@@ -145,9 +145,9 @@ the simple CommonJS servlet form, .jss.cjs is explicit CommonJS, and .jss.mjs
 is ESM. Extensionless requests remain compatible with legacy .js servlets.
 Ordinary .js, .cjs, and .mjs files do not receive .jss source protection.
 
-The servlet_modules verifier covers both compound forms, native ESM imports,
-Context loadCJS()/loadESM(), MIME behavior, development reload, production
-caching, and compound default-file precedence.
+The servlet_modules verifier covers both compound forms, unified Context
+load() dispatch, native ESM imports, MIME behavior, development reload,
+production caching, and compound default-file precedence.
 
 Several files under jss/source_protection and jss/lifecycle are deliberately
 invalid, throw errors, or omit the servlet export. They verify safe diagnostics,

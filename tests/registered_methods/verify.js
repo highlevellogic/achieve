@@ -96,7 +96,7 @@ function json(response){ return JSON.parse(response.body); }
     const xml='<root><item id="1"/><item>two</item></root>';
     response=await request(main,"PROPPATCH","/xml",{"Content-Type":"application/xml"},[xml.slice(0,12),xml.slice(12)]);
     value=json(response); assert.strictEqual(value.elements,2); assert.strictEqual(value.body,xml);
-    response=await request(main,"MKCOL","/loader"); assert.strictEqual(response.body,"cjs-load|esm-load");
+    response=await request(main,"MKCOL","/loader"); assert.strictEqual(response.body,"cjs-load|esm-load|undefined|undefined");
     response=await request(main,"LOCK","/async"); assert.strictEqual(response.body,"async-complete");
     const reloadPath=path.join(__dirname,"application-two","servlets","reload.jss");
     const reloadOriginal=require("node:fs").readFileSync(reloadPath,"utf8");

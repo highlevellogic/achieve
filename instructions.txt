@@ -42,10 +42,10 @@ and is never served as static content. Extensionless requests remain
 compatible with legacy .js servlets.
 
 Ordinary .js, .cjs, and .mjs files in the public application tree do not have
-.jss protection and are served as JavaScript resources. Servlet code can use
-session.loadCJS() for protected .jss/.jss.cjs modules and await
-session.loadESM() for protected .jss.mjs modules. The legacy session.load()
-CommonJS helper remains available.
+.jss protection and are served as JavaScript resources. Servlet code uses
+session.load(filename) for helper modules. Explicit .js, .jss, and .jss.cjs
+files load synchronously as CommonJS; .jss.mjs returns a Promise for an ES
+module. Extensionless names retain the legacy implicit .js behavior.
 
 BUFFERED POST INPUT
 

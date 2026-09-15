@@ -1,1 +1,1 @@
-exports.value = "loadCJS explicit";
+exports.value = "explicit CJS";

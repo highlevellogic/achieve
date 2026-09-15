@@ -1759,15 +1759,13 @@ function evaluatePreconditions (req,res,exists,currentETag,modified) {
   }
   return false;
 }
-function Context (req,res,parms,dirPath,load,loadCJS,loadESM) {
+function Context (req,res,parms,dirPath,load) {
   this.request = req;
   this.response = res;
   this.parms = parms; // deprecate
   this.params = parms;
   this.dirPath = dirPath;
   this.load = load;
-  this.loadCJS = loadCJS;
-  this.loadESM = loadESM;
   this.rtErrorMsg = rtErrorMsg;
   this.allowAsync = false;
 }
@@ -2258,9 +2256,7 @@ function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
   try {
     let loaderState={request:request,response:response,dirPath:fileInfo.dirPath};
     let boundLoader=load.bind(loaderState);
-    let boundCJSLoader=loadCJS.bind(loaderState);
-    let boundESMLoader=loadESM.bind(loaderState);
-    context=new Context(request,response,params,fileInfo.dirPath,boundLoader,boundCJSLoader,boundESMLoader);
+    context=new Context(request,response,params,fileInfo.dirPath,boundLoader);
     let content=myApp.servlet(context);
     if (context.allowAsync) {
       applicationOwned();
@@ -2709,14 +2705,9 @@ exports.loadModule = function (moduleName) {
     serverError("loadModule: " + rtErrorMsg(err),err);
   }
 };
-function loadCommonJSModule (filePath,allowLegacyName) {
+function loadCommonJSModule (filePath) {
   let dirname=this.dirPath;
-  let modulePath=allowLegacyName ? filePath+".js" : filePath;
-  let moduleType=servletModuleType(modulePath);
-  if (!allowLegacyName && moduleType !== "commonjs") {
-    throw new Error("loadCJS() requires a .jss or .jss.cjs module name.");
-  }
-  let fullPath = path.join(dirname,modulePath);
+  let fullPath = path.join(dirname,filePath);
   let loadedMtime;
   const stats = fs.statSync(fullPath);
 	if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
@@ -2727,16 +2718,19 @@ function loadCommonJSModule (filePath,allowLegacyName) {
   if (loadedMtime !== undefined) moduleLoadTimes[fullPath] = loadedMtime;
   return loadedModule;
 }
-let loadCJS = function (filePath) {
-  return loadCommonJSModule.call(this,filePath,false);
-}
 let load = function (filePath) {
-  return loadCommonJSModule.call(this,filePath,true);
-}
-let loadESM = async function (filePath) {
-  if (servletModuleType(filePath) !== "module") {
-    throw new Error("loadESM() requires a .jss.mjs module name.");
+  if (typeof filePath !== "string" || filePath.length === 0) {
+    throw new TypeError("load() requires a nonempty module filename.");
   }
+  let moduleType=servletModuleType(filePath);
+  if (moduleType === "commonjs" || filePath.toLowerCase().endsWith(".js")) {
+    return loadCommonJSModule.call(this,filePath);
+  }
+  if (moduleType === "module") return loadESMModule.call(this,filePath);
+  if (path.extname(filePath) === "") return loadCommonJSModule.call(this,filePath+".js");
+  throw new TypeError("load() supports extensionless legacy names, .js, .jss, .jss.cjs, and .jss.mjs module filenames.");
+}
+let loadESMModule = async function (filePath) {
   let fullPath=path.join(this.dirPath,filePath);
   let importedModule=await importESMFile(fullPath);
   moduleLoadTimes[fullPath]=importedModule.mtimeMs;

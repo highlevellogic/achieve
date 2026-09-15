@@ -1,1 +1,1 @@
-export const value = "loadESM one";
+export const value = "ESM one";

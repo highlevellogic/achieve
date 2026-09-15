@@ -5,8 +5,8 @@
 - Protected servlet modules may use bare `.jss` for CommonJS shorthand,
   `.jss.cjs` for explicit CommonJS, or `.jss.mjs` for ESM. Ordinary `.js`,
   `.cjs`, and `.mjs` application resources remain public JavaScript files.
-- Servlet contexts now provide explicit `loadCJS()` and asynchronous
-  `loadESM()` helpers while retaining the legacy CommonJS `load()` helper.
+- Servlet contexts use one `load()` method that selects CommonJS or ESM from
+  the filename while retaining extensionless legacy CommonJS loading.
 - Parsed query, form, and JSON request data is provided through
   `session.params`. The compatibility alias `session.parms` remains available.
   Achieve 3 no longer duplicates parsed data on `session.request.get` or

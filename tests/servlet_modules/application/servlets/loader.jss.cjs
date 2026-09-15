@@ -1,21 +1,16 @@
-exports.servlet = function (session) {
-    const explicit = session.loadCJS("./loaded.jss.cjs");
-    const shorthand = session.loadCJS("./loaded.jss");
+exports.servlet = async function (session) {
+    const explicit = session.load("./loaded.jss.cjs");
+    const shorthand = session.load("./loaded.jss");
     const legacy = session.load("./legacy");
-
-    session.allowAsync = true;
-    (async function () {
-        try {
-            const esm = await session.loadESM("./loaded.jss.mjs");
-            session.response.end([
-                explicit.value,
-                shorthand.value,
-                legacy.value,
-                esm.value
-            ].join("|"));
-        } catch (err) {
-            session.response.statusCode = 500;
-            session.response.end(String(err));
-        }
-    }());
+    const documented = session.load("./documented.js");
+    const esm = await session.load("./loaded.jss.mjs");
+    return [
+        explicit.value,
+        shorthand.value,
+        legacy.value,
+        documented.value,
+        esm.value,
+        typeof session.loadCJS,
+        typeof session.loadESM
+    ].join("|");
 };

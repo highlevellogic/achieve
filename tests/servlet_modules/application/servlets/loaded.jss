@@ -1,1 +1,1 @@
-exports.value = "loadCJS shorthand";
+exports.value = "bare JSS";
