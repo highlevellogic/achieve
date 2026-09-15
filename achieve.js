@@ -2226,29 +2226,27 @@ async function getModuleAccount (fileInfo) {
 function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
   let context;
   let wmsg;
-  try {
-    let loaderState={request:request,response:response,dirPath:fileInfo.dirPath};
-    let boundLoader=load.bind(loaderState);
-    let boundCJSLoader=loadCJS.bind(loaderState);
-    let boundESMLoader=loadESM.bind(loaderState);
-    context=new Context(request,response,params,fileInfo.dirPath,boundLoader,boundCJSLoader,boundESMLoader);
-    let content=myApp.servlet(context);
-    if (response.writableEnded || context.allowAsync) {
-      developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
+  function applicationOwned() {
+    developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
+  }
+  function complete(content) {
+    if (response.writableEnded || response.destroyed) {
+      applicationOwned();
       return;
     }
     response.statusCode=200;
     if (sendBody && content !== undefined && content !== null) response.write(content);
     response.end();
-  } catch (err) {
+  }
+  function fail(err) {
     if (response.headersSent) {
       wmsg=rtErrorMsg(err);
       serverError(wmsg,err);
       if (!response.writableEnded && !response.destroyed) response.destroy();
       return;
     }
-    if (response.writableEnded || (context && context.allowAsync)) {
-      developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
+    if (response.writableEnded || response.destroyed || (context && context.allowAsync)) {
+      applicationOwned();
       return;
     }
     wmsg=rtErrorMsg(err);
@@ -2256,6 +2254,35 @@ function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
     response.write(wmsg);
     response.end();
     serverError(wmsg,err);
+  }
+  try {
+    let loaderState={request:request,response:response,dirPath:fileInfo.dirPath};
+    let boundLoader=load.bind(loaderState);
+    let boundCJSLoader=loadCJS.bind(loaderState);
+    let boundESMLoader=loadESM.bind(loaderState);
+    context=new Context(request,response,params,fileInfo.dirPath,boundLoader,boundCJSLoader,boundESMLoader);
+    let content=myApp.servlet(context);
+    if (context.allowAsync) {
+      applicationOwned();
+      return;
+    }
+    if (content !== null &&
+        (typeof content === "object" || typeof content === "function") &&
+        typeof content.then === "function") {
+      Promise.resolve(content).then(function (resolvedContent) {
+        try {
+          complete(resolvedContent);
+        } catch (err) {
+          fail(err);
+        }
+      },function (err) {
+        fail(err);
+      });
+      return;
+    }
+    complete(content);
+  } catch (err) {
+    fail(err);
   }
 }
 // startObject parses parameters for Achieve-owned methods before invoking a servlet.

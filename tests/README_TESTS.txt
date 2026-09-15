@@ -162,6 +162,14 @@ Run the focused servlet runtime-error location verifier with:
 It checks application-frame-first reporting for CommonJS and ESM servlets and
 helpers, sanitized error output, fallback frames, and server recovery.
 
+Run managed Promise-returning servlet verification with:
+
+    node tests/promise_servlets/verify.js
+
+It checks CommonJS and ESM Promise results and rejections, synchronous
+compatibility, HEAD completion, custom thenables, registered handlers,
+allowAsync ownership, client aborts, and all four supported transports.
+
 # MEDIA AND COMPRESSION FIXTURES
 
 The tracked fixture is ../achieve_examples/basics/media/media/mov_bbb.mp4. It is the short Big
