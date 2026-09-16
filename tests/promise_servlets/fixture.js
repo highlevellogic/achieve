@@ -4,7 +4,7 @@ const achieve=require("../../achieve");
 
 const protocol=process.env.ACHIEVE_PROMISE_PROTOCOL;
 const port=Number(process.env.ACHIEVE_PROMISE_PORT);
-achieve.setMode("development");
+achieve.setMode(process.env.ACHIEVE_PROMISE_MODE || "development");
 achieve.setLogging("console");
 achieve.setAppPath(path.join(__dirname,"application"));
 achieve.registerMethod("PATCH","servlets/registered.jss.cjs");

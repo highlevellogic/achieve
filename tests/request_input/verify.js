@@ -160,9 +160,9 @@ async function withFixture(file,port,run) {
             raw.body === largeRaw && Object.keys(raw.params).length === 0);
 
         response=await request(19190,{path:"/servlets/empty.jss"});
-        check("undefined servlet return becomes empty 200",response.status === 200 && response.body === "");
+        check("undefined servlet return becomes empty 204",response.status === 204 && response.body === "");
         response=await request(19190,{path:"/servlets/null.jss"});
-        check("null servlet return becomes empty 200",response.status === 200 && response.body === "");
+        check("null servlet return becomes empty 204",response.status === 204 && response.body === "");
 
         const largeJson=JSON.stringify({value:"x".repeat(180)});
         response=await request(19190,{

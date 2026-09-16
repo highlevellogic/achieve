@@ -34,10 +34,10 @@ function httpRequest(protocol,method,target) {
             const chunks=[];
             response.on("data",chunk => chunks.push(chunk));
             response.on("end",function () {
-                finish({status:response.statusCode,body:Buffer.concat(chunks).toString("utf8"),aborted:false});
+                finish({status:response.statusCode,headers:response.headers,body:Buffer.concat(chunks).toString("utf8"),aborted:false});
             });
             response.on("aborted",function () {
-                finish({status:response.statusCode,body:Buffer.concat(chunks).toString("utf8"),aborted:true});
+                finish({status:response.statusCode,headers:response.headers,body:Buffer.concat(chunks).toString("utf8"),aborted:true});
             });
         });
         request.setTimeout(5000,function () { request.destroy(new Error("request timeout")); });
@@ -66,10 +66,10 @@ function http2Request(protocol,method,target) {
         stream.on("response",headers => { status=headers[":status"]; });
         stream.on("data",chunk => chunks.push(chunk));
         stream.on("end",function () {
-            finish({status:status,body:Buffer.concat(chunks).toString("utf8"),aborted:false});
+            finish({status:status,headers:undefined,body:Buffer.concat(chunks).toString("utf8"),aborted:false});
         });
         stream.on("aborted",function () {
-            finish({status:status,body:Buffer.concat(chunks).toString("utf8"),aborted:true});
+            finish({status:status,headers:undefined,body:Buffer.concat(chunks).toString("utf8"),aborted:true});
         });
         stream.on("error",function (error) {
             if (!settled) { client.destroy(); reject(error); }
@@ -125,6 +125,10 @@ async function runProtocol(protocol) {
 
         await expect(protocol,"GET","/servlets/promise.jss.cjs?kind=string",200,"hello");
         await expect(protocol,"GET","/servlets/promise.jss.mjs?kind=string",200,"hello");
+        await expect(protocol,"GET","/servlets/promise.jss.cjs?kind=undefined",204,"");
+        await expect(protocol,"GET","/servlets/promise.jss.cjs?kind=null",204,"");
+        await expect(protocol,"GET","/servlets/promise.jss.mjs?kind=undefined",204,"");
+        await expect(protocol,"GET","/servlets/promise.jss.mjs?kind=null",204,"");
 
         let response=await request(protocol,"GET","/servlets/promise.jss.cjs?kind=reject-after-await");
         checkApplicationError(response,"CJS_ASYNC_AFTER_AWAIT_MARKER","servlets/promise.jss.cjs");
@@ -135,21 +139,21 @@ async function runProtocol(protocol) {
 
         if (protocol === "http") {
             await expect(protocol,"GET","/servlets/promise.jss.cjs?kind=buffer",200,"buffer hello");
-            await expect(protocol,"GET","/servlets/promise.jss.cjs?kind=undefined",200,"");
-            await expect(protocol,"GET","/servlets/promise.jss.cjs?kind=null",200,"");
             response=await request(protocol,"GET","/servlets/promise.jss.cjs?kind=reject-immediate");
             checkApplicationError(response,"CJS_ASYNC_MARKER","servlets/promise.jss.cjs");
 
             await expect(protocol,"GET","/servlets/promise.jss.mjs?kind=buffer",200,"buffer hello");
-            await expect(protocol,"GET","/servlets/promise.jss.mjs?kind=undefined",200,"");
-            await expect(protocol,"GET","/servlets/promise.jss.mjs?kind=null",200,"");
             response=await request(protocol,"GET","/servlets/promise.jss.mjs?kind=reject-immediate");
             checkApplicationError(response,"ESM_ASYNC_MARKER","servlets/promise.jss.mjs");
 
             await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=string",200,"sync hello");
             await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=buffer",200,"sync buffer");
-            await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=undefined",200,"");
-            await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=null",200,"");
+            response=await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=undefined",204,"");
+            assert.strictEqual(response.headers["content-length"],undefined);
+            await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=null",204,"");
+            await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=no-return",204,"");
+            await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=return",204,"");
+            await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=missing-property",204,"");
             response=await request(protocol,"GET","/servlets/synchronous.jss.cjs?kind=throw");
             checkApplicationError(response,"SYNC_MARKER","servlets/synchronous.jss.cjs");
 
@@ -159,6 +163,8 @@ async function runProtocol(protocol) {
             let started=Date.now();
             await expect(protocol,"HEAD","/servlets/promise.jss.cjs?kind=head-delay",200,"");
             assert(Date.now()-started >= 45,"HEAD completed before its Promise settled");
+            started=Date.now();
+            await expect(protocol,"HEAD","/servlets/promise.jss.cjs?kind=undefined",204,"");
             started=Date.now();
             response=await request(protocol,"HEAD","/servlets/promise.jss.cjs?kind=head-reject");
             assert.strictEqual(response.status,500);
@@ -179,7 +185,36 @@ async function runProtocol(protocol) {
         const state=await waitForMessage(child,"state");
         assert.deepStrictEqual(state.unhandled,[],protocol+" had an unhandled process error");
         assert(!output.includes("ERR_INVALID_ARG_TYPE"),protocol+" wrote a Promise as response content");
+        assert(output.includes("INFO: Return from /servlets/promise.jss.cjs is undefined."),protocol+" missing undefined development INFO");
+        assert(output.includes("INFO: Return from /servlets/promise.jss.cjs is null."),protocol+" missing null development INFO");
         return output;
+    } finally {
+        if (child.exitCode === null) {
+            const exited=new Promise(resolve => child.once("exit",resolve));
+            child.send("stop");
+            await exited;
+        }
+    }
+}
+
+async function verifyProductionLogging() {
+    const protocol="http";
+    const child=fork(path.join(__dirname,"fixture.js"),[],{
+        silent:true,
+        env:Object.assign({},process.env,{
+            ACHIEVE_PROMISE_PROTOCOL:protocol,
+            ACHIEVE_PROMISE_PORT:String(ports[protocol]),
+            ACHIEVE_PROMISE_MODE:"production"
+        })
+    });
+    let output="";
+    child.stdout.on("data",chunk => output+=chunk);
+    child.stderr.on("data",chunk => output+=chunk);
+    try {
+        await waitForMessage(child,"ready");
+        await expect(protocol,"GET","/servlets/promise.jss.cjs?kind=undefined",204,"");
+        await expect(protocol,"GET","/servlets/promise.jss.cjs?kind=null",204,"");
+        assert(!output.includes("INFO: Return from "),"production emitted empty-return development INFO");
     } finally {
         if (child.exitCode === null) {
             const exited=new Promise(resolve => child.once("exit",resolve));
@@ -191,6 +226,7 @@ async function runProtocol(protocol) {
 
 (async function () {
     for (const protocol of protocols) await runProtocol(protocol);
+    await verifyProductionLogging();
     console.log("PASS managed Promise servlet verification (HTTP, HTTPS, h2c, secure HTTP/2)");
 })().catch(function (error) {
     console.error(error.stack || error);

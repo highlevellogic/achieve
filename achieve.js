@@ -2232,8 +2232,14 @@ function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
       applicationOwned();
       return;
     }
+    if (content === undefined || content === null) {
+      developmentLog("INFO: Return from " + fileInfo.path.split(path.sep).join("/") + " is " + String(content) + ".");
+      response.statusCode=204;
+      response.end();
+      return;
+    }
     response.statusCode=200;
-    if (sendBody && content !== undefined && content !== null) response.write(content);
+    if (sendBody) response.write(content);
     response.end();
   }
   function fail(err) {
