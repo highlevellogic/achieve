@@ -7,7 +7,7 @@ const path = require("path");
 
 const repositoryPath = path.join(__dirname, "..", "..");
 const achieveModule = path.join(repositoryPath, "achieve.js");
-let applicationPath;
+const applicationPath = path.join(__dirname, "application");
 const fixturePath = path.join(__dirname, "fixture.js");
 let nextPort = 19030;
 let failures = 0;
@@ -171,7 +171,6 @@ async function runningCase(scenario, options, inspect) {
 }
 
 (async function () {
-    ({examplesPath:applicationPath}=await import("../../example-config.mjs"));
     const temporaryPath = fs.mkdtempSync(path.join(os.tmpdir(), "achieve-logging-"));
     try {
         const invalid = await startCase("invalid-api");
@@ -242,13 +241,13 @@ async function runningCase(scenario, options, inspect) {
             check("development request trace is visible", testCase.stdout().includes("GET") && testCase.stdout().includes("req.url:"));
             check("default server logging creates no files", serverLogFiles(defaultRoot).length === 0);
             check("configuration locks after startup", Object.values(testCase.message.checks).every(Boolean));
-            const getResult = await request(testCase.message.port, {path: "/basics/get/servlets/hello.jss"});
-            const headResult = await request(testCase.message.port, {method: "HEAD", path: "/intermediate/head/servlets/hello.jss"});
-            const postResult = await request(testCase.message.port, {method: "POST", path: "/basics/post/servlets/hello.jss", body: "value=1"});
+            const getResult = await request(testCase.message.port, {path: "/servlets/lifecycle.jss"});
+            const headResult = await request(testCase.message.port, {method: "HEAD", path: "/servlets/lifecycle.jss"});
+            const postResult = await request(testCase.message.port, {method: "POST", path: "/servlets/lifecycle.jss", body: "value=1"});
             const containmentResult = await request(testCase.message.port, {path: "/..%2fpackage.json"});
-            check("GET .jss regression", getResult.status === 200 && getResult.body.toString().includes("Hello World"));
+            check("GET .jss regression", getResult.status === 200 && getResult.body.toString() === "GET");
             check("HEAD regression", headResult.status === 200 && headResult.body.length === 0);
-            check("POST .jss regression", postResult.status === 200 && postResult.body.toString().includes("Hello World"));
+            check("POST .jss regression", postResult.status === 200 && postResult.body.toString() === "POST");
             check("request containment regression", containmentResult.status >= 400 && !containmentResult.body.toString().includes('"name": "achieve"'));
         });
 
@@ -494,7 +493,7 @@ async function runningCase(scenario, options, inspect) {
             injectStreamErrorCategory: "access"
         }, async function (testCase) {
             const before = accessRecords(accessRuntimeRoot).length;
-            const response = await request(testCase.message.port, {path: "/basics/get/servlets/hello.jss?after=failure"});
+            const response = await request(testCase.message.port, {path: "/servlets/lifecycle.jss?after=failure"});
             await new Promise(resolve => setTimeout(resolve, 75));
             const after = accessRecords(accessRuntimeRoot).length;
             const serverLog = fs.readFileSync(serverLogFiles(accessRuntimeRoot)[0], "utf8");
