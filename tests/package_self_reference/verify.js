@@ -31,7 +31,7 @@ function checkedResult(name,result) {
 
 function requestStartup() {
     return new Promise(function (resolve) {
-        const request=http.get({host:"127.0.0.1",port:8989,path:"/"},function (response) {
+        const request=http.get({host:"127.0.0.1",port:8888,path:"/"},function (response) {
             const chunks=[];
             response.on("data",chunk => chunks.push(chunk));
             response.on("end",function () {
@@ -43,7 +43,7 @@ function requestStartup() {
 }
 
 async function liveStartupTest() {
-    const expected='import achieve from "achieve";\n\nachieve.setAppPath("./application");\nachieve.listen(8989);\n';
+    const expected='import achieve from "achieve";\n\nachieve.setAppPath("./application");\nachieve.listen(8888);\n';
     assert.strictEqual(fs.readFileSync(startupPath,"utf8").replace(/\r\n/g,"\n"),expected);
     const child=childProcess.spawn(process.execPath,[startupPath],{
         cwd:startupDirectory,

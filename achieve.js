@@ -2715,11 +2715,13 @@ function loadCommonJSModule (filePath) {
   let dirname=this.dirPath;
   let fullPath = path.join(dirname,filePath);
   let loadedMtime;
-  const stats = fs.statSync(fullPath);
-	if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
-    loadedMtime = stats.mtimeMs;
-	  delete require.cache[require.resolve(fullPath)];
-	}
+  if (mode !== "production") {
+    const stats = fs.statSync(fullPath);
+    if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
+      loadedMtime = stats.mtimeMs;
+      delete require.cache[require.resolve(fullPath)];
+    }
+  }
   let loadedModule = require(fullPath);
   if (loadedMtime !== undefined) moduleLoadTimes[fullPath] = loadedMtime;
   return loadedModule;

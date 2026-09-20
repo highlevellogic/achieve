@@ -103,6 +103,23 @@ function updateFile(filePath, content) {
     fs.utimesSync(filePath, future, future);
 }
 
+function cjsHelperStats(child) {
+    return new Promise(function (resolve, reject) {
+        const timer = setTimeout(function () {
+            child.off("message", receive);
+            reject(new Error("CJS helper stat count timeout"));
+        }, 5000);
+        function receive(message) {
+            if (message.type !== "cjs-helper-stats") return;
+            clearTimeout(timer);
+            child.off("message", receive);
+            resolve(message.count);
+        }
+        child.on("message", receive);
+        child.send("cjs-helper-stats");
+    });
+}
+
 async function expectLoaderFailure(port,kind,message,fileName) {
     const result=await request(port,"/servlets/loader-errors.jss.cjs?kind="+kind);
     assert.strictEqual(result.status,500,kind+" status");
@@ -180,6 +197,19 @@ async function verifyProduction(applicationPath) {
             "explicit CJS|bare JSS|legacy load|documented .js load|ESM one|undefined|undefined"
         );
 
+        await cjsHelperStats(child);
+        updateFile(path.join(applicationPath, "servlets", "loaded.jss.cjs"), "exports.value = \"explicit CJS two\";\n");
+        updateFile(path.join(applicationPath, "servlets", "loaded.jss"), "exports.value = \"bare JSS two\";\n");
+        updateFile(path.join(applicationPath, "servlets", "legacy.js"), "exports.value = \"legacy load two\";\n");
+        updateFile(path.join(applicationPath, "servlets", "documented.js"), "exports.value = \"documented .js load two\";\n");
+        updateFile(path.join(applicationPath, "servlets", "loaded.jss.mjs"), "export const value = \"ESM two\";\n");
+        result = await request(port, "/servlets/loader.jss.cjs");
+        assert.strictEqual(result.status, 200);
+        assert.strictEqual(result.body,
+            "explicit CJS|bare JSS|legacy load|documented .js load|ESM one|undefined|undefined");
+        assert.strictEqual(await cjsHelperStats(child), 0,
+            "Production CJS session.load() performed helper change-detection stats.");
+
         await expectLoaderFailure(port,"cjs-evaluation","CJS helper evaluation failure","servlets/error-evaluation.jss.cjs");
         await expectLoaderFailure(port,"cjs-call","CJS helper call failure","servlets/error-call.jss");
         await expectLoaderFailure(port,"esm-evaluation","ESM helper evaluation failure","servlets/error-evaluation.jss.mjs");
@@ -210,6 +240,15 @@ async function verifyProduction(applicationPath) {
         assert.strictEqual(result.body, "ESM compound default precedence");
     } finally {
         await stopServer(child);
+    }
+    const restarted = await startServer(24652, "production", applicationPath);
+    try {
+        const result = await request(24652, "/servlets/loader.jss.cjs");
+        assert.strictEqual(result.status, 200);
+        assert.strictEqual(result.body,
+            "explicit CJS two|bare JSS two|legacy load two|documented .js load two|ESM two|undefined|undefined");
+    } finally {
+        await stopServer(restarted);
     }
 }
 
