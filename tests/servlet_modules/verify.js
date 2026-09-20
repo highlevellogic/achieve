@@ -103,20 +103,20 @@ function updateFile(filePath, content) {
     fs.utimesSync(filePath, future, future);
 }
 
-function cjsHelperStats(child) {
+function helperStats(child, kind) {
     return new Promise(function (resolve, reject) {
         const timer = setTimeout(function () {
             child.off("message", receive);
-            reject(new Error("CJS helper stat count timeout"));
+            reject(new Error(kind + " helper stat count timeout"));
         }, 5000);
         function receive(message) {
-            if (message.type !== "cjs-helper-stats") return;
+            if (message.type !== kind + "-helper-stats") return;
             clearTimeout(timer);
             child.off("message", receive);
             resolve(message.count);
         }
         child.on("message", receive);
-        child.send("cjs-helper-stats");
+        child.send(kind + "-helper-stats");
     });
 }
 
@@ -197,7 +197,9 @@ async function verifyProduction(applicationPath) {
             "explicit CJS|bare JSS|legacy load|documented .js load|ESM one|undefined|undefined"
         );
 
-        await cjsHelperStats(child);
+        assert.strictEqual(await helperStats(child, "esm"), 0,
+            "Initial production ESM session.load() performed helper change-detection stats.");
+        await helperStats(child, "cjs");
         updateFile(path.join(applicationPath, "servlets", "loaded.jss.cjs"), "exports.value = \"explicit CJS two\";\n");
         updateFile(path.join(applicationPath, "servlets", "loaded.jss"), "exports.value = \"bare JSS two\";\n");
         updateFile(path.join(applicationPath, "servlets", "legacy.js"), "exports.value = \"legacy load two\";\n");
@@ -207,12 +209,15 @@ async function verifyProduction(applicationPath) {
         assert.strictEqual(result.status, 200);
         assert.strictEqual(result.body,
             "explicit CJS|bare JSS|legacy load|documented .js load|ESM one|undefined|undefined");
-        assert.strictEqual(await cjsHelperStats(child), 0,
+        assert.strictEqual(await helperStats(child, "cjs"), 0,
             "Production CJS session.load() performed helper change-detection stats.");
+        assert.strictEqual(await helperStats(child, "esm"), 0,
+            "Production ESM session.load() performed helper change-detection stats.");
 
         await expectLoaderFailure(port,"cjs-evaluation","CJS helper evaluation failure","servlets/error-evaluation.jss.cjs");
         await expectLoaderFailure(port,"cjs-call","CJS helper call failure","servlets/error-call.jss");
         await expectLoaderFailure(port,"esm-evaluation","ESM helper evaluation failure","servlets/error-evaluation.jss.mjs");
+        await expectLoaderFailure(port,"esm-missing","missing.jss.mjs");
         await expectLoaderFailure(port,"esm-call","ESM helper call failure","servlets/error-call.jss.mjs");
         await expectLoaderFailure(port,"unsupported","load() supports extensionless legacy names, .js, .jss, .jss.cjs, and .jss.mjs module filenames.");
         result=await request(port,"/servlets/hello.jss?name=healthy");
@@ -295,6 +300,8 @@ async function verifyDevelopment(applicationPath) {
         result = await request(port, "/servlets/loader.jss.cjs");
         assert.strictEqual(result.status, 200);
         assert.strictEqual(result.body,"explicit CJS two|bare JSS two|legacy load two|documented .js load two|ESM two|undefined|undefined");
+        assert((await helperStats(child, "esm")) >= 2,
+            "Development ESM session.load() did not check the helper's modification time.");
     } finally {
         await stopServer(child);
     }

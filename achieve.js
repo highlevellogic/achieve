@@ -2175,14 +2175,15 @@ function getAccount (res,fileInfo) {
 }
 
 async function importESMFile (fullPath) {
-  let stats=fs.statSync(fullPath);
   let moduleUrl=pathToFileURL(path.resolve(fullPath)).href;
+  let mtimeMs;
   if (mode !== "production") {
-    moduleUrl += "?achieve-mtime=" + encodeURIComponent(stats.mtimeMs);
+    mtimeMs=fs.statSync(fullPath).mtimeMs;
+    moduleUrl += "?achieve-mtime=" + encodeURIComponent(mtimeMs);
   }
   return {
     loadedModule:await import(moduleUrl),
-    mtimeMs:stats.mtimeMs
+    mtimeMs
   };
 }
 
