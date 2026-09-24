@@ -20,6 +20,7 @@ let compressionTempSequence = 0;
 if (process.env.NODE_ENV === undefined) process.env.NODE_ENV = 'production';
 
 let moduleLoadTimes = {};
+let productionHelperCache = new Map();
 let servletResolutionCache = new Map();
 let servletResolutionAliases = new Map();
 let registeredMethods = new Map();
@@ -65,6 +66,7 @@ exports.setMode = function (newMode) {
     throw new TypeError('setMode() requires "development" or "production".');
   }
   mode = newMode;
+  productionHelperCache.clear();
 };
 
 exports.setLogging = function (...destinations) {
@@ -447,6 +449,7 @@ exports.setRootDir = function () {
   serverError("ERROR: setRootDir() is no longer supported. Use setAppPath() instead.");
 };
 exports.setAppPath = function (bp) {
+  productionHelperCache.clear();
   servletResolutionCache.clear();
   servletResolutionAliases.clear();
   try {
@@ -2715,6 +2718,9 @@ exports.loadModule = function (moduleName) {
 function loadCommonJSModule (filePath) {
   let dirname=this.dirPath;
   let fullPath = path.join(dirname,filePath);
+  if (mode === "production" && productionHelperCache.has(fullPath)) {
+    return productionHelperCache.get(fullPath);
+  }
   let loadedMtime;
   if (mode !== "production") {
     const stats = fs.statSync(fullPath);
@@ -2724,6 +2730,7 @@ function loadCommonJSModule (filePath) {
     }
   }
   let loadedModule = require(fullPath);
+  if (mode === "production") productionHelperCache.set(fullPath,loadedModule);
   if (loadedMtime !== undefined) moduleLoadTimes[fullPath] = loadedMtime;
   return loadedModule;
 }
@@ -2739,11 +2746,23 @@ let load = function (filePath) {
   if (path.extname(filePath) === "") return loadCommonJSModule.call(this,filePath+".js");
   throw new TypeError("load() supports extensionless legacy names, .js, .jss, .jss.cjs, and .jss.mjs module filenames.");
 }
-let loadESMModule = async function (filePath) {
+let loadESMModule = function (filePath) {
   let fullPath=path.join(this.dirPath,filePath);
-  let importedModule=await importESMFile(fullPath);
-  moduleLoadTimes[fullPath]=importedModule.mtimeMs;
-  return importedModule.loadedModule;
+  if (mode === "production" && productionHelperCache.has(fullPath)) {
+    return productionHelperCache.get(fullPath);
+  }
+  let loading=importESMFile(fullPath).then(
+    function (importedModule) {
+      moduleLoadTimes[fullPath]=importedModule.mtimeMs;
+      return importedModule.loadedModule;
+    },
+    function (err) {
+      productionHelperCache.delete(fullPath);
+      throw err;
+    }
+  );
+  if (mode === "production") productionHelperCache.set(fullPath,loading);
+  return loading;
 }
 const Base64 = {
   _Rixits:"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/",
