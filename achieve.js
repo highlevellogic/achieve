@@ -2243,8 +2243,7 @@ function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
       return;
     }
     response.statusCode=200;
-    if (sendBody) response.write(content);
-    response.end();
+    response.end(sendBody ? content : undefined);
   }
   function fail(err) {
     if (response.headersSent) {
