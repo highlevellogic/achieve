@@ -129,6 +129,39 @@ async function expectLoaderFailure(port,kind,message,fileName) {
     assert(!result.body.includes("C:\\projects"),result.body);
 }
 
+function assertSafeDiagnostic(body, applicationPath) {
+    assert(!body.includes("resolve:275:11"),body);
+    assert(!body.includes("node:internal"),body);
+    assert(!body.includes("achieve.js"),body);
+    assert(!body.includes("?achieve-mtime="),body);
+    assert(!body.includes(applicationPath),body);
+    assert(!body.includes(applicationPath.replace(/\\/g,"/")),body);
+}
+
+async function expectESMLoadFailure(port, requestPath, message, moduleName, applicationPath) {
+    const result=await request(port,requestPath);
+    assert.strictEqual(result.status,500,requestPath+" status");
+    assert(result.body.includes(message),requestPath+" message: "+result.body);
+    assert(result.body.includes("while loading "+moduleName),requestPath+" context: "+result.body);
+    assertSafeDiagnostic(result.body,applicationPath);
+}
+
+async function expectDirectRuntimeFailure(port, extension, message) {
+    const result=await request(port,"/servlets/runtime-error"+extension);
+    assert.strictEqual(result.status,500,extension+" runtime status");
+    assert(result.body.includes(message),result.body);
+    assert(new RegExp("servlets/runtime-error"+extension.replace(/\./g,"\\.")+":\\d+:\\d+$").test(result.body),result.body);
+    assert(!result.body.includes("while loading"),result.body);
+}
+
+async function expectNoInternalFallback(port) {
+    const result=await request(port,"/servlets/internal-stack.jss.cjs");
+    assert.strictEqual(result.status,500);
+    assert(result.body.includes("Synthetic internal fallback failure"),result.body);
+    assert(!result.body.includes("resolve:275:11"),result.body);
+    assert(!result.body.includes("node:internal"),result.body);
+}
+
 function prepareApplication(applicationPath) {
     fs.cpSync(sourceApplication, applicationPath, {recursive: true});
     fs.cpSync(
@@ -217,9 +250,14 @@ async function verifyProduction(applicationPath) {
         await expectLoaderFailure(port,"cjs-evaluation","CJS helper evaluation failure","servlets/error-evaluation.jss.cjs");
         await expectLoaderFailure(port,"cjs-call","CJS helper call failure","servlets/error-call.jss");
         await expectLoaderFailure(port,"esm-evaluation","ESM helper evaluation failure","servlets/error-evaluation.jss.mjs");
-        await expectLoaderFailure(port,"esm-missing","missing.jss.mjs");
+        await expectESMLoadFailure(port,"/servlets/loader-errors.jss.cjs?kind=esm-syntax","Unexpected token ';'","servlets/error-syntax.jss.mjs",applicationPath);
+        await expectESMLoadFailure(port,"/servlets/loader-errors.jss.cjs?kind=esm-missing","missing.jss.mjs","servlets/missing.jss.mjs",applicationPath);
         await expectLoaderFailure(port,"esm-call","ESM helper call failure","servlets/error-call.jss.mjs");
         await expectLoaderFailure(port,"unsupported","load() supports extensionless legacy names, .js, .jss, .jss.cjs, and .jss.mjs module filenames.");
+        await expectESMLoadFailure(port,"/servlets/syntax-error.jss.mjs","Unexpected token ';'","servlets/syntax-error.jss.mjs",applicationPath);
+        await expectDirectRuntimeFailure(port,".jss.cjs","CJS direct runtime failure");
+        await expectDirectRuntimeFailure(port,".jss.mjs","ESM direct runtime failure");
+        await expectNoInternalFallback(port);
         result=await request(port,"/servlets/hello.jss?name=healthy");
         assert.strictEqual(result.status,200);
         assert.strictEqual(result.body,"COMMONJS shorthand healthy");
@@ -302,6 +340,16 @@ async function verifyDevelopment(applicationPath) {
         assert.strictEqual(result.body,"explicit CJS two|bare JSS two|legacy load two|documented .js load two|ESM two|undefined|undefined");
         assert((await helperStats(child, "esm")) >= 2,
             "Development ESM session.load() did not check the helper's modification time.");
+
+        await expectESMLoadFailure(port,"/servlets/loader-errors.jss.cjs?kind=esm-syntax","Unexpected token ';'","servlets/error-syntax.jss.mjs",applicationPath);
+        result=await request(port,"/servlets/loader-errors.jss.cjs?kind=esm-missing");
+        assert.strictEqual(result.status,500);
+        assert(result.body.includes("missing.jss.mjs"),result.body);
+        assertSafeDiagnostic(result.body,applicationPath);
+        await expectESMLoadFailure(port,"/servlets/syntax-error.jss.mjs","Unexpected token ';'","servlets/syntax-error.jss.mjs",applicationPath);
+        await expectDirectRuntimeFailure(port,".jss.cjs","CJS direct runtime failure");
+        await expectDirectRuntimeFailure(port,".jss.mjs","ESM direct runtime failure");
+        await expectNoInternalFallback(port);
     } finally {
         await stopServer(child);
     }

@@ -21,6 +21,7 @@ if (process.env.NODE_ENV === undefined) process.env.NODE_ENV = 'production';
 
 let moduleLoadTimes = {};
 let productionHelperCache = new Map();
+const esmLoadContext = Symbol("esmLoadContext");
 let servletResolutionCache = new Map();
 let servletResolutionAliases = new Map();
 let registeredMethods = new Map();
@@ -2180,14 +2181,24 @@ function getAccount (res,fileInfo) {
 async function importESMFile (fullPath) {
   let moduleUrl=pathToFileURL(path.resolve(fullPath)).href;
   let mtimeMs;
-  if (mode !== "production") {
-    mtimeMs=fs.statSync(fullPath).mtimeMs;
-    moduleUrl += "?achieve-mtime=" + encodeURIComponent(mtimeMs);
+  try {
+    if (mode !== "production") {
+      mtimeMs=fs.statSync(fullPath).mtimeMs;
+      moduleUrl += "?achieve-mtime=" + encodeURIComponent(mtimeMs);
+    }
+    return {
+      loadedModule:await import(moduleUrl),
+      mtimeMs
+    };
+  } catch (err) {
+    if (err !== null && (typeof err === "object" || typeof err === "function")) {
+      try {
+        Object.defineProperty(err,esmLoadContext,{value:fullPath});
+      } catch (contextError) {
+      }
+    }
+    throw err;
   }
-  return {
-    loadedModule:await import(moduleUrl),
-    mtimeMs
-  };
 }
 
 async function getModuleAccount (fileInfo) {
@@ -2438,6 +2449,7 @@ function sanitizeDeveloperErrorText (message) {
   result = result.replace(/\b(?:node:)?internal\/[^\s)]+/g,"");
   result = result.replace(/\b(?:loader|vm):\d+:\d+\b/g,"");
   result = result.replace(/\bachieve\.js:\d+(?::\d+)?\b/gi,"");
+  result = result.replace(/\s+imported from achieve\.js\b/gi,"");
   result = replaceAbsoluteSourcePaths(result);
   return result.trim();
 }
@@ -2467,7 +2479,7 @@ function displayedRuntimeSource (sourcePath) {
 
 function isApplicationRuntimeSource (sourcePath) {
   var source = displayedRuntimeSource(sourcePath);
-  var location = source.match(/(:\d+:\d+)$/);
+  var location = source.match(/(:\d+(?::\d+)?)$/);
   if (!location) return false;
   source = source.substring(0,source.length-location[1].length);
   if (source.toLowerCase().indexOf("file:///") === 0) {
@@ -2542,7 +2554,7 @@ function syntaxStackReason (stack) {
   return headline + " " + sourceIdentity;
 }
 
-function rtErrorMsg (err,shortPath="",code=500) {
+function formatRuntimeErrorMessage (err,shortPath="",code=500) {
   var stack;
   if (err !== null && (typeof err === "object" || typeof err === "function")) {
     try {
@@ -2580,9 +2592,15 @@ function rtErrorMsg (err,shortPath="",code=500) {
       part2 = part2.substring(0,closingParenthesis);
       var openingParenthesis = part2.lastIndexOf('(');
       if (openingParenthesis !== -1) {
-        part2 = safeSourceIdentity(part2.substring(openingParenthesis+1));
+        var fallbackSource = part2.substring(openingParenthesis+1);
+        part2 = isInternalRuntimeSource(fallbackSource)
+          ? ""
+          : safeSourceIdentity(fallbackSource);
       } else {
-        part2 = part2.substring(part2.lastIndexOf('/')+1);
+        var fallbackSource = part2.trim().replace(/^at\s+/,"");
+        part2 = isInternalRuntimeSource(fallbackSource)
+          ? ""
+          : fallbackSource.substring(fallbackSource.lastIndexOf('/')+1);
       }
     } else {
       part2 = "";
@@ -2611,6 +2629,32 @@ function rtErrorMsg (err,shortPath="",code=500) {
   } catch (stringError) {
     return "Thrown value: [unprintable]";
   }
+}
+function runtimeErrorHasApplicationSource (err) {
+  if (err === null || (typeof err !== "object" && typeof err !== "function")) return false;
+  try {
+    if (typeof err.stack !== "string") return false;
+    var stackLines = err.stack.replace(/\\/g,"/").split('\n');
+    if (stackLines.length > 0 && isApplicationRuntimeSource(stackLines[0].trim())) return true;
+    for (var stackLine of stackLines) {
+      if (runtimeStackFrame(stackLine,true)) return true;
+    }
+  } catch (stackError) {
+  }
+  return false;
+}
+function rtErrorMsg (err,shortPath="",code=500) {
+  var reason = formatRuntimeErrorMessage(err,shortPath,code);
+  if (
+    err !== null &&
+    (typeof err === "object" || typeof err === "function") &&
+    err[esmLoadContext] &&
+    !runtimeErrorHasApplicationSource(err)
+  ) {
+    var loadContext = safeSourceIdentity(err[esmLoadContext]);
+    if (loadContext !== "[path]") reason += " (while loading " + loadContext + ")";
+  }
+  return reason;
 }
 // 537().init() sets up event driven streaming file serves
 // The final event also deletes the loaded file reference from the Node.js cache

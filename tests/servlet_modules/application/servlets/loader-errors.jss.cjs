@@ -8,6 +8,8 @@ exports.servlet=async function (session) {
             return helper.hello();
         case "esm-evaluation":
             return session.load("./error-evaluation.jss.mjs");
+        case "esm-syntax":
+            return session.load("./error-syntax.jss.mjs");
         case "esm-missing":
             return session.load("./missing.jss.mjs");
         case "esm-call":
