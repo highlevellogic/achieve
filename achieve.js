@@ -2249,11 +2249,10 @@ function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
     }
     if (content === undefined || content === null) {
       developmentLog("INFO: Return from " + fileInfo.path.split(path.sep).join("/") + " is " + String(content) + ".");
-      response.statusCode=204;
+      if (response.statusCode === 200) response.statusCode=204;
       response.end();
       return;
     }
-    response.statusCode=200;
     response.end(sendBody ? content : undefined);
   }
   function fail(err) {
@@ -2322,8 +2321,7 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
       let contentTypeHeader=request.headers["content-type"];
       let contentType=(contentTypeHeader || "").split(";")[0].trim().toLowerCase();
       if (contentTypeHeader === undefined) serverWarning("WARNING: POST request has no Content-Type; Achieve is treating the input as application/x-www-form-urlencoded.");
-      if (contentType != "" && contentType != "application/json" &&
-          contentType != "application/x-www-form-urlencoded") {
+      if (contentType != "" && contentType != "application/json" && contentType != "application/x-www-form-urlencoded") {
         invokeServlet(request,response,fileInfo,myApp,{},sendBody);
         return;
       }
