@@ -1763,12 +1763,13 @@ function evaluatePreconditions (req,res,exists,currentETag,modified) {
   }
   return false;
 }
-function Context (req,res,parms,dirPath,load) {
+function Context (req,res,parms,dirPath,appPath,load) {
   this.request = req;
   this.response = res;
   this.parms = parms; // deprecate
   this.params = parms;
   this.dirPath = dirPath;
+  this.appPath = appPath;
   this.load = load;
   this.rtErrorMsg = rtErrorMsg;
   this.allowAsync = false;
@@ -2275,7 +2276,7 @@ function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
   try {
     let loaderState={request:request,response:response,dirPath:fileInfo.dirPath};
     let boundLoader=load.bind(loaderState);
-    context=new Context(request,response,params,fileInfo.dirPath,boundLoader);
+    context=new Context(request,response,params,fileInfo.dirPath,fileInfo.basePath,boundLoader);
     let content=myApp.servlet(context);
     if (context.allowAsync) {
       applicationOwned();
