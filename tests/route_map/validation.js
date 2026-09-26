@@ -16,7 +16,7 @@ try {
     achieve.setRouteMap({"/about":"/pages/about.htm"});
     console.log("PASS valid inline route map");
     achieve.setRouteMap(Object.assign(Object.create(null),{"/status":"/servlets/status.jss"}));
-    console.log("PASS null-prototype route map and replacement");
+    console.log("PASS null-prototype route-map batch accumulation");
 
     for (const [name,value] of [["array",[]],["null",null],["string","route"],["date",new Date()],["map",new Map()],["empty object",{}]]) {
         rejects("reject "+name,value,TypeError,/plain object|at least one route/);

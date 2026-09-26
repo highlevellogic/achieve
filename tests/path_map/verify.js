@@ -7,7 +7,7 @@ const path=require("node:path");
 
 let nextPort=19320;
 
-function start(protocol,mode="development",logging=false) {
+function start(protocol,mode="development",logging=false,secondApplication=false) {
     return new Promise(function (resolve,reject) {
         const port=nextPort++;
         const child=childProcess.fork(path.join(__dirname,"fixture.js"),[],{
@@ -16,7 +16,8 @@ function start(protocol,mode="development",logging=false) {
                 ACHIEVE_PATH_PROTOCOL:protocol,
                 ACHIEVE_PATH_MODE:mode,
                 ACHIEVE_PATH_PORT:String(port),
-                ACHIEVE_PATH_LOGGING:String(logging)
+                ACHIEVE_PATH_LOGGING:String(logging),
+                ACHIEVE_PATH_SECOND_APP:String(secondApplication)
             })
         });
         let stdout="";
@@ -95,6 +96,13 @@ async function protocolChecks(testCase) {
     response=await request(testCase,{path:"/manual/api/result.txt"});
     assert.strictEqual(response.body.toString(),"longest prefix\n");
 
+    response=await request(testCase,{path:"/accumulated/file.txt"});
+    assert.strictEqual(response.body.toString(),"mapped asset\n");
+    response=await request(testCase,{path:"/replaced/result.txt"});
+    assert.strictEqual(response.body.toString(),"longest prefix\n");
+    response=await request(testCase,{path:"/partial/file.txt"});
+    assert.strictEqual(response.status,404);
+
     response=await request(testCase,{path:"/ordinary.txt"});
     assert.strictEqual(response.body.toString(),"ordinary fallback\n");
     response=await request(testCase,{path:"/source"});
@@ -150,9 +158,20 @@ async function protocolChecks(testCase) {
 async function startupReportingCheck() {
     const testCase=await start("http","development",true);
     try {
-        assert.match(testCase.stdout(),/Path mappings: \/assets\/ -> \/internal\/assets\//);
+        assert.match(testCase.stdout(),/Path mappings: .*\/assets\/ -> \/internal\/assets\//);
         assert.match(testCase.stdout(),/Route mappings: \/assets\/exact\.txt -> \/exact\/winner\.txt/);
         console.log("PASS distinct route/path startup reporting");
+    } finally {
+        await stop(testCase);
+    }
+}
+async function changedApplicationPathCheck() {
+    const testCase=await start("http","development",false,true);
+    try {
+        const response=await request(testCase,{path:"/accumulated/file.txt"});
+        assert.strictEqual(response.status,200);
+        assert.strictEqual(response.body.toString(),"second application path mapping\n");
+        console.log("PASS accumulated path mappings remain relative after setAppPath");
     } finally {
         await stop(testCase);
     }
@@ -168,6 +187,7 @@ async function startupReportingCheck() {
             await stop(testCase);
         }
     }
+    await changedApplicationPathCheck();
     await startupReportingCheck();
     console.log("All path-map verification tests passed.");
 }()).catch(function (error) {

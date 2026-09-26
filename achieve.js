@@ -417,10 +417,10 @@ function initializeLogging() {
 
 let reqCount = 0;
    // basePath is the root directory for applications. (Like webapps on Tomcat or htdocs on Apache httpd.)
-   // The default is the directory of the entry point or main module for the application.
+   // The default is the root directory beneath the entry point or main module directory.
    // It can be reset by the app developer using .setAppPath(appDir);
  //  let basePath = path.normalize(require.main.filename.substring(0,require.main.filename.lastIndexOf(path.sep)));
-   let basePath = serverInstallationPath;
+   let basePath = path.join(serverInstallationPath,"root");
    let bCaching=false, bCachingCheck=false, compress=false, showMimes=false;
    let corsdomains=[];
    let shortVersion = require('./package.json').version;
@@ -450,18 +450,24 @@ exports.setRootDir = function () {
   serverError("ERROR: setRootDir() is no longer supported. Use setAppPath() instead.");
 };
 exports.setAppPath = function (bp) {
+  let newPath=path.resolve(bp);
+  validateApplicationPath(newPath,"setAppPath() application path");
   productionHelperCache.clear();
   servletResolutionCache.clear();
   servletResolutionAliases.clear();
-  try {
-    let newPath = path.normalize(bp);
-    if (!fs.existsSync(newPath)) {
-      serverWarning("\nWARNING: App. Path: " + newPath + " does not exist.");
-    } else {
-      basePath = newPath;
-    }
-  } catch (err) {serverError(String(err),err);}
+  basePath=newPath;
 };
+function validateApplicationPath(applicationPath,description="Default application path") {
+  let stats;
+  try {
+    stats=fs.statSync(applicationPath);
+  } catch (err) {
+    throw new Error(description + " does not exist: " + applicationPath,{cause:err});
+  }
+  if (!stats.isDirectory()) {
+    throw new Error(description + " is not a directory: " + applicationPath);
+  }
+}
 function validRoutePath(value) {
   if (typeof value !== "string" || value.length === 0 || value.charAt(0) !== "/") return false;
   if (value.indexOf("?") !== -1 || value.indexOf("#") !== -1 || value.indexOf("\\") !== -1 || value.indexOf("\0") !== -1) return false;
@@ -482,7 +488,8 @@ exports.setRouteMap = function (configured) {
     if (!containedRequestPath(basePath,targetPath)) throw new TypeError("setRouteMap() mapped targets must remain beneath the application path.");
     validated.set(publicPath,targetPath);
   }
-  routeMap=validated;
+  if (routeMap === undefined) routeMap=new Map();
+  for (let [publicPath,targetPath] of validated) routeMap.set(publicPath,targetPath);
 };
 exports.setPathMap = function (configured) {
   if (configured === null || typeof configured !== "object" ||
@@ -502,7 +509,8 @@ exports.setPathMap = function (configured) {
     if (!containedRequestPath(basePath,targetPath)) throw new TypeError("setPathMap() mapped targets must remain beneath the application path.");
     validated.set(publicPath,targetPath);
   }
-  pathMap=validated;
+  if (pathMap === undefined) pathMap=new Map();
+  for (let [publicPath,targetPath] of validated) pathMap.set(publicPath,targetPath);
 };
 const achieveOwnedMethods = new Set(["GET","HEAD","POST","OPTIONS","CONNECT"]);
 const advertisedBuiltInMethods = ["GET","HEAD","POST","OPTIONS"];
@@ -523,17 +531,8 @@ exports.registerMethod = function (method,servletPath) {
   registeredMethods.set(method,path.relative(basePath,fullPath));
 };
 exports.setCaching = function (b) {
-  try {
-    if (b && fs.statSync(basePath).mtimeMs === undefined) {
-      bCaching=false;
-      serverError("\nFAILURE to set browser caching support.\nNode version must be v8 or higher.");
-    } else {
-      bCaching=b; // boolean
-    }
-    bCachingCheck=true;
-  } catch (err) {
-    serverError("ERROR setCaching: " + err,err);
-  }
+  bCaching=b; // boolean
+  bCachingCheck=true;
 };
 // CORS
 function checkCorsPolicyPath(req,res,resourcePath) {
@@ -1408,6 +1407,7 @@ exports.listen2 = function (ioptions) {
     serverWarning("Error setting port in listen2(). Setting port to default.")
     sport=portDefault;
   }
+  validateApplicationPath(basePath);
   if (!bCachingCheck) exports.setCaching(bCaching);
   if (!initializeLogging()) return;
 
@@ -1453,6 +1453,7 @@ exports.slisten = function (ioptions) {
     serverWarning("Error setting port in slisten(). Setting port to default.")
     sport=443;
   }
+  validateApplicationPath(basePath);
   if (!bCachingCheck) exports.setCaching(bCaching);
   if (!initializeLogging()) return;
   
@@ -1486,6 +1487,7 @@ exports.listen = function (port) {
     serverWarning("Error setting port in listen(). Setting port to default.")
     port=80;
   }
+  validateApplicationPath(basePath);
   if (!bCachingCheck) exports.setCaching(bCaching);
   if (!initializeLogging()) return;
   

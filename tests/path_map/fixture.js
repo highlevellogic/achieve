@@ -7,13 +7,21 @@ if (process.env.ACHIEVE_PATH_LOGGING !== "true") achieve.setLogging(false);
 achieve.setMode(process.env.ACHIEVE_PATH_MODE || "development");
 achieve.setAppPath(path.join(__dirname,"application"));
 achieve.setRouteMap({"/assets/exact.txt":"/exact/winner.txt"});
-achieve.setPathMap({"/replaced/":"/internal/assets/"});
+achieve.setPathMap({
+    "/accumulated/":"/internal/assets/",
+    "/replaced/":"/internal/docs/",
+    "/docs/api/":"/internal/api/"
+});
 achieve.setPathMap(paths);
+achieve.setPathMap({"/replaced/":"/internal/api/"});
 try {
-    achieve.setPathMap({"/invalid/":"../outside/"});
+    achieve.setPathMap({"/partial/":"/internal/assets/","/invalid/":"../outside/"});
     throw new Error("Invalid path-map reconfiguration was accepted.");
 } catch (error) {
     if (!/invalid mapped target/.test(error.message)) throw error;
+}
+if (process.env.ACHIEVE_PATH_SECOND_APP === "true") {
+    achieve.setAppPath(path.join(__dirname,"application-two"));
 }
 achieve.allowOrigins("https://path-map.example","/public/","allowed.txt");
 achieve.registerMethod("DELETE","servlets/delete.jss");

@@ -6,13 +6,22 @@ const achieve=require("../../achieve");
 achieve.setLogging(false);
 achieve.setMode(process.env.ACHIEVE_ROUTE_MODE || "development");
 achieve.setAppPath(path.join(__dirname,"application"));
-achieve.setRouteMap({"/replaced":"/mapped/static.txt"});
+achieve.setRouteMap({
+    "/accumulated":"/internal/allowed.txt",
+    "/replaced":"/internal/allowed.txt",
+    "/precedence/allowed.txt":"/mapped/static.txt"
+});
 achieve.setRouteMap(routes);
+achieve.setRouteMap({"/replaced":"/internal/denied.txt"});
+achieve.setPathMap({"/precedence/":"/internal/"});
 try {
-    achieve.setRouteMap({"/invalid":"../outside.txt"});
+    achieve.setRouteMap({"/partial":"/mapped/static.txt","/invalid":"../outside.txt"});
     throw new Error("Invalid route-map reconfiguration was accepted.");
 } catch (error) {
     if (!/invalid mapped target/.test(error.message)) throw error;
+}
+if (process.env.ACHIEVE_ROUTE_SECOND_APP === "true") {
+    achieve.setAppPath(path.join(__dirname,"application-two"));
 }
 achieve.allowOrigins("https://route-map.example","/public/","allowed");
 achieve.registerMethod("DELETE","servlets/delete.jss");

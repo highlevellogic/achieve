@@ -16,7 +16,7 @@ try {
     achieve.setPathMap({"/public/docs/":"/internal/docs/"});
     console.log("PASS valid inline path map");
     achieve.setPathMap(Object.assign(Object.create(null),{"/assets/":"/internal/assets/"}));
-    console.log("PASS null-prototype path map and replacement");
+    console.log("PASS null-prototype path-map batch accumulation");
 
     for (const [name,value] of [["array",[]],["null",null],["string","path"],["date",new Date()],["map",new Map()],["empty object",{}]]) {
         rejects("reject "+name,value,/plain object|at least one path mapping/);

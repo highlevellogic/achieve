@@ -123,12 +123,12 @@ class FakeServer extends EventEmitter {
     try {
         const normal=await request(port,"/resource.txt");
         check("default application status",normal.status,200);
-        check("default application is entry-point directory",normal.body.trim(),"modernization default application");
+        check("default application is entry-point root directory",normal.body.trim(),"modernization default application");
         check("normal request completes",normal.state,"complete");
         check(
             "metadata ETag output uses current inputs",
             normal.headers.etag,
-            expectedETag(path.join(__dirname,"resource.txt"),"i")
+            expectedETag(path.join(__dirname,"root","resource.txt"),"i")
         );
 
         const loader=await request(port,"/servlets/loader.jss");

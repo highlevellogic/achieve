@@ -7,7 +7,7 @@ const path=require("node:path");
 
 let nextPort=19220;
 
-function start(protocol,mode="development") {
+function start(protocol,mode="development",secondApplication=false) {
     return new Promise(function (resolve,reject) {
         const port=nextPort++;
         const child=childProcess.fork(path.join(__dirname,"fixture.js"),[],{
@@ -15,7 +15,8 @@ function start(protocol,mode="development") {
             env:Object.assign({},process.env,{
                 ACHIEVE_ROUTE_PROTOCOL:protocol,
                 ACHIEVE_ROUTE_MODE:mode,
-                ACHIEVE_ROUTE_PORT:String(port)
+                ACHIEVE_ROUTE_PORT:String(port),
+                ACHIEVE_ROUTE_SECOND_APP:String(secondApplication)
             })
         });
         let stdout="";
@@ -158,8 +159,16 @@ async function httpSpecificChecks(testCase) {
     response=await request(testCase,{path:"/registered-target",method:"DELETE"});
     assert.deepStrictEqual(json(response),{handler:"DELETE",method:"DELETE",url:"/registered-target"});
 
+    response=await request(testCase,{path:"/accumulated"});
+    assert.strictEqual(response.body.toString(),"internal allowed\n");
     response=await request(testCase,{path:"/replaced"});
+    assert.strictEqual(response.body.toString(),"internal denied\n");
+    response=await request(testCase,{path:"/static"});
+    assert.strictEqual(response.body.toString(),"mapped static\n");
+    response=await request(testCase,{path:"/partial"});
     assert.strictEqual(response.status,404);
+    response=await request(testCase,{path:"/precedence/allowed.txt"});
+    assert.strictEqual(response.body.toString(),"mapped static\n");
 
     response=await request(testCase,{path:"/public/allowed",method:"OPTIONS",headers:{origin:"https://route-map.example","access-control-request-method":"GET"}});
     assert.strictEqual(response.status,204);
@@ -169,6 +178,17 @@ async function httpSpecificChecks(testCase) {
 
 
     console.log("PASS query/POST/source protection/registered method/reconfiguration/preflight behavior");
+}
+async function changedApplicationPathChecks() {
+    const testCase=await start("http","development",true);
+    try {
+        const response=await request(testCase,{path:"/accumulated"});
+        assert.strictEqual(response.status,200);
+        assert.strictEqual(response.body.toString(),"second application mapped route\n");
+        console.log("PASS accumulated route mappings remain relative after setAppPath");
+    } finally {
+        await stop(testCase);
+    }
 }
 async function productionCacheChecks() {
     const testCase=await start("http","production");
@@ -199,6 +219,7 @@ async function productionCacheChecks() {
             await stop(testCase);
         }
     }
+    await changedApplicationPathChecks();
     await productionCacheChecks();
     console.log("All route-map request verification tests passed.");
 }()).catch(function (error) {

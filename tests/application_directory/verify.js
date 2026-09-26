@@ -1,4 +1,7 @@
 const http = require("http");
+const childProcess = require("child_process");
+const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const achieve = require("../../achieve");
 
@@ -50,9 +53,17 @@ async function withServer(run) {
 (async function () {
     await withServer(async function (port) {
         const result = await request(port, "/fixtures/default.html");
-        check("server project root is default app status", result.status, 200);
-        check("server project root is default app", result.body.trim(), "default application");
+        check("server-entry root directory is default app status", result.status, 200);
+        check("server-entry root directory is default app", result.body.trim(), "default root application");
+        const outside=await request(port,"/outside.html");
+        check("startup-directory resource outside root is not served",outside.status,404);
     });
+
+    const missingFixture=path.join(__dirname,"missing_default","fixture.js");
+    const missingRoot=path.join(path.dirname(missingFixture),"root");
+    const missingResult=childProcess.spawnSync(process.execPath,[missingFixture],{encoding:"utf8"});
+    check("missing default root prevents startup",missingResult.status,0);
+    check("missing default root reports complete path",missingResult.stdout.trim(),"Default application path does not exist: "+missingRoot);
 
     let diagnostic = "";
     const originalError = console.error;
@@ -73,7 +84,7 @@ async function withServer(run) {
     await withServer(async function (port) {
         const result = await request(port, "/fixtures/default.html");
         check("setRootDir does not prevent startup", result.status, 200);
-        check("setRootDir changes no configuration", result.body.trim(), "default application");
+        check("setRootDir changes no configuration", result.body.trim(), "default root application");
     });
 
     const configuredPath = path.join(__dirname, "..", "request_path", "application");
@@ -85,8 +96,34 @@ async function withServer(run) {
         check("setRootDir followed by setAppPath", result.body.indexOf("request-path root") !== -1, true);
     });
 
+    const temporaryPath=fs.mkdtempSync(path.join(os.tmpdir(),"achieve-application-path-"));
+    const nonexistentPath=path.join(temporaryPath,"missing");
+    const filePath=path.join(temporaryPath,"file.txt");
+    fs.writeFileSync(filePath,"not a directory");
+    try {
+        assertPathFailure("nonexistent setAppPath",nonexistentPath,/does not exist/);
+        assertPathFailure("non-directory setAppPath",filePath,/is not a directory/);
+        await withServer(async function (port) {
+            const result=await request(port,"/index.html");
+            check("failed setAppPath preserves configured application status",result.status,200);
+            check("failed setAppPath does not silently select another path",result.body.indexOf("request-path root") !== -1,true);
+        });
+    } finally {
+        fs.rmSync(temporaryPath,{recursive:true,force:true});
+    }
+
     if (failures) process.exitCode = 1;
 })().catch(err => {
     console.error(err);
     process.exitCode = 1;
 });
+
+function assertPathFailure(name,target,pattern) {
+    try {
+        achieve.setAppPath(target);
+        check(name+" throws",false,true);
+    } catch (error) {
+        check(name+" throws",pattern.test(error.message),true);
+        check(name+" reports complete path",error.message.includes(path.resolve(target)),true);
+    }
+}

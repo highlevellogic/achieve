@@ -1,7 +1,6 @@
 module.exports = {
     "/assets/":"/internal/assets/",
     "/docs/":"/internal/docs/",
-    "/docs/api/":"/internal/api/",
     "/manual/api/":"/internal/api/",
     "/manual/":"/internal/docs/",
     "/mapped-servlets/":"/servlets/",
