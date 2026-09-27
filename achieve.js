@@ -1879,7 +1879,6 @@ function setFileInfo (req, res, basePath, requestUrl) {
    let headers=req.headers;
    let fullPath="", suffix="", queryString="", contentType="",dirPath="",etag="";
    let fileDescriptor, representationStats, openError, etagCoding="i";
-   if (!headers['accept-encoding']) headers['accept-encoding'] = '';  // gzip, etc. 
    let reload=false;
    let thisBasePath=basePath;
    let audioVisual = false;

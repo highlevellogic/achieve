@@ -20,11 +20,13 @@ function check(name,condition,detail) {
 
 function request(port,resource,encoding,headers={},method="GET") {
     return new Promise((resolve,reject) => {
+        let requestHeaders=Object.assign({},headers);
+        if (encoding !== undefined) requestHeaders["Accept-Encoding"]=encoding;
         let req = http.request({
             port:port,
             path:resource,
             method:method,
-            headers:Object.assign({"Accept-Encoding":encoding},headers)
+            headers:requestHeaders
         },res => {
             let chunks=[];
             res.on("data",chunk => chunks.push(chunk));
@@ -132,6 +134,7 @@ async function run() {
     fs.mkdirSync(staticPath,{recursive:true});
     const sourcePath=path.join(staticPath,"resource.txt");
     const pingPath=path.join(staticPath,"ping.txt");
+    const servletPath=path.join(applicationPath,"servlets","request-headers.jss.cjs");
     const cachePath=path.join(applicationPath,".compression-cache");
     const cacheStaticPath=path.join(cachePath,"static");
     const gzipPath=path.join(cacheStaticPath,"resource.txt.gz");
@@ -139,6 +142,15 @@ async function run() {
     const original=Buffer.from("Achieve asynchronous compression fixture.\n".repeat(100));
     fs.writeFileSync(sourcePath,original);
     fs.writeFileSync(pingPath,"pong\n");
+    fs.mkdirSync(path.dirname(servletPath),{recursive:true});
+    fs.writeFileSync(servletPath,
+        'exports.servlet = function (session) {\n' +
+        '    const headers=session.request.headers;\n' +
+        '    return JSON.stringify({\n' +
+        '        present:Object.prototype.hasOwnProperty.call(headers,"accept-encoding"),\n' +
+        '        value:headers["accept-encoding"] === undefined ? null : headers["accept-encoding"]\n' +
+        '    });\n' +
+        '};\n');
     fs.mkdirSync(cacheStaticPath,{recursive:true});
     fs.writeFileSync(gzipPath,zlib.gzipSync(original));
     setCurrent(gzipPath);
@@ -146,7 +158,17 @@ async function run() {
     setCurrent(deflatePath);
 
     const port=await startFixture();
-    let result=await request(port,"/static/resource.txt","gzip");
+    let result=await request(port,"/servlets/request-headers.jss.cjs",undefined);
+    let observedHeaders=JSON.parse(result.body.toString());
+    check("absent Accept-Encoding remains absent for servlet",
+        result.status === 200 && observedHeaders.present === false && observedHeaders.value === null,
+        JSON.stringify(observedHeaders));
+    result=await request(port,"/servlets/request-headers.jss.cjs","");
+    observedHeaders=JSON.parse(result.body.toString());
+    check("explicitly empty Accept-Encoding remains present and empty for servlet",
+        result.status === 200 && observedHeaders.present === true && observedHeaders.value === "",
+        JSON.stringify(observedHeaders));
+    result=await request(port,"/static/resource.txt","gzip");
     check("current gzip selected",result.status === 200 && result.headers["content-encoding"] === "gzip");
     check("current gzip exact source",zlib.gunzipSync(result.body).equals(original));
     check("current gzip ETag",/-g"$/.test(result.headers.etag),result.headers.etag);
