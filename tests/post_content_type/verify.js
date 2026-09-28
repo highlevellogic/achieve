@@ -1,6 +1,8 @@
 const assert=require("node:assert");
 const childProcess=require("node:child_process");
+const fs=require("node:fs");
 const http=require("node:http");
+const os=require("node:os");
 const path=require("node:path");
 
 const port=19470;
@@ -44,9 +46,13 @@ function stop(child) {
 }
 
 (async function () {
+    const temporaryPath=fs.mkdtempSync(path.join(os.tmpdir(),"achieve-post-content-type-"));
     const child=childProcess.fork(path.join(__dirname,"fixture.js"),[],{
         silent:true,
-        env:Object.assign({},process.env,{ACHIEVE_POST_CONTENT_TYPE_PORT:String(port)})
+        env:Object.assign({},process.env,{
+            ACHIEVE_POST_CONTENT_TYPE_PORT:String(port),
+            ACHIEVE_POST_CONTENT_TYPE_LOG_PATH:temporaryPath
+        })
     });
     let stdout="";
     let stderr="";
@@ -56,34 +62,30 @@ function stop(child) {
     try {
         await waitForReady(child);
 
-        let start=stdout.length;
         let response=await request({},"x=legacy&value=one%20two");
         await new Promise(resolve => setTimeout(resolve,25));
-        let trace=stdout.substring(start);
         assert.strictEqual(response.status,200);
         assert.deepStrictEqual(JSON.parse(response.body),{x:"legacy",value:"one two"});
-        assert.strictEqual(trace.split(warning).length-1,1,"Missing Content-Type warning was not emitted exactly once.");
 
-        start=stdout.length;
         response=await request({"Content-Type":"application/x-www-form-urlencoded"},"x=form");
         await new Promise(resolve => setTimeout(resolve,25));
-        trace=stdout.substring(start);
         assert.strictEqual(response.status,200);
         assert.deepStrictEqual(JSON.parse(response.body),{x:"form"});
-        assert(!trace.includes(warning),"Explicit form Content-Type produced the missing-header warning.");
 
-        start=stdout.length;
         response=await request({"Content-Type":"application/json"},JSON.stringify({x:"json"}));
         await new Promise(resolve => setTimeout(resolve,25));
-        trace=stdout.substring(start);
         assert.strictEqual(response.status,200);
         assert.deepStrictEqual(JSON.parse(response.body),{x:"json"});
-        assert(!trace.includes(warning),"JSON Content-Type produced the missing-header warning.");
+        const serverDir=path.join(temporaryPath,"server");
+        const log=fs.readFileSync(path.join(serverDir,fs.readdirSync(serverDir)[0]),"utf8");
+        assert.strictEqual(log.split(warning).length-1,1,"Missing Content-Type warning was not logged exactly once.");
+        assert(!stdout.includes(warning),"Production warning was written to stdout.");
         assert.strictEqual(stderr,"","Unexpected fixture stderr output.");
 
         console.log("All POST Content-Type warning verification tests passed.");
     } finally {
         await stop(child);
+        fs.rmSync(temporaryPath,{recursive:true,force:true});
     }
 }()).catch(function (err) {
     console.error(err);

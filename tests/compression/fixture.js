@@ -106,6 +106,8 @@ const achieve = require("../../achieve");
 const port = Number(process.env.ACHIEVE_COMPRESSION_PORT);
 
 achieve.setMode("production");
+achieve.setLogPath(process.env.ACHIEVE_COMPRESSION_LOG_PATH);
+achieve.setLogging("server");
 achieve.setAppPath(process.env.ACHIEVE_COMPRESSION_APP);
 achieve.setCaching(true);
 achieve.setCompress(true);

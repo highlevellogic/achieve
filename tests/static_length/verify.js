@@ -143,7 +143,10 @@ async function verify(protocol,index) {
                 else if(result.headers['content-length']!==undefined) assert.equal(Number(result.headers['content-length']),result.body.length);
             });
         }
-        check(protocol+' no uncaught errors',() => assert.equal(stderr,''));
+        check(protocol+' only expected development diagnostics reported',() => assert.deepEqual(
+            stderr.trim().split(/\r?\n/),
+            ['Injected stream setup failure','Injected pre-header read failure']
+        ));
     } finally {
         if(child.connected)child.send('stop');
         const timer=setTimeout(() => child.kill(),5000);

@@ -168,7 +168,10 @@ async function verify(protocol,index) {
         let state=await control();
         for(let i=0;state.descriptors&&i<20;i++){await new Promise(r=>setTimeout(r,10));state=await control();}
         test('all opened descriptors closed',()=>assert.equal(state.descriptors,0));
-        test('no unexpected errors',()=>assert.equal(stderr,''));
+        test('only expected development diagnostics reported',()=>assert.deepEqual(
+            stderr.trim().split(/\r?\n/),
+            ['Injected setup failure','Injected read failure']
+        ));
     } finally {
         if(child.connected)child.send({stop:true});const timer=setTimeout(()=>child.kill(),5000);await exited;clearTimeout(timer);
     }

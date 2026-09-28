@@ -12,7 +12,13 @@ http.ServerResponse.prototype.setHeader=function (name,value) {
 };
 
 const achieve=require("../../achieve");
-if (process.env.ACHIEVE_CATCHALL_LOGGING === "disabled") achieve.setLogging(false);
+achieve.setMode("production");
+if (process.env.ACHIEVE_CATCHALL_LOGGING === "disabled") {
+    achieve.setLogging(false);
+} else {
+    achieve.setLogPath(process.env.ACHIEVE_CATCHALL_LOG_PATH);
+    achieve.setLogging("server");
+}
 achieve.setAppPath(path.join(__dirname,"application"));
 const server=achieve.listen(Number(process.env.ACHIEVE_CATCHALL_PORT));
 

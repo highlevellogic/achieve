@@ -55,7 +55,7 @@ let checks = {};
 if (scenario === "production") {
     achieve.setMode("production");
 } else if (scenario === "server") {
-    achieve.setLogging("console", "server");
+    achieve.setLogging("server");
 } else if (scenario === "server-only") {
     achieve.setLogging("server");
 } else if (scenario === "rollover-error") {
@@ -72,6 +72,15 @@ if (scenario === "production") {
 } else if (scenario === "access-production") {
     achieve.setMode("production");
     achieve.setLogging("access");
+} else if (scenario === "mode-then-logging") {
+    achieve.setMode("production");
+    achieve.setLogging("server");
+} else if (scenario === "logging-then-mode") {
+    achieve.setLogging("server");
+    achieve.setMode("production");
+} else if (scenario === "production-server-warning") {
+    achieve.setMode("production");
+    achieve.setLogging("server");
 } else if (scenario === "access-http2") {
     achieve.setLogging("access");
 } else if (scenario === "access-runtime-error") {
@@ -92,6 +101,7 @@ if (scenario === "production") {
         ["mode", function () { achieve.setMode("debug"); }],
         ["zero", function () { achieve.setLogging(); }],
         ["mixed", function () { achieve.setLogging(true, "server"); }],
+        ["console", function () { achieve.setLogging("console"); }],
         ["unknown", function () { achieve.setLogging("unknown"); }]
     ]) {
         try {

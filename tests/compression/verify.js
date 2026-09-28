@@ -98,7 +98,8 @@ async function startFixture() {
         cwd:path.join(__dirname,"..",".."),
         env:Object.assign({},process.env,{
             ACHIEVE_COMPRESSION_PORT:String(port),
-            ACHIEVE_COMPRESSION_APP:applicationPath
+            ACHIEVE_COMPRESSION_APP:applicationPath,
+            ACHIEVE_COMPRESSION_LOG_PATH:path.join(applicationPath,"logs")
         }),
         silent:true
     });
@@ -351,7 +352,11 @@ async function run() {
     check("forced pipeline failure leaves identity successful",result.status === 200 && result.headers["content-encoding"] === undefined && result.body.equals(changed));
     await waitForMessage(message => message.event === "temp-cleanup","failed-write cleanup");
     check("failed temporary output cleaned",tempFiles(cachePath).length === 0,tempFiles(cachePath).join(","));
-    check("pipeline failure logged",consoleErrors.length > errorsBefore);
+    await new Promise(resolve => setTimeout(resolve,25));
+    const serverLogDirectory=path.join(applicationPath,"logs","server");
+    const serverLog=fs.readFileSync(path.join(serverLogDirectory,fs.readdirSync(serverLogDirectory)[0]),"utf8");
+    check("pipeline failure logged",serverLog.includes("Compression failed"));
+    check("production pipeline failure is not written to console",consoleErrors.length === errorsBefore);
 
     result=await request(port,"/static/resource.txt","gzip");
     check("retry after pipeline failure returns identity",result.status === 200 && result.headers["content-encoding"] === undefined);

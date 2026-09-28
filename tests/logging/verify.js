@@ -18,6 +18,13 @@ function check(name, condition, detail) {
     if (!condition) failures++;
 }
 
+function startupProbe(source) {
+    return childProcess.spawnSync(process.execPath,["-e",source],{
+        cwd:repositoryPath,
+        encoding:"utf8"
+    });
+}
+
 function request(port, options = {}) {
     return new Promise((resolve, reject) => {
         const req = http.request({
@@ -171,6 +178,28 @@ async function runningCase(scenario, options, inspect) {
 }
 
 (async function () {
+        const startupWarning=startupProbe(
+            "const http=require('node:http');" +
+            "const EventEmitter=require('node:events');" +
+            "http.createServer=()=>{const server=new EventEmitter();" +
+            "server.listen=()=>process.nextTick(()=>server.emit('listening'));return server};" +
+            "const achieve=require(" + JSON.stringify(achieveModule) + ");" +
+            "achieve.setMode('production');achieve.setLogging(false);" +
+            "achieve.setAppPath(" + JSON.stringify(applicationPath) + ");" +
+            "achieve.listen('invalid');"
+        );
+        check("startup warning remains visible in production with logging disabled",
+            startupWarning.status === 0 &&
+            startupWarning.stdout.includes("is not a number. Setting port to default"));
+
+        const startupError=startupProbe(
+            "const achieve=require(" + JSON.stringify(achieveModule) + ");" +
+            "achieve.setMode('production');achieve.setLogging(false);achieve.slisten();"
+        );
+        check("startup error remains visible in production with logging disabled",
+            startupError.status === 0 &&
+            startupError.stderr.includes("slisten() requires an options object"));
+
     const temporaryPath = fs.mkdtempSync(path.join(os.tmpdir(), "achieve-logging-"));
     try {
         const invalid = await startCase("invalid-api");
@@ -178,6 +207,7 @@ async function runningCase(scenario, options, inspect) {
         check("invalid mode throws", invalid.message.checks.mode);
         check("zero-argument logging throws", invalid.message.checks.zero);
         check("mixed logging form throws", invalid.message.checks.mixed);
+        check("console logging selection is rejected", invalid.message.checks.console);
         check("unknown destination throws", invalid.message.checks.unknown);
         for (const [scenario,label] of [
             ["startup-http","HTTP"],
@@ -216,7 +246,6 @@ async function runningCase(scenario, options, inspect) {
                 "Browser caching: on",
                 "Static compression: on",
                 "Buffered input limit: 2048 bytes",
-                "Console logging: on",
                 "Server logging: off",
                 "Access logging: off",
                 "Path to logs: ",
@@ -237,7 +266,7 @@ async function runningCase(scenario, options, inspect) {
         const defaultRoot = path.join(temporaryPath, "default");
         await runningCase("default", {logPath: defaultRoot}, async function (testCase) {
             check("default mode is development", testCase.stdout().includes("Mode: development"));
-            check("default console logging is on", testCase.stdout().includes("Console logging: on") && testCase.stdout().includes("Server logging: off") && testCase.stdout().includes("Access logging: off"));
+            check("development startup display is visible", testCase.stdout().includes("HLL Achieve v3.0.0-dev.0 HTTP is running") && testCase.stdout().includes("Server logging: off") && testCase.stdout().includes("Access logging: off"));
             check("development request trace is visible", testCase.stdout().includes("GET") && testCase.stdout().includes("req.url:"));
             check("default server logging creates no files", serverLogFiles(defaultRoot).length === 0);
             check("configuration locks after startup", Object.values(testCase.message.checks).every(Boolean));
@@ -352,13 +381,17 @@ async function runningCase(scenario, options, inspect) {
             check("access elapsed time is nonnegative milliseconds", records.every(record => / elapsed=\d+\.\d{3}ms /.test(record)));
             check("access timestamp uses local offset", records.every(record => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2} /.test(record)));
             check("development trace absent from access log", records.every(record => !record.includes("req.url:") && !record.includes("using GET")));
-            check("access records are not printed to console", testCase.stdout().trim() === "");
+            check("access records are not printed to console", !testCase.stdout().includes(' remote="'));
         });
 
         const productionRoot = path.join(temporaryPath, "production");
         await runningCase("production", {logPath: productionRoot}, async function (testCase) {
             check("production mode reported", testCase.stdout().includes("Mode: production"));
             check("production request trace suppressed", !testCase.stdout().includes("req.url:") && !testCase.stdout().includes("using GET"));
+            const beforeRequest=testCase.stdout().length;
+            await request(testCase.message.port,{path:"/resource.txt?production=quiet"});
+            await new Promise(resolve => setTimeout(resolve,25));
+            check("production successful request performs no console logging",testCase.stdout().length === beforeRequest);
         });
 
         const serverRoot = path.join(temporaryPath, "server");
@@ -395,11 +428,11 @@ async function runningCase(scenario, options, inspect) {
                 }
                 if (scenario === "all") {
                     const log = fs.readFileSync(serverLogFiles(root)[0], "utf8");
-                    check("setLogging(true) enables all selections", log.includes("Console logging: on") && log.includes("Server logging: on") && log.includes("Access logging: on"));
+                    check("setLogging(true) enables both persistent logs", log.includes("Server logging: on") && log.includes("Access logging: on") && !log.includes("Console logging:"));
                 }
                 if (scenario === "selective") {
                     const log = fs.readFileSync(serverLogFiles(root)[0], "utf8");
-                    check("rest list is declarative", log.includes("Console logging: off") && log.includes("Server logging: on") && log.includes("Access logging: on"));
+                    check("rest list is declarative", log.includes("Server logging: on") && log.includes("Access logging: on") && !log.includes("Console logging:"));
                 }
                 if (scenario === "invalid-preserves") {
                     check("invalid call leaves prior state", testCase.message.checks.invalidPreservesThrew && serverLogFiles(root).length === 1);
@@ -413,7 +446,8 @@ async function runningCase(scenario, options, inspect) {
                 check(scenario + " creates no server directory", !fs.existsSync(path.join(root, "server")));
                 check(scenario + " creates no access directory", !fs.existsSync(path.join(root, "access")));
                 if (scenario === "none") {
-                    check("setLogging(false) suppresses normal Achieve console output", testCase.stdout().trim() === "");
+                    check("setLogging(false) leaves startup display enabled", testCase.stdout().includes("HLL Achieve v3.0.0-dev.0 HTTP is running") && testCase.stdout().includes("Server logging: off") && testCase.stdout().includes("Access logging: off"));
+                    check("setLogging(false) does not disable development diagnostics",testCase.stdout().includes("req.url:"));
                 }
             });
         }
@@ -430,7 +464,28 @@ async function runningCase(scenario, options, inspect) {
                 records.length === 1 &&
                 /^\S+ remote="[^"]+" method="GET" target="\/" status=200 elapsed=\d+\.\d{3}ms state=complete$/.test(records[0])
             );
-            check("production access logging stays off console", testCase.stdout().trim() === "");
+            check("production access records stay off console", !testCase.stdout().includes(' remote="'));
+        });
+
+        for (const scenario of ["mode-then-logging","logging-then-mode"]) {
+            const root=path.join(temporaryPath,scenario);
+            await runningCase(scenario,{logPath:root},async function (testCase) {
+                const log=fs.readFileSync(serverLogFiles(root)[0],"utf8");
+                check(scenario+" preserves production mode",testCase.stdout().includes("Mode: production"));
+                check(scenario+" enables only server logging",log.includes("Server logging: on") && log.includes("Access logging: off") && !fs.existsSync(path.join(root,"access")));
+            });
+        }
+
+        const warningRoot=path.join(temporaryPath,"production-server-warning");
+        await runningCase("production-server-warning",{logPath:warningRoot},async function (testCase) {
+            const response=await request(testCase.message.port,{
+                method:"POST",path:"/servlets/lifecycle.jss",body:"value=warning"
+            });
+            await new Promise(resolve => setTimeout(resolve,25));
+            const serverLog=fs.readFileSync(serverLogFiles(warningRoot)[0],"utf8");
+            check("production warning request succeeds",response.status === 200);
+            check("production warning is retained in server log",serverLog.includes("WARN WARNING: POST request has no Content-Type"));
+            check("production warning is not written to console",!testCase.stdout().includes("WARNING: POST request has no Content-Type") && !testCase.stderr().includes("WARNING: POST request has no Content-Type"));
         });
 
         const http2AccessRoot = path.join(temporaryPath, "access-http2");

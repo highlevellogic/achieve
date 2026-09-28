@@ -30,7 +30,6 @@ let pathMap;
 
 let mode = "development";
 let logging = {
-  console: true,
   server: false,
   access: false
 };
@@ -70,36 +69,34 @@ exports.setMode = function (newMode) {
   productionHelperCache.clear();
 };
 
-exports.setLogging = function (...destinations) {
+exports.setLogging = function (...selections) {
   ensureLoggingConfigurable("setLogging");
-  if (destinations.length === 0) {
+  if (selections.length === 0) {
     throw new TypeError("setLogging() requires at least one argument.");
   }
 
-  if (destinations.length === 1 && typeof destinations[0] === "boolean") {
-    let enabled = destinations[0];
+  if (selections.length === 1 && typeof selections[0] === "boolean") {
+    let enabled = selections[0];
     logging = {
-      console: enabled,
       server: enabled,
       access: enabled
     };
     return;
   }
 
-  if (destinations.some(destination => typeof destination !== "string")) {
-    throw new TypeError("setLogging() accepts one boolean or logging destination names.");
+  if (selections.some(selection => typeof selection !== "string")) {
+    throw new TypeError("setLogging() accepts one boolean or persistent logging selection names.");
   }
 
   let selected = {
-    console: false,
     server: false,
     access: false
   };
-  for (let destination of destinations) {
-    if (!Object.prototype.hasOwnProperty.call(selected,destination)) {
-      throw new RangeError("Unknown logging destination: " + destination);
+  for (let selection of selections) {
+    if (!Object.prototype.hasOwnProperty.call(selected,selection)) {
+      throw new RangeError("Unknown logging selection: " + selection);
     }
-    selected[destination] = true;
+    selected[selection] = true;
   }
   logging = selected;
 };
@@ -303,14 +300,10 @@ function createLogSink(category) {
 }
 
 function developmentLog(...values) {
-  if (mode === "development" && logging.console) console.log(...values);
+  if (mode === "development") console.log(...values);
 }
 
 function serverEvent(event,message,err) {
-  if (logging.console) {
-    if (event === "ERROR") console.error(message);
-    else console.log(message);
-  }
   if (logging.server && serverLogSink) {
     serverLogSink.write(
       event + " " +
@@ -320,10 +313,22 @@ function serverEvent(event,message,err) {
 }
 
 function serverWarning(message) {
+  if (!loggingConfigurationLocked || mode === "development") console.log(message);
   serverEvent("WARN",message);
 }
 
 function serverError(message,err) {
+  if (!loggingConfigurationLocked || mode === "development") console.error(message);
+  serverEvent("ERROR",message,err);
+}
+
+function startupWarning(message) {
+  console.log(message);
+  serverEvent("WARN",message);
+}
+
+function startupError(message,err) {
+  console.error(message);
   serverEvent("ERROR",message,err);
 }
 
@@ -633,7 +638,7 @@ function methodNotSupported(req, res) {
 
     res.statusCode = 501;
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    developmentLog(message);
+    if (mode === "development") developmentLog(message);
     res.end(message);
 }
 
@@ -910,7 +915,7 @@ function advertisedMethods() {
 function handleOptions(req,res,basePath,resourceTarget,publicTarget) {
     let allow=advertisedMethods();
     if (req.url === "*") {
-        developmentLog("OPTIONS * REQUEST");
+        if (mode === "development") developmentLog("OPTIONS * REQUEST");
         res.statusCode=204;
         res.setHeader("Allow",allow);
         res.setHeader("server",version);
@@ -922,7 +927,7 @@ function handleOptions(req,res,basePath,resourceTarget,publicTarget) {
     if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
     closeFileInfoDescriptor(fileInfo);
 
-    developmentLog("OPTIONS REQUEST: " + req);
+    if (mode === "development") developmentLog("OPTIONS REQUEST: " + req);
     res.statusCode=204;
     if (req.headers.origin && req.headers["access-control-request-method"]) {
         res.setHeader("Access-Control-Allow-Methods",allow);
@@ -1231,7 +1236,7 @@ function handleConnectRequests(server) {
       }
 
       let message = methodNotSupportedMessage(req);
-      developmentLog(message);
+      if (mode === "development") developmentLog(message);
       endResponse(
         501,
         "Not Implemented",
@@ -1290,40 +1295,44 @@ function attachStartupLogging(server,protocol,port) {
     let methods=Array.from(registeredMethods,function ([method,servletPath]) {
       return method + " -> " + servletPath;
     });
-    serverEvent("START","\n" + version + " " + serverName + " is running on port " + port + ". (Node.js version " + process.version + ")");
-    serverEvent("CONFIG","Path to server entry: " + serverEntryPath);
-    serverEvent("CONFIG","Path to application base: " + basePath);
-    serverEvent("CONFIG","Mode: " + mode);
-    serverEvent("CONFIG","Node environment: " + process.env.NODE_ENV);
-    serverEvent("CONFIG","Browser caching: " + (bCaching ? "on" : "off"));
-    serverEvent("CONFIG","Static compression: " + (compress ? "on" : "off"));
-    serverEvent("CONFIG","Buffered input limit: " + bufferedInputLimit + " bytes");
-    serverEvent("CONFIG","Console logging: " + (logging.console ? "on" : "off"));
-    serverEvent("CONFIG","Server logging: " + (logging.server ? "on" : "off"));
-    serverEvent("CONFIG","Access logging: " + (logging.access ? "on" : "off"));
-    serverEvent("CONFIG","Path to logs: " + logRoot);
-    serverEvent("CONFIG","MIME type listing: " + (showMimes ? "on" : "off"));
-    serverEvent("CONFIG","MIME types: " + Object.keys(mimeList).length + " configured");
-    serverEvent("CONFIG","Audiovisual MIME types: " + Object.keys(avMimeList).length + " configured");
-    serverEvent("CONFIG","Default character set: " + defaultCharSet);
-    serverEvent("CONFIG","CORS policies: " + (corsRules.length ? corsRules.join("; ") : "none"));
-    serverEvent("CONFIG","Route mappings: " + (routes.length ? routes.join("; ") : "none"));
-    serverEvent("CONFIG","Path mappings: " + (paths.length ? paths.join("; ") : "none"));
-    serverEvent("CONFIG","Registered methods: " + (methods.length ? methods.join(", ") : "none"));
-    if (logging.console) console.log("");
+    function startupDisplay(event,message) {
+      console.log(message);
+      serverEvent(event,message);
+    }
+    startupDisplay("START","\n" + version + " " + serverName + " is running on port " + port + ". (Node.js version " + process.version + ")");
+    startupDisplay("CONFIG","Path to server entry: " + serverEntryPath);
+    startupDisplay("CONFIG","Path to application base: " + basePath);
+    startupDisplay("CONFIG","Mode: " + mode);
+    startupDisplay("CONFIG","Node environment: " + process.env.NODE_ENV);
+    startupDisplay("CONFIG","Browser caching: " + (bCaching ? "on" : "off"));
+    startupDisplay("CONFIG","Static compression: " + (compress ? "on" : "off"));
+    startupDisplay("CONFIG","Buffered input limit: " + bufferedInputLimit + " bytes");
+    startupDisplay("CONFIG","Server logging: " + (logging.server ? "on" : "off"));
+    startupDisplay("CONFIG","Access logging: " + (logging.access ? "on" : "off"));
+    startupDisplay("CONFIG","Path to logs: " + logRoot);
+    startupDisplay("CONFIG","MIME type listing: " + (showMimes ? "on" : "off"));
+    startupDisplay("CONFIG","MIME types: " + Object.keys(mimeList).length + " configured");
+    startupDisplay("CONFIG","Audiovisual MIME types: " + Object.keys(avMimeList).length + " configured");
+    startupDisplay("CONFIG","Default character set: " + defaultCharSet);
+    startupDisplay("CONFIG","CORS policies: " + (corsRules.length ? corsRules.join("; ") : "none"));
+    startupDisplay("CONFIG","Route mappings: " + (routes.length ? routes.join("; ") : "none"));
+    startupDisplay("CONFIG","Path mappings: " + (paths.length ? paths.join("; ") : "none"));
+    startupDisplay("CONFIG","Registered methods: " + (methods.length ? methods.join(", ") : "none"));
+    console.log("");
   });
   server.on("error",function (err) {
-    serverError(protocol + " listener error on port " + port + ": " + err.message,err);
+    if (server.listening) serverError(protocol + " listener error on port " + port + ": " + err.message,err);
+    else startupError(protocol + " listener error on port " + port + ": " + err.message,err);
   });
 }
 
 var achieveApp = function (req, res) {
   attachAccessLogging(req,res);
-  developmentLog(req.method);
+  if (mode === "development") developmentLog(req.method);
  try {
    // Get information about the requested file or application.
  //  let urlParsed = url.parse(req.headers.referer, true);
-   developmentLog("url: " + req.url + ", origin: " + req.socket.remoteAddress);
+   if (mode === "development") developmentLog("url: " + req.url + ", origin: " + req.socket.remoteAddress);
    if (/#|%(?![0-9A-Fa-f]{2})/.test(req.url)) {
      if (req.httpVersion === "2.0") {
        // A nonzero reset emits an expected stream error; it is not a server failure.
@@ -1380,7 +1389,7 @@ exports.listen2 = function (ioptions) {
   try {
   if (typeof ioptions === "object") {
     if (ioptions.key === undefined || ioptions.cert === undefined) {
-      serverError("FATAL ERROR: Security certification list is insufficient for SSL.");
+      startupError("FATAL ERROR: Security certification list is insufficient for SSL.");
       return;
     }
     ssl = true;
@@ -1394,17 +1403,17 @@ exports.listen2 = function (ioptions) {
   if (sport === undefined) {
     sport=portDefault;
   } else if (normalizedPort(sport) === false) {
-    serverWarning("http2 port " + sport + " is not a number. Setting port to default: " + portDefault + ".");
+    startupWarning("http2 port " + sport + " is not a number. Setting port to default: " + portDefault + ".");
     sport=portDefault;
   } else {
     sport=normalizedPort(sport);
   }
   if ((sport<1024 && sport != portDefault) || sport>49151) {
-    serverWarning("http2 port " + sport + " is outside acceptable range. (1024-49151) Setting port to default: " + portDefault + ".");
+    startupWarning("http2 port " + sport + " is outside acceptable range. (1024-49151) Setting port to default: " + portDefault + ".");
     sport=portDefault;
   }
   } catch (err) {
-    serverWarning("Error setting port in listen2(). Setting port to default.")
+    startupWarning("Error setting port in listen2(). Setting port to default.")
     sport=portDefault;
   }
   validateApplicationPath(basePath);
@@ -1429,28 +1438,28 @@ exports.slisten = function (ioptions) {
 
   try {
   if (typeof ioptions !== "object") {
-    serverError("FATAL ERROR: slisten() requires an options object as argument.");
+    startupError("FATAL ERROR: slisten() requires an options object as argument.");
     return;
   }
   if (ioptions.key === undefined || ioptions.cert === undefined) {
-    serverError("FATAL ERROR: Security certification list is insufficient.");
+    startupError("FATAL ERROR: Security certification list is insufficient.");
     return;
   }
   sport = ioptions.httpsPort;
   if (sport === undefined) {
     sport=443;
   } else if (normalizedPort(sport) === false) {
-    serverWarning("https port " + sport + " is not a number. Setting port to default.");
+    startupWarning("https port " + sport + " is not a number. Setting port to default.");
     sport=443;
   } else {
     sport=normalizedPort(sport);
   }
   if ((sport<1024 && sport!=443) || sport>49151) {
-    serverWarning("https port " + sport + " is outside acceptable range. (1024-49151) Setting port to default.");
+    startupWarning("https port " + sport + " is outside acceptable range. (1024-49151) Setting port to default.");
     sport=443;
   }
   } catch (err) {
-    serverWarning("Error setting port in slisten(). Setting port to default.")
+    startupWarning("Error setting port in slisten(). Setting port to default.")
     sport=443;
   }
   validateApplicationPath(basePath);
@@ -1474,17 +1483,17 @@ exports.listen = function (port) {
   if (port === undefined) {
     port=80;
   } else if (normalizedPort(port) === false) {
-    serverWarning(port + " is not a number. Setting port to default.");
+    startupWarning(port + " is not a number. Setting port to default.");
     port=80;
   } else {
     port=normalizedPort(port);
   }
   if ((port<1024 && port != 80) || port>49151) {
-    serverWarning("Port " + port + " is outside acceptable range. (1024-49151) Setting port to default.");
+    startupWarning("Port " + port + " is outside acceptable range. (1024-49151) Setting port to default.");
     port=80;
   }
   } catch (err) {
-    serverWarning("Error setting port in listen(). Setting port to default.")
+    startupWarning("Error setting port in listen(). Setting port to default.")
     port=80;
   }
   validateApplicationPath(basePath);
@@ -1581,7 +1590,7 @@ let avMimeList = {
 function reportError (res,account,statusCode,reason,sendBody = true) {
   if (statusCode === undefined) statusCode = 500;
   if (statusCode >= 500) serverError(statusCode + ": " + reason);
-  else developmentLog(statusCode + ": " + reason);
+  else if (mode === "development") developmentLog(statusCode + ": " + reason);
   res.statusCode=statusCode;
   res.setHeader('Content-Type','text/plain;charset=utf-8');
   if (sendBody) {
@@ -1883,7 +1892,7 @@ function setFileInfo (req, res, basePath, requestUrl) {
    let thisBasePath=basePath;
    let audioVisual = false;
    let notAcceptable = false;
-developmentLog("req.url: " + req.url);
+   if (mode === "development") developmentLog("req.url: " + req.url);
    let queryStart = requestUrl.indexOf("?");
    let uncheckedPath = queryStart === -1
      ? requestUrl
@@ -2126,6 +2135,7 @@ function nodeVersion () {
   return result;
 }
 function display (fi) {
+  if (mode !== "development") return;
   developmentLog("\nFile Info: " + reqCount++);
   var propValue;
   for(var propName in fi) {
@@ -2242,7 +2252,7 @@ function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
   let context;
   let wmsg;
   function applicationOwned() {
-    developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
+    if (mode === "development") developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
   }
   function complete(content) {
     if (response.writableEnded || response.destroyed) {
@@ -2250,7 +2260,7 @@ function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
       return;
     }
     if (content === undefined || content === null) {
-      developmentLog("INFO: Return from " + fileInfo.path.split(path.sep).join("/") + " is " + String(content) + ".");
+      if (mode === "development") developmentLog("INFO: Return from " + fileInfo.path.split(path.sep).join("/") + " is " + String(content) + ".");
       if (response.statusCode === 200) response.statusCode=204;
       response.end();
       return;
@@ -2319,7 +2329,7 @@ function startObject (req,res,fileInfo,myApp,sendBody = true) {
     response.setHeader('server',version);
     response.setHeader('Content-Type','text/plain');
     if (request.method == "POST") {
-      developmentLog("using POST");
+      if (mode === "development") developmentLog("using POST");
       let contentTypeHeader=request.headers["content-type"];
       let contentType=(contentTypeHeader || "").split(";")[0].trim().toLowerCase();
       if (contentTypeHeader === undefined) serverWarning("WARNING: POST request has no Content-Type; Achieve is treating the input as application/x-www-form-urlencoded.");
