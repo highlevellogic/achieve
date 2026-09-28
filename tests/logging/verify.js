@@ -90,6 +90,7 @@ function startCase(scenario, options = {}) {
                 ACHIEVE_LOGGING_SCENARIO: scenario,
                 ACHIEVE_LOGGING_PORT: String(nextPort++),
                 ACHIEVE_LOG_PATH: options.logPath || "",
+                ACHIEVE_SHOW_MIMES: options.showMimes ? "true" : "false",
                 ACHIEVE_INJECT_STREAM_ERROR: options.injectStreamError ? "true" : "false",
                 ACHIEVE_INJECT_STREAM_ERROR_CATEGORY: options.injectStreamErrorCategory || ""
             }),
@@ -216,7 +217,8 @@ async function runningCase(scenario, options, inspect) {
             ["startup-http2s","HTTP2 (secure)"]
         ]) {
             const startupCase=await startCase(scenario,{
-                appPath:path.join(__dirname,"application")
+                appPath:path.join(__dirname,"application"),
+                showMimes:true
             });
             try {
                 const output=startupCase.stdout();
@@ -227,6 +229,13 @@ async function runningCase(scenario, options, inspect) {
                         " is running on port "+startupCase.message.port+
                         ". (Node.js version "+process.version+")"
                     )
+                );
+                check(
+                    label+" startup displays configured MIME tables",
+                    output.includes("\nMIME Types:\n") &&
+                    output.includes(" html: text/html") &&
+                    output.includes("\nAudioVisual MIME Types:\n") &&
+                    output.includes(" mp4: video/mp4")
                 );
             } finally {
                 await stopCase(startupCase);

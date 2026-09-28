@@ -1379,6 +1379,17 @@ function normalizedPort(port) {
   if (typeof port !== "number" || !Number.isInteger(port)) return false;
   return port;
 }
+function displayMimeTypes() {
+  if (!showMimes) return;
+  console.log("\nMIME Types:");
+  for (var type in mimeList) {
+      console.log(" " + type + ": " + mimeList[type]);
+  }
+  console.log("\nAudioVisual MIME Types:");
+  for (var atype in avMimeList) {
+      console.log(" " + atype + ": " + avMimeList[atype]);
+  }
+}
 exports.listen2 = function (ioptions) {
   http2 = require('http2');
   
@@ -1427,6 +1438,7 @@ exports.listen2 = function (ioptions) {
   }
   attachStartupLogging(server,ssl ? "http2.https" : "http2.http",sport);
   server.listen(sport);
+  displayMimeTypes();
   return server;
   
 };
@@ -1470,6 +1482,7 @@ exports.slisten = function (ioptions) {
   handleConnectRequests(server);
   attachStartupLogging(server,"https",sport);
   server.listen(sport);
+  displayMimeTypes();
   return server;
   
 };
@@ -1504,17 +1517,7 @@ exports.listen = function (port) {
   handleConnectRequests(server);
   attachStartupLogging(server,"http",port);
   server.listen(port);
-  
-  if (showMimes) {
-    console.log("\nMIME Types:");
-    for (var type in mimeList) {
-        console.log(" " + type + ": " + mimeList[type]);
-    }
-    console.log("\nAudioVisual MIME Types:");
-    for (var atype in avMimeList) {
-        console.log(" " + atype + ": " + avMimeList[atype]);
-    }
-  }
+  displayMimeTypes();
   return server;
 };
 // Supported MIME types, based on file extensions

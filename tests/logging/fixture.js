@@ -50,6 +50,7 @@ function send(message) {
 if (process.env.ACHIEVE_LOG_PATH) {
     achieve.setLogPath(process.env.ACHIEVE_LOG_PATH);
 }
+if (process.env.ACHIEVE_SHOW_MIMES === "true") achieve.showMimeTypes();
 
 let checks = {};
 if (scenario === "production") {
