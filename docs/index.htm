@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve v3 Documentation</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+main { margin:2% 5% 5%; }
+.docLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.docLink:hover,.packageLink:hover { color:blue; }
+.docList { list-style:none; padding-left:0; }
+.docList li { margin:1.2em 0; }
+.docList p { margin:.25em 0 0; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+</style>
+</head>
+<body>
+
+<header>
+<img src="images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+
+<main>
+
+<h1>Achieve v3 Documentation</h1>
+
+<p>Achieve is a developer-friendly HTTP server for Node.js. It provides the server behavior so you can concentrate on building your application.</p>
+
+<h2>Detailed Reference</h2>
+
+<ul class="docList">
+<li>
+<a class="docLink" href="reference/config.htm">Configuration</a>
+<p>Configure the application space, development and production modes, caching, compression, logging, MIME types, routing, HTTP methods, and CORS.</p>
+</li>
+
+<li>
+<a class="docLink" href="reference/routing.htm">Routing</a>
+<p>How Achieve maps request URLs to application resources, including application-space selection, exact route mappings, and subtree mappings.</p>
+</li>
+
+<li>
+<a class="docLink" href="reference/servlets.htm">Backend: JavaScript Servlets</a>
+<p>Write server-side JavaScript using Achieve's servlet model, with CommonJS and ESM support, request parameters, backend modules, asynchronous processing, and managed responses.</p>
+</li>
+
+<li>
+<a class="docLink" href="reference/session.htm">The Servlet Session Object</a>
+<p>Reference for the request, response, parameters, module loading, response ownership, and application and servlet paths available through the servlet session.</p>
+</li>
+</ul>
+
+</main>
+
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a>
+</footer>
+
+</body>
+</html>

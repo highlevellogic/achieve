@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve v3 - The Servlet Session Object</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+.navLink { display:inline-block; margin:.6em 5% .2em; color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.navLink:hover,.packageLink:hover { color:blue; }
+.backArrow { margin-right:.4em; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+main { margin:2% 5% 5%; }
+code { padding:.08em .35em; border-radius:.3em; background-color:rgb(220,235,245); color:blue; font-family:Consolas,"Courier New",monospace; }
+pre { margin:1em 0 1.4em; }
+pre code { display:block; padding:1em; overflow:auto; white-space:pre; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to documentation index</a>
+<main>
+
+<h1>The Servlet Session Object</h1>
+
+<p>Every JavaScript Servlet receives a <code>session</code> object.</p>
+
+<p>The session object provides access to the HTTP request and response, parsed request parameters, and achieve services used while processing the request.</p>
+
+<p>The session object provides:</p>
+
+<pre><code>session.request
+// complete Node.js HTTP request object
+
+session.response
+// complete Node.js HTTP response object
+
+session.params
+// request parameters parsed by achieve
+
+session.load()
+// loads backend JavaScript modules within achieve's processing mechanisms
+
+session.allowAsync
+// gives application code responsibility for completing the response
+
+session.dirPath
+// directory containing the current servlet
+
+session.appPath
+// root of the application space</code></pre>
+
+<h2>session.params</h2>
+
+<p><code>session.params</code> contains request parameters that achieve has parsed for the servlet.</p>
+
+<p>For GET requests, achieve parses parameters from the URL query string into <code>session.params</code>. This includes HTML forms using <code>method="get"</code>, which construct the query string from the form data.</p>
+
+<p>For POST requests, achieve parses <code>application/x-www-form-urlencoded</code> form data and <code>application/json</code> into <code>session.params</code>.</p>
+
+<p>For compatibility, a POST request without a <code>Content-Type</code> is treated as <code>application/x-www-form-urlencoded</code> and produces a server warning.</p>
+
+<p>For request data that achieve does not parse, use <code>session.request</code> directly.</p>
+
+<h2>session.request</h2>
+
+<p><code>session.request</code> is the complete Node.js HTTP request object for the current request.</p>
+
+<p>Use <code>session.request</code> when application code needs request information or processing beyond achieve's convenience handling.</p>
+
+<h2>session.response</h2>
+
+<p><code>session.response</code> is the complete Node.js HTTP response object for the current request.</p>
+
+<p>Use <code>session.response</code> to set headers, status information, or otherwise work directly with the response.</p>
+
+<p>Normally, achieve completes the response after the servlet returns its result. See <code>session.allowAsync</code> when application code needs to take responsibility for completing the response.</p>
+
+<h2>session.allowAsync</h2>
+
+<p><code>session.allowAsync</code> controls who is responsible for completing the HTTP response.</p>
+
+<p>The default is false. Normally, a servlet returns its result and achieve completes the response.</p>
+
+<p>Set <code>session.allowAsync</code> to true when processing must continue after the servlet returns and application code will complete the response itself.</p>
+
+<p>With <code>session.allowAsync</code> set to true, achieve does not automatically complete the response when the servlet returns. The application is responsible for eventually completing the response and for handling errors that occur during its asynchronous processing.</p>
+
+<p>Ordinary use of <code>async</code> and <code>await</code> does not require <code>allowAsync</code>. If the servlet awaits its work and returns the result, leave response completion to achieve.</p>
+
+<h2>session.load()</h2>
+
+<p><code>session.load()</code> loads additional backend JavaScript modules within achieve's servlet processing mechanisms.</p>
+
+<p>CommonJS modules are loaded synchronously. Supported forms include:</p>
+
+<pre><code>session.load("helper.jss");
+
+session.load("helper.jss.cjs");</code></pre>
+
+<p>ESM modules use <code>.jss.mjs</code>. Loading an ESM module returns a Promise and can be awaited:</p>
+
+<pre><code>let mod = await session.load("helper.jss.mjs");</code></pre>
+
+<p>Relative filenames passed to <code>session.load()</code> are resolved from the directory containing the current servlet.</p>
+
+<p>In development mode, modules loaded with <code>session.load()</code> are reloaded when their files change. In production mode, loaded modules are cached for efficient repeated use.</p>
+
+<p>Errors raised while loading or using a module receive achieve's servlet error processing when they propagate through the managed servlet invocation or its returned Promise.</p>
+
+<h2>session.dirPath</h2>
+
+<p><code>session.dirPath</code> is the directory containing the currently executing servlet.</p>
+
+<p>Relative filenames passed to <code>session.load()</code> are resolved from this directory.</p>
+
+<h2>session.appPath</h2>
+
+<p><code>session.appPath</code> is the root of the application space.</p>
+
+<p>Unlike <code>session.dirPath</code>, it does not change according to the location of the current servlet. It provides a stable reference to the application space configured with <code>setAppPath()</code>.</p>
+
+<p>Application code can also use <code>session.appPath</code> when it needs to locate resources deliberately kept outside the HTTP-accessible application space.</p>
+
+</main>
+<footer>
+<a href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a>
+</footer>
+</body>
+</html>
