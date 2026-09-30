@@ -112,6 +112,7 @@ class FakeServer extends EventEmitter {
 (async function () {
     achieve.setLogging(false);
     achieve.setCaching(true);
+    achieve.setAppPath(path.join(__dirname,"root"));
 
     check("fs is module-local",Object.hasOwn(global,"fs"),false);
     check("Base64 is module-local",Object.hasOwn(global,"Base64"),false);
@@ -122,8 +123,8 @@ class FakeServer extends EventEmitter {
     await listening(server);
     try {
         const normal=await request(port,"/resource.txt");
-        check("default application status",normal.status,200);
-        check("default application is entry-point root directory",normal.body.trim(),"modernization default application");
+        check("configured application status",normal.status,200);
+        check("explicit application path serves resource",normal.body.trim(),"modernization default application");
         check("normal request completes",normal.state,"complete");
         check(
             "metadata ETag output uses current inputs",

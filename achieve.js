@@ -421,11 +421,8 @@ function initializeLogging() {
 }
 
 let reqCount = 0;
-   // basePath is the root directory for applications. (Like webapps on Tomcat or htdocs on Apache httpd.)
-   // The default is the root directory beneath the entry point or main module directory.
-   // It can be reset by the app developer using .setAppPath(appDir);
- //  let basePath = path.normalize(require.main.filename.substring(0,require.main.filename.lastIndexOf(path.sep)));
-   let basePath = path.join(serverInstallationPath,"root");
+   // basePath is the explicitly configured root directory for applications.
+   let basePath;
    let bCaching=false, bCachingCheck=false, compress=false, showMimes=false;
    let corsdomains=[];
    let shortVersion = require('./package.json').version;
@@ -462,7 +459,7 @@ exports.setAppPath = function (bp) {
   servletResolutionAliases.clear();
   basePath=newPath;
 };
-function validateApplicationPath(applicationPath,description="Default application path") {
+function validateApplicationPath(applicationPath,description="Application path") {
   let stats;
   try {
     stats=fs.statSync(applicationPath);
@@ -472,6 +469,14 @@ function validateApplicationPath(applicationPath,description="Default applicatio
   if (!stats.isDirectory()) {
     throw new Error(description + " is not a directory: " + applicationPath);
   }
+}
+function applicationPathReady() {
+  if (basePath === undefined) {
+    startupError("ERROR: Application space has not been configured. Use setAppPath() before starting the server.");
+    return false;
+  }
+  validateApplicationPath(basePath,"Configured application path");
+  return true;
 }
 function validRoutePath(value) {
   if (typeof value !== "string" || value.length === 0 || value.charAt(0) !== "/") return false;
@@ -1427,7 +1432,7 @@ exports.listen2 = function (ioptions) {
     startupWarning("Error setting port in listen2(). Setting port to default.")
     sport=portDefault;
   }
-  validateApplicationPath(basePath);
+  if (!applicationPathReady()) return;
   if (!bCachingCheck) exports.setCaching(bCaching);
   if (!initializeLogging()) return;
 
@@ -1474,7 +1479,7 @@ exports.slisten = function (ioptions) {
     startupWarning("Error setting port in slisten(). Setting port to default.")
     sport=443;
   }
-  validateApplicationPath(basePath);
+  if (!applicationPathReady()) return;
   if (!bCachingCheck) exports.setCaching(bCaching);
   if (!initializeLogging()) return;
   
@@ -1509,7 +1514,7 @@ exports.listen = function (port) {
     startupWarning("Error setting port in listen(). Setting port to default.")
     port=80;
   }
-  validateApplicationPath(basePath);
+  if (!applicationPathReady()) return;
   if (!bCachingCheck) exports.setCaching(bCaching);
   if (!initializeLogging()) return;
   
@@ -2491,6 +2496,7 @@ function displayedRuntimeSource (sourcePath) {
 }
 
 function isApplicationRuntimeSource (sourcePath) {
+  if (typeof basePath !== "string") return false;
   var source = displayedRuntimeSource(sourcePath);
   var location = source.match(/(:\d+(?::\d+)?)$/);
   if (!location) return false;

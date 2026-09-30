@@ -120,6 +120,7 @@ if (scenario === "production") {
     achieve.setLogging("server", "access");
 }
 
+achieve.setAppPath(process.env.ACHIEVE_APP_PATH);
 if (scenario === "startup-config") {
     achieve.setMode("production");
     achieve.setNodeEnv("startup-test");
@@ -132,7 +133,6 @@ if (scenario === "startup-config") {
     achieve.addMimeType("startup","application/x-startup");
     achieve.addAVMimeType("startup-media","video/x-startup");
 }
-achieve.setAppPath(process.env.ACHIEVE_APP_PATH);
 let server;
 if (scenario === "access-http2" || scenario === "startup-http2") {
     server=achieve.listen2(port);

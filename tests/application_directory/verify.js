@@ -51,19 +51,14 @@ async function withServer(run) {
 }
 
 (async function () {
-    await withServer(async function (port) {
-        const result = await request(port, "/fixtures/default.html");
-        check("server-entry root directory is default app status", result.status, 200);
-        check("server-entry root directory is default app", result.body.trim(), "default root application");
-        const outside=await request(port,"/outside.html");
-        check("startup-directory resource outside root is not served",outside.status,404);
-    });
-
     const missingFixture=path.join(__dirname,"missing_default","fixture.js");
-    const missingRoot=path.join(path.dirname(missingFixture),"root");
-    const missingResult=childProcess.spawnSync(process.execPath,[missingFixture],{encoding:"utf8"});
-    check("missing default root prevents startup",missingResult.status,0);
-    check("missing default root reports complete path",missingResult.stdout.trim(),"Default application path does not exist: "+missingRoot);
+    check("adjacent root fixture exists but is not implicit",fs.existsSync(path.join(path.dirname(missingFixture),"root","implicit.html")),true);
+    const missingMessage="ERROR: Application space has not been configured. Use setAppPath() before starting the server.";
+    for (const listener of ["listen","slisten","listen2","listen2-secure"]) {
+        const missingResult=childProcess.spawnSync(process.execPath,[missingFixture,listener],{encoding:"utf8"});
+        check(listener+" without setAppPath exits cleanly",missingResult.status,0);
+        check(listener+" without setAppPath returns no server",missingResult.stderr.trim(),missingMessage);
+    }
 
     let diagnostic = "";
     const originalError = console.error;
@@ -81,19 +76,15 @@ async function withServer(run) {
         "ERROR: setRootDir() is no longer supported. Use setAppPath() instead."
     );
 
-    await withServer(async function (port) {
-        const result = await request(port, "/fixtures/default.html");
-        check("setRootDir does not prevent startup", result.status, 200);
-        check("setRootDir changes no configuration", result.body.trim(), "default root application");
-    });
-
-    const configuredPath = path.join(__dirname, "..", "request_path", "application");
+    const configuredPath = path.join(__dirname,"root");
     achieve.setRootDir("still-ignored");
     achieve.setAppPath(configuredPath);
     await withServer(async function (port) {
-        const result = await request(port, "/index.html");
+        const result = await request(port, "/fixtures/default.html");
         check("setAppPath override status", result.status, 200);
-        check("setRootDir followed by setAppPath", result.body.indexOf("request-path root") !== -1, true);
+        check("setRootDir followed by setAppPath", result.body.trim(), "default root application");
+        const outside=await request(port,"/outside.html");
+        check("resource adjacent to configured application is not served",outside.status,404);
     });
 
     const temporaryPath=fs.mkdtempSync(path.join(os.tmpdir(),"achieve-application-path-"));
@@ -104,9 +95,9 @@ async function withServer(run) {
         assertPathFailure("nonexistent setAppPath",nonexistentPath,/does not exist/);
         assertPathFailure("non-directory setAppPath",filePath,/is not a directory/);
         await withServer(async function (port) {
-            const result=await request(port,"/index.html");
+            const result=await request(port,"/fixtures/default.html");
             check("failed setAppPath preserves configured application status",result.status,200);
-            check("failed setAppPath does not silently select another path",result.body.indexOf("request-path root") !== -1,true);
+            check("failed setAppPath does not silently select another path",result.body.trim(),"default root application");
         });
     } finally {
         fs.rmSync(temporaryPath,{recursive:true,force:true});
