@@ -57,6 +57,7 @@ function assertSanitized(body) {
     assert(!body.includes("C:/projects"),"POSIX-style absolute path leaked: "+body);
     assert(!body.includes("C:\\projects"),"Windows absolute path leaked: "+body);
     assert(!body.includes("?achieve-mtime="),"ESM reload marker leaked: "+body);
+    assert(!body.includes("ENOENT"),"Node missing-file code leaked: "+body);
 }
 
 async function expectFailure(target,fileName,message,excludedSource) {
@@ -93,7 +94,7 @@ async function expectFailure(target,fileName,message,excludedSource) {
         results.esmCore=await expectFailure(
             "/servlets/core-esm.jss.mjs",
             "servlets/core-esm.jss.mjs",
-            "ENOENT",
+            "File not found:",
             "node:fs:"
         );
         assert(results.esmCore.includes("missing-esm.txt"),"ESM missing filename was lost.");
@@ -101,7 +102,7 @@ async function expectFailure(target,fileName,message,excludedSource) {
         results.commonJSCore=await expectFailure(
             "/servlets/core-cjs.jss.cjs",
             "servlets/core-cjs.jss.cjs",
-            "ENOENT",
+            "File not found:",
             "node:fs:"
         );
         assert(results.commonJSCore.includes("missing-cjs.txt"),"CommonJS missing filename was lost.");
@@ -109,7 +110,7 @@ async function expectFailure(target,fileName,message,excludedSource) {
         results.esmHelper=await expectFailure(
             "/servlets/helper-esm.jss.mjs",
             "helpers/core-helper.jss.mjs",
-            "ENOENT",
+            "File not found:",
             "node:fs:"
         );
         assert(results.esmHelper.includes("missing-helper-esm.txt"),"ESM helper filename was lost.");

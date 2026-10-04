@@ -2472,6 +2472,20 @@ function sanitizeDeveloperErrorText (message) {
   return result.trim();
 }
 
+function runtimeErrorHeadline (err,message) {
+  if (
+    err !== null &&
+    (typeof err === "object" || typeof err === "function") &&
+    err.code === "ENOENT"
+  ) {
+    var missingPath = typeof err.path === "string" ? safeSourceIdentity(err.path) : "";
+    return missingPath && missingPath !== "[path]"
+      ? "File not found: " + missingPath
+      : "File not found.";
+  }
+  return sanitizeDeveloperErrorText(message);
+}
+
 function runtimeFunctionName (functionName) {
   var name = functionName.trim();
   if (name.indexOf("Object.") === 0) name = name.substring(7);
@@ -2588,11 +2602,11 @@ function formatRuntimeErrorMessage (err,shortPath="",code=500) {
     if (syntaxReason) return syntaxReason;
 
     var firstLineEnd = normalizedStack.indexOf('\n');
-    if (firstLineEnd === -1) return sanitizeDeveloperErrorText(normalizedStack);
+    if (firstLineEnd === -1) return runtimeErrorHeadline(err,normalizedStack);
 
     var part1 = normalizedStack.substring(0,firstLineEnd);
     if (/^[A-Za-z_$][A-Za-z0-9_$]*Error:/.test(part1) || /^Error:/.test(part1)) {
-      var headline = sanitizeDeveloperErrorText(part1);
+      var headline = runtimeErrorHeadline(err,part1);
       var stackLines = normalizedStack.substring(firstLineEnd+1).split('\n');
       for (var stackLine of stackLines) {
         var applicationFrame = runtimeStackFrame(stackLine,true);
@@ -2632,9 +2646,9 @@ function formatRuntimeErrorMessage (err,shortPath="",code=500) {
     try {
       var errorName = typeof err.name === "string" ? err.name : "";
       var errorMessage = typeof err.message === "string" ? err.message : "";
-      if (errorName && errorMessage) return sanitizeDeveloperErrorText(errorName + ": " + errorMessage);
+      if (errorName && errorMessage) return runtimeErrorHeadline(err,errorName + ": " + errorMessage);
       if (errorName) return sanitizeDeveloperErrorText(errorName);
-      if (errorMessage) return sanitizeDeveloperErrorText(errorMessage);
+      if (errorMessage) return runtimeErrorHeadline(err,errorMessage);
     } catch (errorPropertyError) {
     }
   }
