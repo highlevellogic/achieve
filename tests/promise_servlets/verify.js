@@ -135,6 +135,11 @@ async function runProtocol(protocol) {
         response=await request(protocol,"GET","/servlets/promise.jss.mjs?kind=reject-after-await");
         checkApplicationError(response,"ESM_ASYNC_AFTER_AWAIT_MARKER","servlets/promise.jss.mjs");
         await expect(protocol,"GET","/servlets/promise.jss.cjs?kind=allow-async",201,"application owned");
+        response=await request(protocol,"GET","/servlets/synchronous.jss.cjs?kind=allow-throw");
+        checkApplicationError(response,"ALLOW_ASYNC_SYNC_THROW_MARKER","servlets/synchronous.jss.cjs");
+        await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=allow-owned",202,"synchronous application owned");
+        await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=allow-ended-throw",203,"synchronous already ended");
+        await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=allow-timer",203,"detached timer owned");
         await expect(protocol,"GET","/health.txt",200,"healthy\n");
 
         if (protocol === "http") {
@@ -175,6 +180,14 @@ async function runProtocol(protocol) {
             assert.strictEqual(response.status,200);
             assert.strictEqual(response.body,"prefix");
             assert(response.aborted,"response was not terminated after rejection with headers sent");
+            try {
+                response=await request(protocol,"GET","/servlets/synchronous.jss.cjs?kind=allow-headers-throw");
+                assert.strictEqual(response.status,200);
+                assert.strictEqual(response.body,"synchronous prefix");
+                assert(response.aborted,"allowAsync response was not terminated after a synchronous throw with headers sent");
+            } catch (err) {
+                assert.strictEqual(err.code,"ECONNRESET","unexpected allowAsync headers-sent failure: "+err);
+            }
             await expect(protocol,"GET","/servlets/promise.jss.cjs?kind=allow-rejection",202,"application caught rejection");
             await expect(protocol,"GET","/servlets/promise.jss.cjs?kind=ended-rejection",200,"already ended");
             await abortPendingRequest();
@@ -185,6 +198,11 @@ async function runProtocol(protocol) {
         const state=await waitForMessage(child,"state");
         assert.deepStrictEqual(state.unhandled,[],protocol+" had an unhandled process error");
         assert(!output.includes("ERR_INVALID_ARG_TYPE"),protocol+" wrote a Promise as response content");
+        assert(output.includes("ALLOW_ASYNC_SYNC_THROW_MARKER"),protocol+" did not report allowAsync synchronous throw");
+        assert(output.includes("ALLOW_ASYNC_ENDED_THROW_MARKER"),protocol+" did not report allowAsync throw after response completion");
+        if (protocol === "http") {
+            assert(output.includes("ALLOW_ASYNC_HEADERS_THROW_MARKER"),"HTTP did not report allowAsync throw after headers");
+        }
         assert(output.includes("INFO: Return from /servlets/promise.jss.cjs is undefined."),protocol+" missing undefined development INFO");
         assert(output.includes("INFO: Return from /servlets/promise.jss.cjs is null."),protocol+" missing null development INFO");
         return output;

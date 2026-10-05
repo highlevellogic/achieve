@@ -2282,7 +2282,7 @@ function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
       if (!response.writableEnded && !response.destroyed) response.destroy();
       return;
     }
-    if (response.writableEnded || response.destroyed || (context && context.allowAsync)) {
+    if (response.writableEnded || response.destroyed) {
       applicationOwned();
       return;
     }

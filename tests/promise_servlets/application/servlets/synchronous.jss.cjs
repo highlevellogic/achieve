@@ -9,5 +9,29 @@ exports.servlet=function (session) {
         case "missing-property":
             return session.load("missing-property.js").hell;
         case "throw": throw new Error("SYNC_MARKER");
+        case "allow-throw":
+            session.allowAsync=true;
+            throw new Error("ALLOW_ASYNC_SYNC_THROW_MARKER");
+        case "allow-owned":
+            session.allowAsync=true;
+            session.response.statusCode=202;
+            session.response.end("synchronous application owned");
+            return "ignored";
+        case "allow-headers-throw":
+            session.allowAsync=true;
+            session.response.write("synchronous prefix");
+            throw new Error("ALLOW_ASYNC_HEADERS_THROW_MARKER");
+        case "allow-ended-throw":
+            session.allowAsync=true;
+            session.response.statusCode=203;
+            session.response.end("synchronous already ended");
+            throw new Error("ALLOW_ASYNC_ENDED_THROW_MARKER");
+        case "allow-timer":
+            session.allowAsync=true;
+            setTimeout(function () {
+                session.response.statusCode=203;
+                session.response.end("detached timer owned");
+            },25);
+            return "ignored";
     }
 };
