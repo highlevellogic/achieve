@@ -50,6 +50,12 @@ async function verify(protocol,index) {
     write('media.mp4',bytes,past+3000);
     write('.compression-cache/static.txt.gz',zlib.gzipSync(bytes),past+1000);
     write('.compression-cache/static.txt.zl',zlib.deflateSync(bytes),past+2000);
+    write('fallback.txt',bytes,past+3000);
+    write('.compression-cache/fallback.txt.gz',zlib.gzipSync(bytes),past+4000);
+    write('identity-failure.txt',bytes,past+3000);
+    write('.compression-cache/identity-failure.txt.gz',zlib.gzipSync(bytes),past+4000);
+    write('forbidden-fallback.txt',bytes,past+3000);
+    write('.compression-cache/forbidden-fallback.txt.gz',zlib.gzipSync(bytes),past+4000);
     write('servlet.jss','exports.servlet=()=>"dynamic";',past);
     write('old.txt',bytes,Date.UTC(1994,10,6,8,49,37));
     const child=fork(path.join(__dirname,'fixture.js'),[],{silent:true,env:{...process.env,
@@ -93,6 +99,27 @@ async function verify(protocol,index) {
             }
         }
         const base=await get(),etag=base.headers.etag;
+        const fallback=await get('/fallback.txt',{'accept-encoding':'gzip'});
+        const fallbackIdentity=await get('/fallback.txt');
+        test('compressed open failure falls back to identity',()=>{
+            assert.equal(fallback.status,200);assert.equal(fallback.headers['content-encoding'],undefined);
+            assert.equal(fallback.headers['content-length'],String(bytes.length));assert.deepEqual(fallback.body,bytes);
+            assert.equal(fallback.headers['last-modified'],date(past+3000));
+            assert.equal(fallback.headers.etag,fallbackIdentity.headers.etag);
+        });
+        const identityFailure=await get('/identity-failure.txt',{'accept-encoding':'gzip'});
+        test('identity fallback error is unencoded and hides application path',()=>{
+            assert.equal(identityFailure.status,404);assert.equal(identityFailure.headers['content-encoding'],undefined);
+            assert.match(identityFailure.body.toString(),/^File not found: identity-failure\.txt$/);
+            assert.ok(!identityFailure.body.toString().includes(app));
+        });
+        const forbiddenFallback=await get('/forbidden-fallback.txt',
+            {'accept-encoding':'gzip, identity;q=0'});
+        test('compressed open failure respects forbidden identity fallback',()=>{
+            assert.equal(forbiddenFallback.status,406);
+            assert.equal(forbiddenFallback.headers['content-encoding'],undefined);
+            assert.equal(forbiddenFallback.body.toString(),'No acceptable representation is available.');
+        });
         for(const [target,headers,status] of [['/setup-error.txt',{},500],['/read-error.txt',{},500],
             ['/missing.txt',{},404],['/media.mp4',{range:'bytes=bad'},400],['/media.mp4',{range:'bytes=99999-'},416]]) {
             const r=await get(target,headers);

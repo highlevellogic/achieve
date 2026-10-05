@@ -252,6 +252,11 @@ function directRequest(server,target) {
             result.status === 301 && result.headers.location === "/directory/?x=1",
             result.status + " " + result.headers.location);
 
+        result=await request("/directory?x=1?y=2");
+        check("directory redirect preserves query after first question mark",
+            result.status === 301 && result.headers.location === "/directory/?x=1?y=2",
+            result.status + " " + result.headers.location);
+
         const outsideSecret=fs.readFileSync(path.join(__dirname,"secret.txt"),"utf8");
         check("outside containment fixture exists",
             outsideSecret.includes("outside application boundary"));

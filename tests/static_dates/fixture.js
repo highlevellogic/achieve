@@ -17,7 +17,16 @@ fs.createReadStream=function(file,options) {
     return stream;
 };
 const open=fs.openSync,closeSync=fs.closeSync,close=fs.close;
+let compressedFallbackInjected=false;
 fs.openSync=function(file,...args) {
+    const name=path.basename(String(file));
+    if((!compressedFallbackInjected&&name==='fallback.txt.gz')||
+        name==='identity-failure.txt.gz'||name==='identity-failure.txt'||
+        name==='forbidden-fallback.txt.gz') {
+        compressedFallbackInjected=true;
+        const error=new Error('Injected compressed representation open failure');
+        error.code='ENOENT';error.path=String(file);throw error;
+    }
     const fd=open.call(this,file,...args);
     if(String(file).startsWith(app+path.sep)) descriptors.add(fd);
     return fd;

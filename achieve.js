@@ -676,9 +676,10 @@ function handleResolvedResource(req, res, fileInfo, sendBody = true, servletCach
  // display(fileInfo);
    // If request is a directory, it must have a trailing slash (otherwise resources such as css and js won't be loaded).
    if (fileInfo.redirect) {
-     var qString = fileInfo.path.split("?");
-	   var newUrl = path.posix.join(qString[0].replace(/\\/g,"/"), "/");
-     if (qString.length == 2) newUrl = newUrl+"?"+qString[1];
+     var queryStart = fileInfo.path.indexOf("?");
+     var redirectPath = queryStart === -1 ? fileInfo.path : fileInfo.path.substring(0,queryStart);
+	   var newUrl = path.posix.join(redirectPath.replace(/\\/g,"/"), "/");
+     if (queryStart !== -1) newUrl += fileInfo.path.substring(queryStart);
      res.statusCode = 301;
      res.setHeader('Content-Type', 'text/plain');
      res.setHeader('Location', newUrl);
@@ -701,7 +702,7 @@ function handleResolvedResource(req, res, fileInfo, sendBody = true, servletCach
    } else if (fileInfo.openError) {
      let statusCode=fileInfo.openError.code === "ENOENT" ? 404 : 500;
      let reason=statusCode === 404
-       ? "File not found: " + fileInfo.fullPath
+       ? "File not found: " + safeSourceIdentity(fileInfo.fullPath)
        : "Error attempting to open " + safeSourceIdentity(fileInfo.fullPath) + ": " + rtErrorMsg(fileInfo.openError);
      reportError(res,fileInfo.fullPath,statusCode,reason,sendBody);
    } else if (fileInfo.serveFile) {
@@ -1900,6 +1901,7 @@ function setFileInfo (req, res, basePath, requestUrl) {
    let thisBasePath=basePath;
    let audioVisual = false;
    let notAcceptable = false;
+   let identityAllowed = true;
    if (mode === "development") developmentLog("req.url: " + req.url);
    let queryStart = requestUrl.indexOf("?");
    let uncheckedPath = queryStart === -1
@@ -1943,7 +1945,8 @@ function setFileInfo (req, res, basePath, requestUrl) {
      // For compression
      if (compress && (contentType.indexOf("text") == 0 || contentType.indexOf("application") == 0)) {
        res.setHeader("Vary","Accept-Encoding");
-        let enc = getEncoding(req);
+       let enc = getEncoding(req);
+       identityAllowed = enc.identityQuality != 0;
         let schedule = true;
         for (let candidate of enc.candidates) {
           if (candidate.quality < enc.identityQuality) break;
@@ -1961,7 +1964,7 @@ function setFileInfo (req, res, basePath, requestUrl) {
     }
     if (!notAcceptable && (serveFile || audioVisual)) {
       let representationPath=path.join(thisBasePath,currentPath);
-      try {
+      function openRepresentation() {
         fileDescriptor=fs.openSync(representationPath,"r");
         representationStats=fs.fstatSync(fileDescriptor);
         if (!representationStats.isFile()) {
@@ -1969,6 +1972,9 @@ function setFileInfo (req, res, basePath, requestUrl) {
           err.code="EISDIR";
           throw err;
         }
+      }
+      try {
+        openRepresentation();
       } catch (err) {
         openError=err;
         if (fileDescriptor !== undefined) {
@@ -1980,7 +1986,32 @@ function setFileInfo (req, res, basePath, requestUrl) {
           fileDescriptor=undefined;
         }
       }
-      if (!openError && serveFile && (bCaching || hasEntityTagPrecondition(req))) {
+      if (openError && etagCoding != "i") {
+        res.removeHeader("Content-Encoding");
+        currentPath=checkedPath.filePath;
+        representationPath=fullPath;
+        representationStats=undefined;
+        openError=undefined;
+        etagCoding="i";
+        if (!identityAllowed) {
+          notAcceptable=true;
+        } else {
+          try {
+            openRepresentation();
+          } catch (err) {
+            openError=err;
+            if (fileDescriptor !== undefined) {
+              try {
+                fs.closeSync(fileDescriptor);
+              } catch (closeError) {
+                serverError("Error closing " + safeSourceIdentity(representationPath) + ": " + rtErrorMsg(closeError),closeError);
+              }
+              fileDescriptor=undefined;
+            }
+          }
+        }
+      }
+      if (!notAcceptable && !openError && serveFile && (bCaching || hasEntityTagPrecondition(req))) {
         etag = representationETag(representationStats.mtimeMs,representationStats.size,etagCoding);
       }
     }
