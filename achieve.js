@@ -864,6 +864,25 @@ function mappedResourceTarget(resourceTarget) {
     if (targetPath === undefined) return;
     return queryStart === -1 ? targetPath : targetPath + resourceTarget.substring(queryStart);
 }
+function protectedCompressionCacheTarget(basePath,resourceTarget) {
+    if (typeof resourceTarget !== "string") return false;
+    let queryStart=resourceTarget.indexOf("?");
+    let resourcePath=queryStart === -1 ? resourceTarget : resourceTarget.substring(0,queryStart);
+    let resolvedPath=containedRequestPath(basePath,resourcePath);
+    if (!resolvedPath) return false;
+    let cachePath=path.join(path.resolve(basePath),".compression-cache");
+    let relativePath=path.relative(cachePath,resolvedPath);
+    return relativePath === "" || (
+      relativePath !== ".." &&
+      !relativePath.startsWith(".." + path.sep) &&
+      !path.isAbsolute(relativePath)
+    );
+}
+function rejectProtectedCompressionCache(req,res,basePath,resourceTarget,sendBody = true) {
+    if (!protectedCompressionCacheTarget(basePath,resourceTarget)) return false;
+    reportError(res,resourceTarget,403,"Access to this resource is forbidden.",sendBody);
+    return true;
+}
 function checkResourceCors(req,res,fileInfo,publicTarget) {
     let allowed;
     try {
@@ -949,24 +968,32 @@ function dispatchMethod(req, res, basePath, resourceTarget) {
     switch (req.method) {
         case "GET":
             mappedTarget=mappedResourceTarget(resourceTarget);
+            if (rejectProtectedCompressionCache(req,res,basePath,
+                mappedTarget === undefined ? resourceTarget : mappedTarget)) return;
             handleGet(req,res,basePath,mappedTarget === undefined ? resourceTarget : mappedTarget,
               mappedTarget === undefined ? undefined : resourceTarget);
             break;
 
         case "POST":
             mappedTarget=mappedResourceTarget(resourceTarget);
+            if (rejectProtectedCompressionCache(req,res,basePath,
+                mappedTarget === undefined ? resourceTarget : mappedTarget)) return;
             handlePost(req,res,basePath,mappedTarget === undefined ? resourceTarget : mappedTarget,
               mappedTarget === undefined ? undefined : resourceTarget);
             break;
 
         case "HEAD":
             mappedTarget=mappedResourceTarget(resourceTarget);
+            if (rejectProtectedCompressionCache(req,res,basePath,
+                mappedTarget === undefined ? resourceTarget : mappedTarget,false)) return;
             handleHead(req,res,basePath,mappedTarget === undefined ? resourceTarget : mappedTarget,
               mappedTarget === undefined ? undefined : resourceTarget);
             break;
 
         case "OPTIONS":
             mappedTarget=mappedResourceTarget(resourceTarget);
+            if (rejectProtectedCompressionCache(req,res,basePath,
+                mappedTarget === undefined ? resourceTarget : mappedTarget,false)) return;
             handleOptions(req,res,basePath,mappedTarget === undefined ? resourceTarget : mappedTarget,
               mappedTarget === undefined ? undefined : resourceTarget);
             break;
@@ -3015,7 +3042,8 @@ let stream = function(req, res, fileInfo, sendBody = true) {
     res.writeHead(200, {
       "Accept-Ranges": "bytes",
       "Content-Length": stats.size,
-      "Content-Type": fileInfo.contentType
+      "Content-Type": fileInfo.contentType,
+      "Server": version
     });
     res.end();
     return;
@@ -3081,7 +3109,8 @@ let stream = function(req, res, fileInfo, sendBody = true) {
   {
     "Accept-Ranges": "bytes",
     "Content-Length": contentLength,
-    "Content-Type": fileInfo.contentType
+    "Content-Type": fileInfo.contentType,
+    "Server": version
   };
   if(contentRange)
   {

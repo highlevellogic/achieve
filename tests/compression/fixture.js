@@ -109,6 +109,8 @@ achieve.setMode("production");
 achieve.setLogPath(process.env.ACHIEVE_COMPRESSION_LOG_PATH);
 achieve.setLogging("server");
 achieve.setAppPath(process.env.ACHIEVE_COMPRESSION_APP);
+achieve.setRouteMap({"/mapped-cache-file":"/.compression-cache/static/resource.txt.gz"});
+achieve.setPathMap({"/mapped-cache/":"/.compression-cache/"});
 achieve.setCaching(true);
 achieve.setCompress(true);
 

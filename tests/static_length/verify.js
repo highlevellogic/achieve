@@ -11,6 +11,7 @@ const root=fs.mkdtempSync(path.join(os.tmpdir(),'achieve-static-length-'));
 const source=Buffer.from('Static representation. '.repeat(100));
 const media=Buffer.from('0123456789abcdefghijklmnopqrstuvwxyz');
 const original=Buffer.from('ORIGINAL');
+const serverHeader='HLL Achieve v'+require('../../package.json').version;
 let checks=0;
 function check(name,fn) { fn(); checks++; console.log('PASS '+name); }
 function write(app,name,data) {
@@ -86,6 +87,7 @@ async function verify(protocol,index) {
                 assert.equal(result.headers['content-length'],String(bytes.length));
                 assert.equal(result.headers['transfer-encoding'],undefined);
                 assert.equal(result.headers['content-encoding'],coding === 'identity' ? undefined : coding);
+                assert.equal(result.headers.server,serverHeader);
                 assert.deepEqual(result.body,bytes);
             });
             const head=await get('/static.txt','HEAD',headers);
@@ -93,6 +95,7 @@ async function verify(protocol,index) {
                 assert.equal(head.status,200);assert.equal(head.body.length,0);
                 assert.equal(head.headers['content-length'],String(bytes.length));
                 assert.equal(head.headers['transfer-encoding'],undefined);
+                assert.equal(head.headers.server,serverHeader);
             });
             const cached=await get('/static.txt','GET',{...headers,'if-none-match':result.headers.etag});
             check(protocol+' '+coding+' 304',() => {
@@ -131,9 +134,16 @@ async function verify(protocol,index) {
         const full=await get('/media.mp4'),range=await get('/media.mp4','GET',{range:'bytes=3-8'});
         check(protocol+' media unchanged',() => {
             assert.equal(full.status,200);assert.equal(full.headers['content-length'],String(media.length));
+            assert.equal(full.headers.server,serverHeader);
             assert.deepEqual(full.body,media);assert.equal(range.status,206);
+            assert.equal(range.headers.server,serverHeader);
             assert.equal(range.headers['content-length'],'6');assert.equal(range.headers['content-range'],'bytes 3-8/'+media.length);
             assert.deepEqual(range.body,media.subarray(3,9));
+        });
+        const mediaHead=await get('/media.mp4','HEAD');
+        check(protocol+' media HEAD server header',() => {
+            assert.equal(mediaHead.status,200);assert.equal(mediaHead.headers.server,serverHeader);
+            assert.equal(mediaHead.body.length,0);
         });
         for (const [target,status] of [['/missing',404],['/servlet.jss',200],['/bodyless.jss',204]]) {
             const result=await get(target);

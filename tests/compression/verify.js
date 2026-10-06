@@ -143,6 +143,7 @@ async function run() {
     const original=Buffer.from("Achieve asynchronous compression fixture.\n".repeat(100));
     fs.writeFileSync(sourcePath,original);
     fs.writeFileSync(pingPath,"pong\n");
+    fs.writeFileSync(path.join(applicationPath,".ordinary-dotfile"),"ordinary dotfile\n");
     fs.mkdirSync(path.dirname(servletPath),{recursive:true});
     fs.writeFileSync(servletPath,
         'exports.servlet = function (session) {\n' +
@@ -243,9 +244,19 @@ async function run() {
 
     let currentState=await state();
     check("current artifacts start no generation",currentState.gzip === 0 && currentState.deflate === 0,JSON.stringify(currentState));
+    result=await request(port,"/.compression-cache/",undefined);
+    check("direct cache directory request forbidden",result.status === 403 && result.body.toString() === "Access to this resource is forbidden.");
     result=await request(port,"/.compression-cache/static/resource.txt.gz","gzip");
     let recursionState=await state();
-    check("direct cache request remains available",result.status === 200 && result.headers["content-encoding"] === undefined && result.body.equals(fs.readFileSync(gzipPath)));
+    check("direct cache file request forbidden",result.status === 403 && result.headers["content-encoding"] === undefined && result.body.toString() === "Access to this resource is forbidden.");
+    result=await request(port,"/.compression-cache/static/resource.txt.gz",undefined,{},"HEAD");
+    check("direct cache HEAD forbidden",result.status === 403 && result.body.length === 0);
+    result=await request(port,"/mapped-cache-file",undefined);
+    check("exact route cannot expose cache",result.status === 403 && result.body.toString() === "Access to this resource is forbidden.");
+    result=await request(port,"/mapped-cache/static/resource.txt.gz",undefined);
+    check("subtree route cannot expose cache",result.status === 403 && result.body.toString() === "Access to this resource is forbidden.");
+    result=await request(port,"/.ordinary-dotfile",undefined);
+    check("ordinary dotfile remains available",result.status === 200 && result.body.toString() === "ordinary dotfile\n");
     check("direct cache request starts no recursive generation",recursionState.gzip === currentState.gzip && recursionState.deflate === currentState.deflate,JSON.stringify(recursionState));
     check("no recursive .compression-cache tree",!fs.existsSync(path.join(cachePath,".compression-cache")));
     check("source directory has no sibling artifacts",!fs.existsSync(sourcePath+".gz") && !fs.existsSync(sourcePath+".zl"));
