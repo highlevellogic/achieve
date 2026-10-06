@@ -12,22 +12,25 @@ exports.servlet=function (session) {
         case "allow-throw":
             session.allowAsync=true;
             throw new Error("ALLOW_ASYNC_SYNC_THROW_MARKER");
+        case "auto-throw":
+            session.autoEnd=false;
+            throw new Error("AUTO_END_SYNC_THROW_MARKER");
         case "allow-owned":
-            session.allowAsync=true;
+            session.autoEnd=false;
             session.response.statusCode=202;
             session.response.end("synchronous application owned");
             return "ignored";
         case "allow-headers-throw":
-            session.allowAsync=true;
+            session.autoEnd=false;
             session.response.write("synchronous prefix");
             throw new Error("ALLOW_ASYNC_HEADERS_THROW_MARKER");
         case "allow-ended-throw":
-            session.allowAsync=true;
+            session.autoEnd=false;
             session.response.statusCode=203;
             session.response.end("synchronous already ended");
             throw new Error("ALLOW_ASYNC_ENDED_THROW_MARKER");
         case "allow-timer":
-            session.allowAsync=true;
+            session.autoEnd=false;
             setTimeout(function () {
                 session.response.statusCode=203;
                 session.response.end("detached timer owned");

@@ -1,5 +1,5 @@
 exports.servlet=function (context) {
-  context.allowAsync=true;
+  context.autoEnd=false;
   let xml="";
   context.request.setEncoding("utf8");
   context.request.on("data",chunk => { xml += chunk; });

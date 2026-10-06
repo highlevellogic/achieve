@@ -1784,6 +1784,7 @@ function evaluatePreconditions (req,res,exists,currentETag,modified) {
   return false;
 }
 function Context (req,res,parms,dirPath,appPath,load) {
+  let autoEnd=true;
   this.request = req;
   this.response = res;
   this.parms = parms; // deprecate
@@ -1792,7 +1793,18 @@ function Context (req,res,parms,dirPath,appPath,load) {
   this.appPath = appPath;
   this.load = load;
   this.rtErrorMsg = rtErrorMsg;
-  this.allowAsync = false;
+  Object.defineProperties(this,{
+    autoEnd:{
+      enumerable:true,
+      get:function () { return autoEnd; },
+      set:function (value) { autoEnd=Boolean(value); }
+    },
+    allowAsync:{
+      enumerable:true,
+      get:function () { return !autoEnd; },
+      set:function (value) { autoEnd=!Boolean(value); }
+    }
+  });
 }
 function PathInfo (filePath,reload,action,stats) {
   this.filePath = filePath;
@@ -2328,7 +2340,7 @@ function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
     let boundLoader=load.bind(loaderState);
     context=new Context(request,response,params,fileInfo.dirPath,fileInfo.basePath,boundLoader);
     let content=myApp.servlet(context);
-    if (context.allowAsync) {
+    if (!context.autoEnd) {
       applicationOwned();
       return;
     }

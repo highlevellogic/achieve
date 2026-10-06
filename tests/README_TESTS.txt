@@ -136,7 +136,7 @@ resource paths:
 * a Range header on HEAD is ignored, so media metadata remains a full 200
   response rather than a partial 206 response;
 * asynchronous servlets retain application ownership after enabling
-  allowAsync, with Node responsible for suppressing HEAD body bytes.
+  autoEnd, with Node responsible for suppressing HEAD body bytes.
 
 # SERVLET FIXTURES
 
@@ -168,7 +168,7 @@ Run managed Promise-returning servlet verification with:
 
 It checks CommonJS and ESM Promise results and rejections, synchronous
 compatibility, HEAD completion, custom thenables, registered handlers,
-allowAsync ownership, client aborts, and all four supported transports.
+autoEnd ownership, client aborts, and all four supported transports.
 
 # MEDIA AND COMPRESSION FIXTURES
 

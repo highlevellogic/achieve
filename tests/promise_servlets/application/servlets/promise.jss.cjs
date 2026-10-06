@@ -22,13 +22,13 @@ exports.servlet=async function (session) {
             await new Promise(resolve => setTimeout(resolve,75));
             return "late response";
         case "allow-async":
-            session.allowAsync=true;
+            session.autoEnd=false;
             await Promise.resolve();
             session.response.statusCode=201;
             session.response.end("application owned");
             return "ignored";
         case "allow-rejection":
-            session.allowAsync=true;
+            session.autoEnd=false;
             try {
                 await Promise.reject(new Error("APPLICATION_OWNED_MARKER"));
             } catch (err) {

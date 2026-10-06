@@ -47,8 +47,8 @@ session.params
 session.load()
 // loads backend JavaScript modules within achieve's processing mechanisms
 
-session.allowAsync
-// gives application code responsibility for completing the response
+session.autoEnd
+// controls whether achieve completes normal responses
 
 session.dirPath
 // directory containing the current servlet
@@ -80,19 +80,28 @@ session.appPath
 
 <p>Use <code>session.response</code> to set headers, status information, or otherwise work directly with the response.</p>
 
-<p>Normally, achieve completes the response after the servlet returns its result. See <code>session.allowAsync</code> when application code needs to take responsibility for completing the response.</p>
+<p>Normally, achieve completes the response after the servlet returns its result. Set <code>session.autoEnd</code> to <code>false</code> when application code needs to take responsibility for completing the response.</p>
 
-<h2>session.allowAsync</h2>
+<h2>session.autoEnd</h2>
 
-<p><code>session.allowAsync</code> controls who is responsible for completing the HTTP response.</p>
+<p><code>session.autoEnd</code> is a Boolean property that controls who is responsible for completing a normal HTTP response.</p>
 
-<p>The default is false. Normally, a servlet returns its result and achieve completes the response.</p>
+<p>The default is <code>true</code>. Normally, a servlet returns its result and achieve completes the response.</p>
 
-<p>Set <code>session.allowAsync</code> to true when processing must continue after the servlet returns and application code will complete the response itself.</p>
+<p>Set <code>session.autoEnd</code> to <code>false</code> when processing must continue after the servlet returns and application code will complete the response itself.</p>
 
-<p>With <code>session.allowAsync</code> set to true, achieve does not automatically complete the response when the servlet returns. The application is responsible for eventually completing the response and for handling errors that occur during its asynchronous processing.</p>
+<p>With <code>session.autoEnd</code> set to <code>false</code>, achieve does not automatically inspect the returned value or Promise and does not complete the response when the servlet returns. The application is responsible for eventually completing the response.</p>
 
-<p>Ordinary use of <code>async</code> and <code>await</code> does not require <code>allowAsync</code>. If the servlet awaits its work and returns the result, leave response completion to achieve.</p>
+<p>Ordinary use of <code>async</code> and <code>await</code> does not require changing <code>autoEnd</code>. If the servlet returns a Promise while <code>autoEnd</code> remains <code>true</code>, achieve waits for it and completes the response from its resolved value.</p>
+
+<p><code>autoEnd = false</code> does not suppress an error that achieve catches while it can still safely respond. If headers have not been sent, achieve can return its normal 500 response. Once headers have been sent, achieve reports the error and terminates an incomplete response without attempting to replace it with a new 500. Errors in detached asynchronous work after the servlet has returned are the application's responsibility.</p>
+
+<pre><code>exports.servlet = function(session) {
+    session.autoEnd = false;
+
+    session.response.write("Hello ");
+    session.response.end("World!");
+}</code></pre>
 
 <h2>session.load()</h2>
 

@@ -38,10 +38,35 @@ exports.servlet=function (session) {
             session.response.statusCode=409;
             return {then(resolve) { resolve(undefined); }};
         case "invalid": return {};
-        case "owned":
+        case "auto-default":
+            return JSON.stringify({autoEnd:session.autoEnd,allowAsync:session.allowAsync});
+        case "auto-owned":
+            session.autoEnd=false;
+            session.response.statusCode=202;
+            session.response.end("autoEnd application owned");
+            return "ignored";
+        case "auto-restored":
+            session.autoEnd=false;
+            session.autoEnd=true;
+            return JSON.stringify({autoEnd:session.autoEnd,allowAsync:session.allowAsync});
+        case "alias-owned":
             session.allowAsync=true;
             session.response.statusCode=202;
-            session.response.end("owned");
+            session.response.end("allowAsync application owned");
+            return "ignored";
+        case "alias-restored":
+            session.autoEnd=false;
+            session.allowAsync=false;
+            return JSON.stringify({autoEnd:session.autoEnd,allowAsync:session.allowAsync});
+        case "auto-last":
+            session.allowAsync=true;
+            session.autoEnd=true;
+            return JSON.stringify({autoEnd:session.autoEnd,allowAsync:session.allowAsync});
+        case "alias-last":
+            session.autoEnd=true;
+            session.allowAsync=true;
+            session.response.statusCode=202;
+            session.response.end(JSON.stringify({autoEnd:session.autoEnd,allowAsync:session.allowAsync}));
             return "ignored";
     }
 };

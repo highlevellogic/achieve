@@ -1,7 +1,7 @@
 import { SaxParser } from "@nodable/sax";
 
 export function servlet(session) {
-    session.allowAsync=true;
+    session.autoEnd=false;
 
     const parser=new SaxParser({
         onError(error) {

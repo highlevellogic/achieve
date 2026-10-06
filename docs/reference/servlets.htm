@@ -136,19 +136,22 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 
 <h2>Application-owned response completion</h2>
 
-<p>Set <code>session.allowAsync</code> when processing must continue after the servlet returns and application code will complete the response itself.</p>
+<p><code>session.autoEnd</code> is a Boolean property that controls who completes a normal HTTP response. Its default is <code>true</code>, so achieve completes the response from the servlet's returned result.</p>
 
-<pre><code>export function servlet(session) {
-    session.allowAsync = true;
+<p>Set <code>session.autoEnd</code> to <code>false</code> when application code will complete the response itself.</p>
 
-    setTimeout(() =&gt; {
-        session.response.end("Hello World!");
-    }, 1000);
+<pre><code>exports.servlet = function(session) {
+    session.autoEnd = false;
+
+    session.response.write("Hello ");
+    session.response.end("World!");
 }</code></pre>
 
-<p><code>session.allowAsync = true</code> tells achieve that application code owns response completion. achieve does not automatically end the response when the servlet returns. The application is responsible for handling errors in that asynchronous work and for eventually completing the response.</p>
+<p>With <code>session.autoEnd = false</code>, achieve does not automatically inspect the returned value or Promise and does not end the response when the servlet returns. The application is responsible for eventually completing the response.</p>
 
-<p>Ordinary use of <code>async</code> and <code>await</code> does not require <code>allowAsync</code>.</p>
+<p>Ordinary use of <code>async</code> and <code>await</code> does not require changing <code>autoEnd</code>. When <code>autoEnd</code> remains <code>true</code>, achieve waits for a returned Promise and completes the response from its resolved value.</p>
+
+<p><code>autoEnd = false</code> does not suppress an error that achieve catches while it can still safely respond. If headers have not been sent, achieve can return its normal 500 response. Once headers have been sent, achieve reports the error and terminates an incomplete response without attempting to replace it with a new 500. Errors in detached asynchronous work after the servlet has returned are the application's responsibility.</p>
 
 </main>
 <footer>

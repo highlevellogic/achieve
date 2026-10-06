@@ -1,6 +1,6 @@
 exports.servlet = function (context) {
     if (context.params.abort === "true") {
-        context.allowAsync = true;
+        context.autoEnd = false;
         return;
     }
     if (context.params.throw === "true") {

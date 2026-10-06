@@ -9,7 +9,7 @@ export async function servlet(session) {
             await Promise.resolve();
             throw new Error("ESM_ASYNC_AFTER_AWAIT_MARKER");
         case "allow-async":
-            session.allowAsync=true;
+            session.autoEnd=false;
             await Promise.resolve();
             session.response.statusCode=201;
             session.response.end("application owned");

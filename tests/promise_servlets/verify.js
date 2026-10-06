@@ -137,6 +137,8 @@ async function runProtocol(protocol) {
         await expect(protocol,"GET","/servlets/promise.jss.cjs?kind=allow-async",201,"application owned");
         response=await request(protocol,"GET","/servlets/synchronous.jss.cjs?kind=allow-throw");
         checkApplicationError(response,"ALLOW_ASYNC_SYNC_THROW_MARKER","servlets/synchronous.jss.cjs");
+        response=await request(protocol,"GET","/servlets/synchronous.jss.cjs?kind=auto-throw");
+        checkApplicationError(response,"AUTO_END_SYNC_THROW_MARKER","servlets/synchronous.jss.cjs");
         await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=allow-owned",202,"synchronous application owned");
         await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=allow-ended-throw",203,"synchronous already ended");
         await expect(protocol,"GET","/servlets/synchronous.jss.cjs?kind=allow-timer",203,"detached timer owned");

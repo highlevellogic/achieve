@@ -1,5 +1,5 @@
 exports.servlet = function (context) {
-    context.allowAsync=true;
+    context.autoEnd=false;
     const chunks=[];
 
     context.request.on("data",function (chunk) {

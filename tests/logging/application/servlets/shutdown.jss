@@ -1,5 +1,5 @@
 exports.servlet = function (context) {
-    context.allowAsync = true;
+    context.autoEnd = false;
     context.response.statusCode = 200;
     context.response.setHeader("Content-Type", "text/plain;charset=utf-8");
     context.response.write("started\n");
