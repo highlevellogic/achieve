@@ -29,75 +29,55 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 
 <h1>Routing</h1>
 
-<p>achieve automatically routes requests to resources within your application.
-The directory tree containing those resources is the application space.</p>
+<p>achieve automatically routes requests to resources within your application. The directory tree containing those resources is the application space.</p>
 
 <h2>Security</h2>
 
-<p>The application space is also the boundary for resources accessible through HTTP
-requests. A request cannot use relative path addressing to escape the application
-space and access files elsewhere on the computer.</p>
+<p>The application space is also the boundary for resources accessible through HTTP requests. Achieve restricts HTTP request path resolution to resources within the application space.</p>
 
-<p>You can create private asset areas accessible only to your servlets by placing them
-outside the application space. To access a private space next to the public application
-space in a refactoring friendly way:</p>
+<p>Servlets are not restricted to the application space. They can access resources elsewhere on the server using normal Node.js file-system operations.</p>
 
 <pre><code>let private = path.resolve(session.appPath, "../private");</code></pre>
 
-<h2>Default Routing</h2>
+<h2>Application space</h2>
 
-<p>Default routing simply works right out of the box. A request path maps directly to
-the corresponding resource within the application space. By default, the application
-space begins at:</p>
+<p>Default routing is established with mandatory <code>setAppPath()</code>. <code>setAppPath()</code> sets the location of the application space. It can be located anywhere accessible to the server.</p>
 
-<pre><code>[achieve startup directory]/root/</code></pre>
-
-<pre><code>/example/my.htm → [achieve startup directory]/root/example/my.htm</code></pre>
-
-<h2>Custom Routing</h2>
-
-<p>achieve provides three levels of control over routing: the location of the application
-space, individual asset mappings, and subtree mappings. Custom routing is configured
-in the server startup file using <code>setAppPath()</code>, <code>setRouteMap()</code>,
-and <code>setPathMap()</code>.</p>
-
-<h3>Application space</h3>
-
-<p><code>setAppPath()</code> changes the location of the application space. It can be
-located anywhere accessible to the server.</p>
-
-<p>For example:<br>
-(Windows users: notice the forward slashes.)</p>
+<p>For example, using forward slashes as a portable convention (not an achieve requirement):</p>
 
 <pre><code>achieve.setAppPath("C:/projects/myApplication/");</code></pre>
 
-<p>After this call, <code>C:/projects/myApplication/</code> is the root of the
-application space and request paths are resolved within that directory.</p>
+<p>After this call, <code>C:/projects/myApplication/</code> is the root of the application space and request paths are resolved within that directory.</p>
+
+<p>Request URL <code>/hello/hello.htm</code> maps to <code>C:/projects/myApplication/hello/hello.htm</code></p>
+
+<p>TIP: To create a refactoring-friendly private area, reached only from your servlets, use the <code>session.appPath</code> parameter in the servlet.</p>
+
+<pre><code>let private = path.resolve(session.appPath, "../private");</code></pre>
+
+<h2>Custom Routing</h2>
+
+<p>achieve provides three levels of control over routing: the location of the application space, individual asset mappings, and subtree mappings. Custom routing is configured in the server startup file using <code>setAppPath()</code>, <code>setRouteMap()</code>, and <code>setPathMap()</code>.</p>
 
 <h3>Exact asset route mapping</h3>
 
-<p>An exact route map can give an individual resource a different public URL. You can
-include multiple mappings in one object or make additional calls to
-<code>setRouteMap()</code>.</p>
+<p>An exact route map can give an individual resource a different public URL. You can include multiple mappings in one object or make additional calls to <code>setRouteMap()</code>.</p>
 
 <pre><code>achieve.setRouteMap({
-    "/products": "/services/catalog/list.jss"
+  "/products": "/services/catalog/list.jss"
 });</code></pre>
 
-<p>Only the exact public path is mapped. Other request paths continue to use normal
-automatic routing unless another mapping applies.</p>
+<p>Only the exact public path is mapped. Other request paths continue to use normal automatic routing unless another mapping applies.</p>
 
 <h3>Subtree mapping</h3>
 
-<p><code>setPathMap()</code> maps a public path prefix to another directory subtree
-in the application space.</p>
+<p><code>setPathMap()</code> maps a public path prefix to another directory subtree in the application space.</p>
 
 <pre><code>achieve.setPathMap({
-    "/docs/": "/internal/documentation/"
+  "/docs/": "/internal/documentation/"
 });</code></pre>
 
-<p>The part of the request path following the mapped prefix is preserved and appended
-to the mapped application-space path.</p>
+<p>The part of the request path following the mapped prefix is preserved and appended to the mapped application-space path.</p>
 
 <pre><code>/docs/start.htm
 /docs/reference/http.htm</code></pre>
@@ -109,24 +89,22 @@ to the mapped application-space path.</p>
 
 <h3>Overlapping path mappings</h3>
 
-<p>If more than one path mapping matches a request, the most specific matching prefix
-is used.</p>
+<p>If more than one path mapping matches a request, the most specific matching prefix is used.</p>
 
 <pre><code>achieve.setPathMap({
-    "/public/": "/content/",
-    "/public/docs/": "/documentation/"
+  "/public/": "/content/",
+  "/public/docs/": "/documentation/"
 });</code></pre>
 
 <p>A request for:</p>
 
 <pre><code>/public/docs/start.htm</code></pre>
 
-<p>uses the <code>/public/docs/</code> mapping because it is the longer matching
-prefix.</p>
+<p>uses the <code>/public/docs/</code> mapping because it is the longer matching prefix.</p>
 
 <p>The order in which the mappings are defined does not determine which one wins.</p>
 
-<h2>Routing order</h2>
+<h3>Routing order</h3>
 
 <p>achieve checks routing in this order:</p>
 
@@ -136,26 +114,20 @@ prefix.</p>
 <li>automatic application routing</li>
 </ol>
 
-<p>An exact mapping therefore takes precedence over a path mapping. If neither applies,
-achieve uses normal automatic routing within the application space.</p>
+<p>An exact mapping therefore takes precedence over a path mapping. If neither applies, achieve uses normal automatic routing within the application space.</p>
 
-<h2>Routing changes location, not processing</h2>
+<h3>Routing changes location, not processing</h3>
 
-<p>A routing map translates a public request path to a resource in the application space.
-After the translation, achieve processes that resource in the normal way.</p>
+<p>A routing map translates a public request path to a resource in the application space. After the translation, achieve processes that resource in the normal way.</p>
 
-<p>The mapped resource may be a static file, JavaScript Servlet, or another resource type
-supported by achieve. Routing does not require a different application programming
-model.</p>
+<p>The mapped resource may be a static file, JavaScript Servlet, or another resource type supported by achieve. Routing does not require a different application programming model.</p>
 
-<p>The original request URL remains the public URL requested by the client. Application
-code can therefore continue to use the request information supplied through
-<code>session.request</code>.</p>
+<p>The original request URL remains the public URL requested by the client. Application code can therefore continue to use the request information supplied through <code>session.request</code>.</p>
 
 </main>
 <footer>
-<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
-<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a>
+<a href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a>
 </footer>
 </body>
 </html>

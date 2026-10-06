@@ -1,0 +1,141 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve v3 - Static Resources</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+.navLink { display:inline-block; margin:.6em 5% .2em; color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.navLink:hover,.packageLink:hover { color:blue; }
+.backArrow { margin-right:.4em; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+main { margin:2% 5% 5%; }
+code { padding:.08em .35em; border-radius:.3em; background-color:rgb(220,235,245); color:blue; font-family:Consolas,"Courier New",monospace; }
+pre { margin:1em 0 1.4em; }
+pre code { display:block; padding:1em; overflow:auto; white-space:pre; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to documentation index</a>
+<main>
+
+<h1>Static Resources</h1>
+
+<h2>Static resources and application space</h2>
+
+<p><code>setAppPath()</code> selects the required application space: the directory tree containing the application resources Achieve makes available through HTTP. Ordinary static resources are resolved within this space, and request paths cannot escape its boundary.</p>
+
+<p>Query strings are not part of filesystem lookup. Exact and subtree mappings can give a resource another public URL while keeping its actual location inside the application space. See the <a href="routing.htm">Routing Reference</a> for mapping behavior and precedence.</p>
+
+<p>Files ending in <code>.jss</code>, <code>.jss.cjs</code>, or <code>.jss.mjs</code> are executable JavaScript Servlets. Achieve executes them instead of returning their source. See <a href="servlets.htm">Backend: JavaScript Servlets</a> for servlet behavior.</p>
+
+<h2>Directories and default documents</h2>
+
+<p>A request for a directory without its trailing slash receives a <code>301</code> redirect to the slash form. Achieve preserves the complete query string in the redirect.</p>
+
+<p>For a directory request, Achieve selects the first existing default document in this order:</p>
+
+<ol>
+<li><code>index.html</code></li>
+<li><code>index.htm</code></li>
+<li><code>index.jss</code></li>
+<li><code>index.jss.mjs</code></li>
+<li><code>index.jss.cjs</code></li>
+</ol>
+
+<p>The servlet forms are executed rather than returned as source. A resource that cannot be found normally receives <code>404 Not Found</code>.</p>
+
+<h2>Content types</h2>
+
+<p>Achieve includes MIME mappings for common web, document, image, audio, and video file types. Use <a href="config.htm#addMimeType"><code>addMimeType()</code></a> to register an ordinary static type and <a href="config.htm#addAVMimeType"><code>addAVMimeType()</code></a> to register a media type.</p>
+
+<p>Call <code>showMimeTypes()</code> before starting the server to display the registered MIME types in the startup output. Both ordinary static-resource and audio/video MIME mappings are included.</p>
+
+<pre><code>achieve.setAppPath("./application");
+achieve.showMimeTypes();
+achieve.listen(8989);</code></pre>
+
+<p>The <code>showMimeTypes()</code> call enables reporting; it does not change how resources are served.</p>
+
+<p>The audio/video MIME table selects Achieve's media-streaming and byte-range handling. Other registered types use ordinary static-resource handling.</p>
+
+<p>An unknown extension defaults to <code>text/plain</code>. Extension matching is case-sensitive. For a successful static response, Achieve uses the configured MIME value as the <code>Content-Type</code> without automatically appending a character set.</p>
+
+<h2 id="caching-and-conditional-requests">Caching and conditional requests</h2>
+
+<p><a href="config.htm#setCaching"><code>setCaching(true)</code></a> enables advertisement of <code>ETag</code> and <code>Last-Modified</code> validators for static and media resources. An ETag identifies the selected representation, so identity, gzip, and deflate representations have distinct validators.</p>
+
+<p>Achieve supports <code>If-Match</code>, <code>If-Unmodified-Since</code>, <code>If-None-Match</code>, and <code>If-Modified-Since</code>. Entity-tag and date preconditions are evaluated in their appropriate precedence order. Depending on the method and condition, evaluation can produce <code>304 Not Modified</code> or <code>412 Precondition Failed</code>.</p>
+
+<p><code>setCaching(false)</code> stops normal advertisement of cache validators, but it does not disable all conditional-request processing. Preconditions supplied by a client can still affect the response.</p>
+
+<h2>Byte ranges and media</h2>
+
+<p>Byte-range support applies to resources handled through the audio/video MIME table. Ordinary non-media static resources do not use this range-serving path.</p>
+
+<p>Supported range forms include:</p>
+
+<pre><code>Range: bytes=100-199
+Range: bytes=100-
+Range: bytes=-100</code></pre>
+
+<p>A satisfiable range produces <code>206 Partial Content</code>. A valid but unsatisfiable range produces <code>416 Range Not Satisfiable</code>, while a malformed range produces <code>400 Bad Request</code>. Achieve supplies <code>Accept-Ranges</code>, <code>Content-Range</code>, and <code>Content-Length</code> as appropriate.</p>
+
+<p>Multiple range members do not produce a <code>multipart/byteranges</code> response. Achieve serves the first satisfiable range. Date-form <code>If-Range</code> is not supported and results in a full response. Other request preconditions are evaluated before range handling.</p>
+
+<h2 id="compression">Compression</h2>
+
+<p><a href="config.htm#setCompress"><code>setCompress(true)</code></a> enables compression for eligible ordinary static resources with <code>text/*</code> or <code>application/*</code> MIME types. Achieve supports gzip and deflate. Brotli is not supported, and media-streaming resources are not compressed.</p>
+
+<p><code>Accept-Encoding</code> determines representation selection. Achieve normally permits the identity representation unless the request excludes it, and sends <code>Vary: Accept-Encoding</code> where negotiation applies. If no acceptable representation is available, Achieve returns <code>406 Not Acceptable</code>.</p>
+
+<p>Achieve generates and maintains compressed representations in <code>.compression-cache</code> beneath the application space. Artifact generation requires filesystem write access. The first request may receive the identity representation while a compressed representation is generated; later requests can use the generated artifact.</p>
+
+<p>The compression cache is internal. Direct HTTP access to its directory and contents is forbidden, including access through exact or subtree route mappings. Achieve's compression machinery continues to use the artifacts internally.</p>
+
+<p>If a selected compressed artifact becomes unavailable before it is served, Achieve falls back to identity when identity is permitted. Response headers and validators then describe the identity representation actually returned.</p>
+
+<h2>HEAD requests and response headers</h2>
+
+<p>HEAD follows the same static-resource and representation selection as GET. It returns the appropriate status and metadata without response body bytes. <code>Content-Length</code> describes the selected representation.</p>
+
+<p>A Range header does not make a media HEAD response partial. Directory redirects and conditional requests retain their appropriate redirect or conditional status.</p>
+
+<p>Depending on the response, Achieve automatically supplies headers including:</p>
+
+<ul>
+<li><code>Content-Type</code> and <code>Content-Length</code></li>
+<li><code>Server</code> and <code>Date</code></li>
+<li><code>ETag</code> and <code>Last-Modified</code> when applicable</li>
+<li><code>Content-Encoding</code> and <code>Vary</code> when compression negotiation applies</li>
+<li><code>Accept-Ranges</code> and <code>Content-Range</code> for media range handling</li>
+<li><code>Location</code> for directory redirects</li>
+</ul>
+
+<p>Not every header applies to every response. Successful ordinary static and media responses use the same Achieve <code>Server</code> header.</p>
+
+<h2>Missing resources and errors</h2>
+
+<ul>
+<li><code>404 Not Found</code> normally identifies a missing resource.</li>
+<li><code>403 Forbidden</code> protects the internal compression cache.</li>
+<li><code>406 Not Acceptable</code> means no acceptable negotiated representation is available.</li>
+<li><code>500 Internal Server Error</code> can report a relevant filesystem or serving failure.</li>
+</ul>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a>
+</footer>
+</body>
+</html>

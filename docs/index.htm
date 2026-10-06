@@ -31,7 +31,28 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 
 <p>Achieve is a developer-friendly HTTP server for Node.js. It provides the server behavior so you can concentrate on building your application.</p>
 
-<h2>Detailed Reference</h2>
+<h2>Getting Started</h2>
+
+<ul class="docList">
+<li>
+<a class="docLink" href="start/startup.htm">Starting the server</a>
+<p>Start achieve with HTTP, HTTPS, or HTTP/2, choose the application location, and run multiple listeners.</p>
+</li>
+<li>
+<a class="docLink" href="start/static.htm">Static content and audio/video</a>
+<p>Serve static resources and audio/video, work with MIME types, and use default index files.</p>
+</li>
+<li>
+<a class="docLink" href="start/servlets.htm">Your first servlet</a>
+<p>Servlets are the entry points to your backend processes, invoked by the server.</p>
+</li>
+<li>
+<a class="docLink" href="start/input.htm">Handling Input</a>
+<p>Read GET parameters, process POST forms and JSON, and work with streamed request data.</p>
+</li>
+</ul>
+
+<h2>Detailed References</h2>
 
 <ul class="docList">
 <li>
@@ -45,6 +66,16 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 </li>
 
 <li>
+<a class="docLink" href="reference/static.htm">Static Resources</a>
+<p>Serve files and media with MIME types, caching, conditional requests, byte ranges, compression, and HEAD responses.</p>
+</li>
+
+<li>
+<a class="docLink" href="reference/methods.htm">HTTP Methods</a>
+<p>Use GET, HEAD, POST, and OPTIONS, and register servlet handlers for additional HTTP methods.</p>
+</li>
+
+<li>
 <a class="docLink" href="reference/servlets.htm">Backend: JavaScript Servlets</a>
 <p>Write server-side JavaScript using Achieve's servlet model, with CommonJS and ESM support, request parameters, backend modules, asynchronous processing, and managed responses.</p>
 </li>
@@ -54,6 +85,42 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <p>Reference for the request, response, parameters, module loading, response ownership, and application and servlet paths available through the servlet session.</p>
 </li>
 </ul>
+
+<h2>Examples</h2>
+
+<p>
+The Achieve v3 Advanced Examples are complete runnable applications
+demonstrating MySQL integration, WebSockets and Rooms, Node clustering,
+XML/SAX streaming, distributed computing, and SOAP services.
+</p>
+<p>
+This development ZIP bundles the current Achieve v3 code, so it does not
+require an adjacent development checkout or a published Achieve v3 package.
+</p>
+
+<p>
+<a class="docLink" href="downloads/achieve-v3-advanced-examples-dev.zip">Download the Achieve v3 Advanced Examples development ZIP</a>.
+</p>
+
+<p>
+Extract the ZIP, open a command prompt in the
+<code>achieve-v3-advanced-examples-dev</code> directory, and install the
+dependencies:
+</p>
+<pre><code>npm ci</code></pre>
+
+<p>
+Start the landing page, MySQL application, and XML/SAX application:
+</p>
+
+<pre><code>npm start</code></pre>
+
+<p>
+Then open <code>http://localhost:8989/</code>. The included
+<code>README.md</code> gives the specialized startup commands for WebSockets,
+Cluster, Distributed computing, and SOAP, plus the optional MySQL setup. Stop
+any other server using ports 8989 or 8990 before starting these examples.
+</p>
 
 </main>
 

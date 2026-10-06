@@ -1,0 +1,119 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve v3 - Handling Input</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+.navLink { display:inline-block; margin:.6em 5% .2em; color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.navLink:hover,.packageLink:hover { color:blue; }
+.backArrow { margin-right:.4em; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+main { margin:2% 5% 5%; }
+code { padding:.08em .35em; border-radius:.3em; background-color:rgb(220,235,245); color:blue; font-family:Consolas,"Courier New",monospace; }
+pre { margin:1em 0 1.4em; }
+pre code { display:block; padding:1em; overflow:auto; white-space:pre; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to documentation index</a>
+<main>
+
+<h1>Handling Input</h1>
+
+<p>Achieve prepares common client input as <code>session.params</code>. Your servlet can read those values without adding a body-parser package.</p>
+
+<h2>GET query parameters</h2>
+
+<p>For GET requests, Achieve parses the query string into <code>session.params</code>. This form sends a value named <code>name</code>:</p>
+
+<pre><code>&lt;form action="/servlets/greet.jss" method="get"&gt;
+    &lt;label&gt;Name &lt;input name="name"&gt;&lt;/label&gt;
+    &lt;button type="submit"&gt;Say hello&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+
+<p>The servlet reads the value directly:</p>
+
+<pre><code>exports.servlet = function(session) {
+    let name = session.params.name || "visitor";
+    return "Hello, " + name + "!";
+};</code></pre>
+
+<p>A request such as <code>/servlets/greet.jss?name=Ada</code> therefore returns <code>Hello, Ada!</code>.</p>
+
+<h2>POST form data</h2>
+
+<p>A normal HTML POST form sends <code>application/x-www-form-urlencoded</code> data. Achieve buffers and parses that body into <code>session.params</code> before invoking the servlet:</p>
+
+<pre><code>&lt;form action="/servlets/greet.jss" method="post"&gt;
+    &lt;label&gt;Name &lt;input name="name"&gt;&lt;/label&gt;
+    &lt;button type="submit"&gt;Say hello&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+
+<p>The same <code>greet.jss</code> servlet can read <code>session.params.name</code>. For POST, these automatically prepared parameters come from the body; URL query parameters are not merged into them.</p>
+
+<h2>JSON requests</h2>
+
+<p>For a POST with <code>Content-Type: application/json</code>, Achieve parses the JSON value and supplies it as <code>session.params</code>. Native <code>fetch()</code> can send the request:</p>
+
+<pre><code>let response = await fetch("/servlets/profile.jss", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        name: "Ada",
+        role: "developer"
+    })
+});
+
+console.log(await response.json());</code></pre>
+
+<p>The servlet receives the parsed JSON value in <code>session.params</code>. In this example, the value is an object:</p>
+
+<pre><code>exports.servlet = function(session) {
+    session.response.setHeader(
+        "Content-Type",
+        "application/json; charset=utf-8"
+    );
+
+    return JSON.stringify({
+        message: "Hello, " + session.params.name,
+        role: session.params.role
+    });
+};</code></pre>
+
+<p>Content-Type matching is case-insensitive, and parameters such as <code>charset=utf-8</code> are allowed.</p>
+
+<h2>Malformed and large input</h2>
+
+<p>Invalid JSON receives <code>400 Bad Request</code>, and Achieve does not invoke the servlet.</p>
+
+<p>Achieve limits automatically buffered JSON and URL-encoded form bodies to 1 MiB by default. Requests exceeding that limit receive <code>413 Payload Too Large</code> before the servlet runs.</p>
+
+<p>Use <a href="../reference/config.htm#setBufferedInputLimit"><code>setBufferedInputLimit()</code></a> to change that limit.</p>
+
+<h2>Other content types and streaming</h2>
+
+<p>Achieve automatically parses only JSON and URL-encoded form POST bodies. For another content type, <code>session.params</code> is empty and application code reads the normal Node request stream through <code>session.request</code>. This also avoids Achieve's buffered-input limit, so the application must enforce any limits appropriate to its stream.</p>
+
+<p>Buffered parsing is complete before either a synchronous or asynchronous servlet is invoked. Async servlets use the same <code>session.params</code> values as synchronous servlets.</p>
+
+<p>See <a href="../reference/servlets.htm">Backend: JavaScript Servlets</a> for servlet execution and responses, the <a href="../reference/session.htm">Servlet Session Object</a> for <code>session.params</code> and <code>session.request</code>, and the <a href="../reference/config.htm">Configuration Reference</a> for input limits.</p>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a>
+</footer>
+</body>
+</html>

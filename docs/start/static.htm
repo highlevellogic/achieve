@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve v3 - Static content and audio/video</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+.navLink { display:inline-block; margin:.6em 5% .2em; color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.navLink:hover,.packageLink:hover { color:blue; }
+.backArrow { margin-right:.4em; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+main { margin:2% 5% 5%; }
+code { padding:.08em .35em; border-radius:.3em; background-color:rgb(220,235,245); color:blue; font-family:Consolas,"Courier New",monospace; }
+pre { margin:1em 0 1.4em; }
+pre code { display:block; padding:1em; overflow:auto; white-space:pre; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to documentation index</a>
+<main>
+
+<h1>Static content and audio/video</h1>
+
+<p>Achieve serves static content and provides byte-range streaming for audio and video.</p>
+
+<p>Achieve automatically sets a <em>Content-Type</em> header for file types with registered extensions. The header tells the browser what kind of resource it has received so that it can handle and render it properly. Files with unregistered extensions are served as <code>text/plain</code>.</p>
+
+<p>The registered extensions for ordinary static and audio/video files can be displayed at startup with <code>showMimeTypes()</code>:</p>
+
+<pre><code>achieve.showMimeTypes();</code></pre>
+
+<p>If you want to serve another <em>MIME type</em>, add it with <code>addMimeType()</code>:</p>
+
+<pre><code>achieve.addMimeType("pub", "application/x-mspublisher");</code></pre>
+
+<p>To add an audio/video type with byte-range support, use <code>addAVMimeType()</code>:</p>
+
+<pre><code>achieve.addAVMimeType("wav", "audio/wav");</code></pre>
+
+<p>When a directory is requested, Achieve uses the first available default in this order: <code>index.html</code>, <code>index.htm</code>, <code>index.jss</code>, <code>index.jss.mjs</code>, and <code>index.jss.cjs</code>. The <code>.jss</code> forms are executable servlets rather than static source.</p>
+
+<p>See the <a href="../reference/static.htm">Static Resources Reference</a> for the complete default-document order, caching, compression, byte ranges, and response-header behavior.</p>
+
+</main>
+<footer>
+<a href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a>
+</footer>
+</body>
+</html>

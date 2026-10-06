@@ -61,7 +61,7 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 
 <p>achieve filters error information to provide a concise, useful diagnostic similar to what you are accustomed to seeing in a browser dev console. Runtime errors normally include the application filename, line and column. For syntax and module-loading errors, achieve reports the most useful source information available and identifies the module being loaded when an exact source location is unavailable.</p>
 
-<p>Processed error information is returned to the client and, when server logging is enabled, reported in the CLI. Development mode additionally provides development-oriented logging.</p>
+<p>When achieve can safely respond, processed error information is returned to the client. Development mode also displays concise diagnostics in the console. Persistent server logging, when enabled, records server errors in server log files; it does not enable CLI diagnostics.</p>
 
 <p>To select production mode:</p>
 
@@ -119,7 +119,9 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 
 <h2>Empty results</h2>
 
-<p>If a servlet returns <code>undefined</code> or <code>null</code>, achieve completes the response with HTTP status 204 No Content. An empty string is a valid result and produces an empty response body.</p>
+<p>If a servlet returns <code>undefined</code> or <code>null</code> while the response status is still the default 200, achieve changes the status to 204 No Content. If application code has selected another status, achieve preserves it. An empty string is valid response content and retains the current status.</p>
+
+<p>A resolved Promise or thenable follows the same completion rules as a directly returned result. For a HEAD request, achieve suppresses the response body while preserving the status selected by these rules or by application code.</p>
 
 <p>Development mode provides a friendly INFO message to help identify an unintended empty result.</p>
 
