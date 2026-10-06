@@ -9,7 +9,7 @@ $templateDirectory = Join-Path $achieveRepository "distribution\advanced-example
 $outputDirectory = Join-Path $achieveRepository "docs\downloads"
 $archivePath = Join-Path $outputDirectory "achieve-v3-advanced-examples-dev.zip"
 $buildRoot = Join-Path $env:TEMP ("achieve-v3-advanced-examples-build-" + [Guid]::NewGuid())
-$distributionRoot = Join-Path $buildRoot "achieve-v3-advanced-examples-dev"
+$distributionRoot = Join-Path $buildRoot "achieve3-examples"
 
 if (-not (Test-Path -LiteralPath $ExamplesRepository -PathType Container)) {
     throw "Examples repository not found: $ExamplesRepository"

@@ -26,7 +26,7 @@ Achieve v3 npm package.
 ## Install
 
 Extract the ZIP, open a command prompt in the extracted
-`achieve-v3-advanced-examples-dev` directory, and run:
+`achieve3-examples` directory, and run:
 
 ```bash
 npm ci
