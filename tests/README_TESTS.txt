@@ -17,11 +17,41 @@ Run the focused server/access logging regressions with:
 
 # RUNNING THE TESTS
 
-1. Install Node.js if it is not already installed.
+Achieve 3 requires Node.js 22 or later. From the repository root, install the
+locked development dependencies and run the complete regression suite with:
 
-2. Run the focused verifier for the behavior under review.
+    npm ci
+    npm test
 
-3. Treat deliberately invalid fixtures as test inputs, not files to repair.
+Run the JavaScript syntax check followed by the complete suite with:
+
+    npm run validate
+
+The aggregate runner discovers immediate tests/*/verify.js files, sorts them,
+and runs them sequentially using the current Node executable. Several suites
+use fixed loopback ports, so do not run another Achieve test batch or example
+server on those ports at the same time. The runner continues after an ordinary
+suite failure, prints every suite's output and result, and exits nonzero if any
+suite fails or terminates abnormally.
+
+To write an optional Markdown report in addition to the console output, use:
+
+    node tests/run-verifiers.js --report release-validation/achieve-3.0.0.md
+
+The report records the tested commit, working-tree state, platform, Node
+version, suite results, and declared environmental skips. The normal npm test
+command does not create a report.
+
+The physical-containment verifier uses directory junctions on Windows and
+symbolic links on other platforms. Windows file-symlink creation may be denied
+with a recognized permission or capability error; those cases are reported as
+explicit skips rather than passes. On Linux, those symbolic-link cases are
+expected to run when the filesystem permits them. Other link-creation errors
+remain test failures.
+
+Run an individual focused verifier directly when reviewing a particular
+behavior. Treat deliberately invalid fixtures as test inputs, not files to
+repair.
 
 # DEVELOPMENT TESTS
 
@@ -84,16 +114,17 @@ server, and serves a real request without depending on the Startup example.
 
 # APPLICATION-DIRECTORY FIXTURES
 
-Achieve uses the server project's root directory as its default application
-directory. Use setAppPath() to select a different application directory. URL
-directories never select another application or containment boundary.
+Achieve has no default application directory. A valid application space must
+be selected with setAppPath() before a listener can start. URL directories
+never select another application or containment boundary.
 
 Run the focused automated verification with:
 
 node tests/application_directory/verify.js
 
-The verifier is self-contained and proves the default directory, setAppPath()
-override, and the inert diagnostic behavior of obsolete setRootDir().
+The verifier is self-contained and proves the required setAppPath()
+configuration, rejection of an implicit adjacent root directory, and the inert
+diagnostic behavior of obsolete setRootDir().
 
 # CONDITIONAL-REQUEST TESTS
 

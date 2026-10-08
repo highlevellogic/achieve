@@ -13,6 +13,7 @@ const insideTargetPath=path.join(applicationPath,"inside-target");
 let child;
 let failures=0;
 let skips=0;
+const skipDetails=[];
 
 function check(name,condition,detail) {
     console.log((condition ? "PASS" : "FAIL")+" "+name+
@@ -22,6 +23,11 @@ function check(name,condition,detail) {
 
 function skip(name,error) {
     skips++;
+    skipDetails.push({
+        name,
+        code:error.code,
+        reason:"Filesystem link creation is unavailable: "+error.code
+    });
     console.log("SKIP "+name+": "+error.code+" "+error.message);
 }
 
@@ -248,5 +254,11 @@ async function fileLinkChecks(created) {
         fs.rmSync(resolvedRoot,{recursive:true,force:true});
     }
     console.log("Physical-containment verification: "+failures+" failure(s), "+skips+" skip(s).");
+    if (process.send) {
+        process.send({
+            type:"achieve-verifier-summary",
+            skips:skipDetails
+        });
+    }
     process.exitCode=failures ? 1 : 0;
 });

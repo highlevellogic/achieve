@@ -9,7 +9,9 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "check": "node --check achieve.js"
+    "check": "node --check achieve.js",
+    "test": "node tests/run-verifiers.js",
+    "validate": "npm run check && npm test"
   },
   "repository": {
     "type": "git",
