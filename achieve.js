@@ -423,6 +423,7 @@ function initializeLogging() {
 let reqCount = 0;
    // basePath is the explicitly configured root directory for applications.
    let basePath;
+   let physicalBasePath;
    let bCaching=false, bCachingCheck=false, compress=false, showMimes=false;
    let corsdomains=[];
    let shortVersion = require('./package.json').version;
@@ -454,10 +455,12 @@ exports.setRootDir = function () {
 exports.setAppPath = function (bp) {
   let newPath=path.resolve(bp);
   validateApplicationPath(newPath,"setAppPath() application path");
+  let newPhysicalPath=fs.realpathSync.native(newPath);
   productionHelperCache.clear();
   servletResolutionCache.clear();
   servletResolutionAliases.clear();
   basePath=newPath;
+  physicalBasePath=newPhysicalPath;
 };
 function validateApplicationPath(applicationPath,description="Application path") {
   let stats;
@@ -476,6 +479,7 @@ function applicationPathReady() {
     return false;
   }
   validateApplicationPath(basePath,"Configured application path");
+  physicalBasePath=fs.realpathSync.native(basePath);
   return true;
 }
 function validRoutePath(value) {
@@ -790,6 +794,7 @@ function registeredHandlerFileInfo(req,basePath,servletPath) {
     if (!fullPath || !servletModuleType(fullPath)) throw new Error("Invalid registered handler path: " + servletPath);
     let stats=fs.statSync(fullPath);
     if (!stats.isFile()) throw new Error("Registered handler is not a file: " + servletPath);
+    if (!containedPhysicalPath(fullPath)) throw new Error("Registered handler is outside the application path: " + servletPath);
     let reload=moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs;
     return new FileInfo(basePath,servletPath,fullPath,path.dirname(fullPath),"servlet",req.headers,
       mimeList.servlet,"",false,false,false,reload,"",false);
@@ -1854,6 +1859,23 @@ function containedRequestPath (boundaryPath,requestPath) {
 
   return candidate;
 }
+function containedPhysicalPath (candidatePath) {
+  let physicalCandidate;
+  try {
+    physicalCandidate=fs.realpathSync.native(candidatePath);
+  } catch (err) {
+    return false;
+  }
+  let relativeCandidate=path.relative(physicalBasePath,physicalCandidate);
+  if (
+    relativeCandidate === ".." ||
+    relativeCandidate.startsWith(".." + path.sep) ||
+    path.isAbsolute(relativeCandidate)
+  ) {
+    return false;
+  }
+  return physicalCandidate;
+}
 function servletModuleType (filePath) {
   let lowerPath=filePath.toLowerCase();
   if (lowerPath.endsWith(".jss.mjs")) return "module";
@@ -1867,7 +1889,7 @@ function checkPath (basePath,relativePath,directoryForm) {
   // Build full path.
   let action="";
   let fullPath = containedRequestPath(basePath,relativePath);
-  let stats, checkPath;
+  let stats, checkPath, physicalPath;
   let reload=false;
 
   if (!fullPath) {
@@ -1885,6 +1907,10 @@ function checkPath (basePath,relativePath,directoryForm) {
       throwIfNoEntry:false
     });
     if (stats !== undefined) {
+      physicalPath=containedPhysicalPath(fullPath+".js");
+      if (!physicalPath || protectedServletPath(physicalPath)) {
+        return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
+      }
 	    if (moduleLoadTimes[fullPath+".js"] === undefined || moduleLoadTimes[fullPath+".js"] < stats.mtimeMs) reload = true;
 	    return new PathInfo(path.normalize(relativePath+".js"),reload,"servlet",stats);
 	  }
@@ -1892,24 +1918,30 @@ function checkPath (basePath,relativePath,directoryForm) {
     }
   // If fullPath points to a file, return the relative path.
   if (stats.isFile()) {
+    physicalPath=containedPhysicalPath(fullPath);
+    if (!physicalPath) return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
     if (servletModuleType(fullPath)) {
       if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) reload = true;
       return new PathInfo(path.normalize(relativePath),reload,"servlet",stats);
     }
-    if (protectedServletPath(fullPath)) {
+    if (protectedServletPath(fullPath) || protectedServletPath(physicalPath)) {
       return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
     }
     return new PathInfo(path.normalize(relativePath),true,"serveFile",stats);
   }
   // If fullPath points to a directory:
   if (stats.isDirectory()) {
+	physicalPath=containedPhysicalPath(fullPath);
+    if (!physicalPath) return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
 	// directory requests without trailing '/' are redirected with '/' added
     if (!directoryForm) return new PathInfo(path.normalize(relativePath),false,"redirect",stats);
 	  // Check for default files like index.html and index.js
 	  for (let df of defaultFiles) {
       checkPath = path.join(fullPath,df);
 	    if (fs.existsSync(checkPath)) {
-		    if (servletModuleType(checkPath) || df == "index.js") {
+		let physicalDefault=containedPhysicalPath(checkPath);
+		if (!physicalDefault || (!servletModuleType(checkPath) && protectedServletPath(physicalDefault))) continue;
+		  if (servletModuleType(checkPath) || df == "index.js") {
 		  	  stats = fs.statSync(checkPath);
 			    if (moduleLoadTimes[checkPath] === undefined || moduleLoadTimes[checkPath] < stats.mtimeMs) reload = true;
           action = "servlet";
