@@ -782,11 +782,44 @@ function cachedServletFileInfo(cached,req,resourceTarget) {
       false
     );
 }
+function handleUnexpectedRequestError(res,error,eventMessage,responseFailureMessage) {
+    serverError(eventMessage,error);
+    if (res.destroyed || res.writableEnded) return;
+    if (res.headersSent) {
+      try {
+        res.destroy();
+      } catch (destroyError) {
+        serverError("Failed to destroy incomplete response.",destroyError);
+      }
+      return;
+    }
+    try {
+      res.statusCode=500;
+      res.setHeader('Content-Type','text/plain;charset=utf-8');
+      res.end("Internal Server Error");
+    } catch (responseError) {
+      serverError(responseFailureMessage,responseError);
+      if (!res.destroyed) {
+        try {
+          res.destroy();
+        } catch (destroyError) {
+          serverError("Failed to destroy incomplete response.",destroyError);
+        }
+      }
+    }
+}
 function handlePreparedServlet(req,res,fileInfo,account,sendBody) {
     if (evaluatePreconditions(req,res,true)) return;
     try {
       new startObject(req,res,fileInfo,account,sendBody).init();
-    } catch (err) {}
+    } catch (err) {
+      handleUnexpectedRequestError(
+        res,
+        err,
+        "Unexpected error starting servlet.",
+        "Failed to send servlet startup error response."
+      );
+    }
 }
 
 function registeredHandlerFileInfo(req,basePath,servletPath) {
@@ -1391,23 +1424,15 @@ var achieveApp = function (req, res) {
      return;
    }
    return dispatchMethod(req, res, basePath, targetInfo.resourceTarget);
- } catch (e) {
-   serverError("Catchall error in achieveApp.",e);
-   if (res.destroyed || res.writableEnded) return;
-   if (res.headersSent) {
-     res.destroy();
-     return;
-   }
-   try {
-     res.statusCode=500;
-     res.setHeader('Content-Type','text/plain;charset=utf-8');
-     res.end("Internal Server Error");
-   } catch (responseError) {
-     serverError("Failed to send catchall error response.",responseError);
-     if (!res.destroyed) res.destroy();
-   }
+  } catch (e) {
+    handleUnexpectedRequestError(
+      res,
+      e,
+      "Catchall error in achieveApp.",
+      "Failed to send catchall error response."
+    );
+  }
  }
-}
 function normalizedPort(port) {
   if (typeof port === "string") {
     let numericPort=port.trim();
