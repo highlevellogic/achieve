@@ -11,20 +11,21 @@ process.on("exit",function () {
     fs.rmSync(applicationPath,{recursive:true,force:true});
 });
 
-function copy(source,destination) {
+function write(relativePath,content) {
+    const destination=path.join(applicationPath,relativePath);
     fs.mkdirSync(path.dirname(destination),{recursive:true});
-    fs.copyFileSync(source,destination);
+    fs.writeFileSync(destination,content);
 }
 
 (async function () {
-    const {examplesPath}=await import("../../example-config.mjs");
-    const sourcePath=path.join(examplesPath,"intermediate","conditional");
-
-    copy(path.join(sourcePath,"index.html"),path.join(applicationPath,"index.html"));
-    copy(path.join(sourcePath,"conditional.js"),path.join(applicationPath,"conditional.js"));
-    copy(path.join(sourcePath,"static","resource.txt"),path.join(applicationPath,"static","resource.txt"));
-    copy(path.join(sourcePath,"servlets","counter.jss"),path.join(applicationPath,"servlets","counter.jss"));
-    copy(path.join(examplesPath,"basics","media","media","mov_bbb.mp4"),path.join(applicationPath,"media","sample.mp4"));
+    write(path.join("static","resource.txt"),"Achieve conditional request fixture.\n");
+    write(path.join("servlets","counter.jss"),
+        "let count = 0;\n\n"+
+        "exports.servlet = function (context) {\n"+
+        "    if (context.request.method === \"POST\") count++;\n"+
+        "    return String(count);\n"+
+        "};\n");
+    write(path.join("media","sample.mp4"),Buffer.from("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
 
     achieve.setAppPath(applicationPath);
     achieve.setCaching(caching);

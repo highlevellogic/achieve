@@ -98,7 +98,7 @@ async function liveStartupTest() {
 
         let output=checkedResult("ESM self-reference inside repository",run([esmProbePath],repositoryPath));
         let esmResult=JSON.parse(output);
-        assert.strictEqual(esmResult.resolved,"file:///"+achievePath.replace(/\\/g,"/"));
+        assert.strictEqual(esmResult.resolved,pathToFileURL(achievePath).href);
         assert.strictEqual(esmResult.listen,"function");
         assert.strictEqual(esmResult.setAppPath,"function");
         assert.strictEqual(esmResult.registerMethod,"function");
