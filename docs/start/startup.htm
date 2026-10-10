@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve v3 - Starting the server</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+.navLink { display:inline-block; margin:.6em 5% .2em; color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.navLink:hover,.packageLink:hover { color:blue; }
+.backArrow { margin-right:.4em; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+main { margin:2% 5% 5%; }
+code { padding:.08em .35em; border-radius:.3em; background-color:rgb(220,235,245); color:blue; font-family:Consolas,"Courier New",monospace; }
+pre { margin:1em 0 1.4em; }
+pre code { display:block; padding:1em; overflow:auto; white-space:pre; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to documentation index</a>
+<main>
+
+<h1>Starting the server</h1>
+
+<p>achieve supports a variety of options that only work if they are configured or turned on. Only one is mandatory: <code>setAppPath(appPath)</code>. It defines the base directory for public resources—the root of your <strong>application space</strong>.
+Achieve restricts HTTP request path resolution to resources within the application space. Backend programs can still access resources elsewhere on the computer when appropriate. <code>appPath</code> can be any accessible directory.</p>
+
+<p>In the following examples, with default <a href="../reference/routing.htm">routing</a>, request URL <code>/hello/hello.htm</code> maps to <code>c:/my/app/path/hello/hello.htm</code>.</p>
+
+<p>Optional configuration settings appear after <code>setAppPath()</code>. Details on configuration options are given in the <a href="../reference/config.htm">configuration reference</a>.</p>
+
+<h2>HTTP</h2>
+
+<p>In CommonJS:</p>
+
+<pre><code>const achieve = require("achieve");
+achieve.setAppPath("c:/my/app/path/");
+// optional settings
+achieve.listen(port);   // port defaults to 80</code></pre>
+
+<p>In ESM:</p>
+
+<pre><code>import achieve from "achieve";
+achieve.setAppPath("c:/my/app/path/");
+// optional settings
+achieve.listen(port);   // port defaults to 80</code></pre>
+
+<p>Save the startup file as either <code>start.js</code> (for example) for CommonJS or <code>start.mjs</code> for ESM.</p>
+
+<p>From that directory, run <code>node start</code> for CommonJS or <code>node start.mjs</code> for ESM.</p>
+
+<p>You should see the startup message from achieve. The server is then running.</p>
+
+<h2>HTTPS</h2>
+
+<pre><code>const options = {
+ key:  /* private key */,
+ cert: /* certificate */,
+ httpsPort: 8443   // default 443
+};
+
+achieve.slisten(options);</code></pre>
+
+<h2>HTTP/2 with TLS</h2>
+
+<pre><code>const options = {
+ key:  /* private key */,
+ cert: /* certificate */,
+ http2Port: 8444   // default 443
+};
+
+achieve.listen2(options);</code></pre>
+
+<h2>HTTP/2 without TLS</h2>
+
+<pre><code>achieve.listen2(port); // port defaults to 80</code></pre>
+
+<p>HTTPS and HTTP/2 with TLS require a private key and certificate. For HTTPS, <code>httpsPort</code> specifies the port. For HTTP/2 with TLS, <code>http2Port</code> specifies the port. In both cases, the port defaults to 443 when omitted.</p>
+
+<h2>Multiple listeners</h2>
+
+<p>You can start more than one listener in the same startup file, so long as each uses its own available port. The listeners share the same achieve configuration and application space.</p>
+
+<p>For multiple processes on one port, see Clustering in the Advanced Demonstrations section.</p>
+
+</main>
+<footer>
+<a href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a>
+</footer>
+</body>
+</html>

@@ -1,0 +1,1 @@
+exports.value = "explicit CJS";

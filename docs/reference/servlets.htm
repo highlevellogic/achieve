@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve v3 - Backend: JavaScript Servlets</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+.navLink { display:inline-block; margin:.6em 5% .2em; color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.navLink:hover,.packageLink:hover { color:blue; }
+.backArrow { margin-right:.4em; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+main { margin:2% 5% 5%; }
+code { padding:.08em .35em; border-radius:.3em; background-color:rgb(220,235,245); color:blue; font-family:Consolas,"Courier New",monospace; }
+pre { margin:1em 0 1.4em; }
+pre code { display:block; padding:1em; overflow:auto; white-space:pre; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to documentation index</a>
+<main>
+
+<h1>Backend: JavaScript Servlets</h1>
+
+<p>A servlet is a small server program that achieve invokes in response to a request. The term is well known in the Java web server world. JavaScript Servlets (JSS) use the same basic idea, with the servlet written in JavaScript.</p>
+
+<p>A servlet exports a function named <code>servlet</code>. achieve calls the function and provides a <code>session</code> object that links the servlet to the current request.</p>
+
+<p>Servlets may be written as CommonJS or ESM modules.</p>
+
+<p>CommonJS:</p>
+
+<pre><code>exports.servlet = function(session) {
+    return "Hello World!";
+}</code></pre>
+
+<p>ESM:</p>
+
+<pre><code>export function servlet(session) {
+    return "Hello World!";
+}</code></pre>
+
+<h2>Servlet file names</h2>
+
+<p>The <code>.jss</code> marker identifies backend JavaScript that achieve executes but does not serve as source.</p>
+
+<p>CommonJS servlets use <code>.jss</code> or <code>.jss.cjs</code>. ESM servlets use <code>.jss.mjs</code>.</p>
+
+<h2>Development and production</h2>
+
+<p>achieve has two modes, development (default) and production. In development mode, achieve automatically reloads a servlet when its file changes. There is no need to restart the server after editing the servlet.</p>
+
+<p>Error protection is provided in both modes. achieve catches errors that occur while loading or running a servlet, including rejection of a Promise returned by the servlet, and reports them as servlet errors rather than allowing them to terminate normal request processing.</p>
+
+<p>achieve filters error information to provide a concise, useful diagnostic similar to what you are accustomed to seeing in a browser dev console. Runtime errors normally include the application filename, line and column. For syntax and module-loading errors, achieve reports the most useful source information available and identifies the module being loaded when an exact source location is unavailable.</p>
+
+<p>When achieve can safely respond, processed error information is returned to the client. Development mode also displays concise diagnostics in the console. Persistent server logging, when enabled, records server errors in server log files; it does not enable CLI diagnostics.</p>
+
+<p>To select production mode:</p>
+
+<pre><code>achieve.setMode('production');</code></pre>
+
+<h2>A first servlet</h2>
+
+<p>An ESM servlet can simply return its result:</p>
+
+<pre><code>export function servlet(session) {
+    return "Hello World!";
+}</code></pre>
+
+<p>The CommonJS form is:</p>
+
+<pre><code>exports.servlet = function(session) {
+    return "Hello World!";
+}</code></pre>
+
+<p>achieve provides the session object, supplies the default <code>text/plain</code> response type, protects the managed servlet process from errors, and completes the HTTP response.</p>
+
+<h2>Response types</h2>
+
+<p>The servlet has access to the complete Node.js response object through <code>session.response</code>. For example, application code can set the response type:</p>
+
+<pre><code>export function servlet(session) {
+    session.response.setHeader(
+        "Content-Type",
+        "application/json; charset=utf-8"
+    );
+    return JSON.stringify({message:"Hello World!"});
+}</code></pre>
+
+<h2>GET and POST parameters</h2>
+
+<p>For GET requests, achieve parses parameters from the URL query string into <code>session.params</code>. This includes HTML forms using <code>method="get"</code>, which construct the query string from the form data.</p>
+
+<p>For POST requests, achieve parses HTML form data and JSON into <code>session.params</code>. For other request data, use <code>session.request</code> directly.</p>
+
+<h2>Loading backend modules</h2>
+
+<p>Additional back-end modules can be loaded with <code>session.load()</code>.</p>
+
+<p>CommonJS modules are loaded synchronously:</p>
+
+<pre><code>let mod = session.load("second.jss");</code></pre>
+
+<p>ESM modules are loaded asynchronously:</p>
+
+<pre><code>let mod = await session.load("second.jss.mjs");</code></pre>
+
+<p>Errors from modules loaded with <code>session.load()</code> receive the same error processing when they propagate through the managed servlet invocation or its returned Promise.</p>
+
+<p>In development mode, modules loaded with <code>session.load()</code> are reloaded when their files change. In production mode, loaded modules are cached for efficient repeated use.</p>
+
+<h2>Empty results</h2>
+
+<p>If a servlet returns <code>undefined</code> or <code>null</code> while the response status is still the default 200, achieve changes the status to 204 No Content. If application code has selected another status, achieve preserves it. An empty string is valid response content and retains the current status.</p>
+
+<p>A resolved Promise or thenable follows the same completion rules as a directly returned result. For a HEAD request, achieve suppresses the response body while preserving the status selected by these rules or by application code.</p>
+
+<p>Development mode provides a friendly INFO message to help identify an unintended empty result.</p>
+
+<h2>Asynchronous Processing</h2>
+
+<p>Servlets can use ordinary JavaScript asynchronous processing. So long as the servlet waits for asynchronous processing to complete before returning its result, the normal servlet contract remains unchanged.</p>
+
+<pre><code>export async function servlet(session) {
+    const result = await something();
+    return result;
+}</code></pre>
+
+<p>achieve waits for the returned Promise and completes the response when the result is available.</p>
+
+<h2>Application-owned response completion</h2>
+
+<p><code>session.autoEnd</code> is a Boolean property that controls who completes a normal HTTP response. Its default is <code>true</code>, so achieve completes the response from the servlet's returned result.</p>
+
+<p>Set <code>session.autoEnd</code> to <code>false</code> when application code will complete the response itself.</p>
+
+<pre><code>exports.servlet = function(session) {
+    session.autoEnd = false;
+
+    session.response.write("Hello ");
+    session.response.end("World!");
+}</code></pre>
+
+<p>With <code>session.autoEnd = false</code>, achieve does not automatically inspect the returned value or Promise and does not end the response when the servlet returns. The application is responsible for eventually completing the response.</p>
+
+<p>Ordinary use of <code>async</code> and <code>await</code> does not require changing <code>autoEnd</code>. When <code>autoEnd</code> remains <code>true</code>, achieve waits for a returned Promise and completes the response from its resolved value.</p>
+
+<p><code>autoEnd = false</code> does not suppress an error that achieve catches while it can still safely respond. If headers have not been sent, achieve can return its normal 500 response. Once headers have been sent, achieve reports the error and terminates an incomplete response without attempting to replace it with a new 500. Errors in detached asynchronous work after the servlet has returned are the application's responsibility.</p>
+
+</main>
+<footer>
+<a href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a>
+</footer>
+</body>
+</html>

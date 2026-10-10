@@ -1,13 +1,25 @@
+
+/*
+ * Achieve - Web server for Node.js
+ * Copyright (c) 2018-2026 Roger F. Gay
+ * SPDX-License-Identifier: MIT
+ */
+
 // Essential modules. Always load. 
-global.fs = require('fs');
+const fs = require('fs');
 const path = require('path');
-const url = require('url');
 const querystring = require('querystring');
+const { createRequire } = require('node:module');
+const { pathToFileURL } = require('node:url');
 // Optional modules. Load only when used.
 
 let http;
 let https;
+let http2;
 let zlib;
+let streamPipeline;
+let compressionJobs = new Set();
+let compressionTempSequence = 0;
 // const avmine = require("./avmine");
 // const dt = require('./datetime');
 // let flatted = require('flatted');
@@ -15,171 +27,1438 @@ let zlib;
 if (process.env.NODE_ENV === undefined) process.env.NODE_ENV = 'production';
 
 let moduleLoadTimes = {};
+let productionHelperCache = new Map();
+const esmLoadContext = Symbol("esmLoadContext");
+let servletResolutionCache = new Map();
+let servletResolutionAliases = new Map();
+let registeredMethods = new Map();
+let routeMap;
+let pathMap;
+
+let mode = "development";
+let logging = {
+  server: false,
+  access: false
+};
+let loggingConfigurationLocked = false;
+let serverEntryPath = getServerEntryPath();
+let serverInstallationPath = path.dirname(serverEntryPath);
+let applicationRequire = createRequire(serverEntryPath);
+let logRoot = path.join(serverInstallationPath,"logs");
+let serverLogSink;
+let accessLogSink;
+
+let corsPolicies = new Map();
+let bufferedInputLimit = 1024 * 1024;  // default 1 MiB
+
+function getServerEntryPath() {
+  if (require.main && typeof require.main.filename === "string" && require.main.filename.length > 0) {
+    return path.resolve(require.main.filename);
+  }
+  if (typeof process.argv[1] === "string" && process.argv[1].length > 0) {
+    return path.resolve(process.argv[1]);
+  }
+  return path.join(path.resolve(process.cwd()),"achieve-entry.js");
+}
+
+function ensureLoggingConfigurable(functionName) {
+  if (loggingConfigurationLocked) {
+    throw new Error(functionName + "() must be called before listen().");
+  }
+}
+
+exports.setMode = function (newMode) {
+  ensureLoggingConfigurable("setMode");
+  if (newMode !== "development" && newMode !== "production") {
+    throw new TypeError('setMode() requires "development" or "production".');
+  }
+  mode = newMode;
+  productionHelperCache.clear();
+};
+
+exports.setLogging = function (...selections) {
+  ensureLoggingConfigurable("setLogging");
+  if (selections.length === 0) {
+    throw new TypeError("setLogging() requires at least one argument.");
+  }
+
+  if (selections.length === 1 && typeof selections[0] === "boolean") {
+    let enabled = selections[0];
+    logging = {
+      server: enabled,
+      access: enabled
+    };
+    return;
+  }
+
+  if (selections.some(selection => typeof selection !== "string")) {
+    throw new TypeError("setLogging() accepts one boolean or persistent logging selection names.");
+  }
+
+  let selected = {
+    server: false,
+    access: false
+  };
+  for (let selection of selections) {
+    if (!Object.prototype.hasOwnProperty.call(selected,selection)) {
+      throw new RangeError("Unknown logging selection: " + selection);
+    }
+    selected[selection] = true;
+  }
+  logging = selected;
+};
+// Configure buffered input during startup, before listen(), for predictable request handling.
+exports.setBufferedInputLimit = function(limit) {
+    if (!Number.isSafeInteger(limit) || limit < 1) {
+        throw new RangeError("Buffered input limit must be a positive integer.");
+    }
+    const v8 = require("node:v8");
+    let maxLimit = Math.floor(v8.getHeapStatistics().heap_size_limit * 0.01);
+
+    if (limit > maxLimit) {
+        throw new RangeError("Buffered input limit exceeds Achieve's safe maximum of " + maxLimit + " bytes.");
+    }
+    bufferedInputLimit = limit;
+}
+exports.setLogPath = function (newLogRoot) {
+  ensureLoggingConfigurable("setLogPath");
+  if (typeof newLogRoot !== "string" || newLogRoot.trim().length === 0) {
+    throw new TypeError("setLogPath() requires a non-empty path string.");
+  }
+  let candidate = newLogRoot.trim();
+  logRoot = path.isAbsolute(candidate)
+    ? path.normalize(candidate)
+    : path.resolve(serverInstallationPath,candidate);
+};
+
+function padNumber(value,width = 2) {
+  return String(value).padStart(width,"0");
+}
+
+function localDateKey(date = new Date()) {
+  return date.getFullYear() + "-" +
+    padNumber(date.getMonth() + 1) + "-" +
+    padNumber(date.getDate());
+}
+
+function localTimestamp(date = new Date()) {
+  let offsetMinutes = -date.getTimezoneOffset();
+  let sign = offsetMinutes >= 0 ? "+" : "-";
+  let absoluteOffset = Math.abs(offsetMinutes);
+  return localDateKey(date) + "T" +
+    padNumber(date.getHours()) + ":" +
+    padNumber(date.getMinutes()) + ":" +
+    padNumber(date.getSeconds()) + "." +
+    padNumber(date.getMilliseconds(),3) +
+    sign +
+    padNumber(Math.floor(absoluteOffset / 60)) + ":" +
+    padNumber(absoluteOffset % 60);
+}
+
+function createLogSink(category) {
+  let stream;
+  let streams = new Set();
+  let dateKey;
+  let failed = false;
+  let ended = false;
+  let failureError;
+  let errorReported = false;
+
+  function reportFailure(err) {
+    if (errorReported) return;
+    errorReported = true;
+    console.error(
+      "Achieve " + category + " logging failed: " +
+      (err && err.message ? err.message : String(err))
+    );
+  }
+
+  function disable(err) {
+    failed = true;
+    if (!failureError) failureError = err;
+    reportFailure(err);
+    for (let ownedStream of streams) {
+      if (!ownedStream.destroyed) ownedStream.destroy();
+    }
+    stream = undefined;
+    dateKey = undefined;
+  }
+
+  function openStream(nextDateKey) {
+    let categoryPath = path.join(logRoot,category);
+    let filePath = path.join(categoryPath,nextDateKey + ".log");
+    fs.mkdirSync(categoryPath,{recursive:true});
+    let fileDescriptor = fs.openSync(filePath,"a");
+    let nextStream;
+    try {
+      nextStream = fs.createWriteStream(filePath,{
+        fd:fileDescriptor,
+        flags:"a",
+        autoClose:true
+      });
+    } catch (err) {
+      fs.closeSync(fileDescriptor);
+      throw err;
+    }
+    streams.add(nextStream);
+    nextStream.once("close",function () {
+      streams.delete(nextStream);
+    });
+    nextStream.on("error",function (err) {
+      disable(err);
+    });
+    return nextStream;
+  }
+
+  function initialize() {
+    if (failed || ended) return false;
+    if (stream) return true;
+    try {
+      dateKey = localDateKey();
+      stream = openStream(dateKey);
+      return true;
+    } catch (err) {
+      disable(err);
+      return false;
+    }
+  }
+
+  function write(record) {
+    if (failed || ended) return false;
+    if (!stream && !initialize()) return false;
+    let now = new Date();
+    let nextDateKey = localDateKey(now);
+    if (nextDateKey !== dateKey) {
+      let nextStream;
+      try {
+        nextStream = openStream(nextDateKey);
+      } catch (err) {
+        disable(err);
+        return false;
+      }
+      let previousStream = stream;
+      stream = nextStream;
+      dateKey = nextDateKey;
+      previousStream.end();
+    }
+    try {
+      stream.write(localTimestamp(now) + " " + record + "\n");
+      return true;
+    } catch (err) {
+      disable(err);
+      return false;
+    }
+  }
+
+  function close() {
+    for (let ownedStream of streams) {
+      if (!ownedStream.destroyed) ownedStream.destroy();
+    }
+    stream = undefined;
+    dateKey = undefined;
+  }
+
+  function end(callback) {
+    callback = typeof callback === "function"
+      ? callback
+      : function () {};
+
+    if (failed || ended) {
+      process.nextTick(callback);
+      return;
+    }
+
+    ended = true;
+
+    let openStreams = Array.from(streams).filter(function (ownedStream) {
+      return !ownedStream.destroyed;
+    });
+
+    stream = undefined;
+    dateKey = undefined;
+
+    if (openStreams.length === 0) {
+      process.nextTick(callback);
+      return;
+    }
+
+    let remaining = openStreams.length;
+
+    function streamClosed() {
+      remaining--;
+      if (remaining === 0) {
+        callback(failed ? failureError : undefined);
+      }
+    }
+
+    for (let ownedStream of openStreams) {
+      ownedStream.once("close",streamClosed);
+      if (!ownedStream.writableEnded) ownedStream.end();
+    }
+  }
+
+  return {
+    initialize:initialize,
+    write:write,
+    close:close,
+    end:end,
+    hasFailed:function () { return failed; }
+  };
+}
+
+function developmentLog(...values) {
+  if (mode === "development") console.log(...values);
+}
+
+function serverEvent(event,message,err) {
+  if (logging.server && serverLogSink) {
+    serverLogSink.write(
+      event + " " +
+      (err && err.stack ? message + "\n" + err.stack : message)
+    );
+  }
+}
+
+function serverWarning(message) {
+  if (!loggingConfigurationLocked || mode === "development") console.log(message);
+  serverEvent("WARN",message);
+}
+
+function serverError(message,err) {
+  if (!loggingConfigurationLocked || mode === "development") console.error(message);
+  serverEvent("ERROR",message,err);
+}
+
+function startupWarning(message) {
+  console.log(message);
+  serverEvent("WARN",message);
+}
+
+function startupError(message,err) {
+  console.error(message);
+  serverEvent("ERROR",message,err);
+}
+
+function accessLogValue(value) {
+  return '"' +
+    String(value)
+      .replace(/\\/g,"\\\\")
+      .replace(/"/g,'\\"')
+      .replace(/[\x00-\x1F\x7F]/g,function (character) {
+        return "\\u" +
+          character.charCodeAt(0).toString(16).padStart(4,"0");
+      }) +
+    '"';
+}
+
+function createAccessRecorder(req) {
+  if (
+    !logging.access ||
+    !accessLogSink ||
+    accessLogSink.hasFailed()
+  ) return;
+
+  let started = process.hrtime.bigint();
+  let recorded = false;
+  let method = req.method || "";
+  let requestTarget = req.url || "";
+  let remoteAddress =
+    req.socket && req.socket.remoteAddress
+      ? req.socket.remoteAddress
+      : "-";
+
+  return function recordAccess(statusCode,completionState) {
+    if (recorded) return;
+    recorded = true;
+
+    let elapsedNanoseconds = process.hrtime.bigint() - started;
+    let elapsedMilliseconds = Number(elapsedNanoseconds) / 1e6;
+
+    accessLogSink.write(
+      "remote=" + accessLogValue(remoteAddress) +
+      " method=" + accessLogValue(method) +
+      " target=" + accessLogValue(requestTarget) +
+      " status=" + statusCode +
+      " elapsed=" + elapsedMilliseconds.toFixed(3) + "ms" +
+      " state=" + completionState
+    );
+  };
+}
+
+function attachAccessLogging(req,res) {
+  let recordAccess = createAccessRecorder(req);
+  if (!recordAccess) return;
+
+  res.once("finish",function () {
+    recordAccess(res.statusCode,"complete");
+  });
+
+  res.once("close",function () {
+    recordAccess(res.statusCode,"aborted");
+  });
+}
+
+function initializeLogging() {
+  if (loggingConfigurationLocked) {
+    return (
+      (!logging.server || (serverLogSink && !serverLogSink.hasFailed())) &&
+      (!logging.access || (accessLogSink && !accessLogSink.hasFailed()))
+    );
+  }
+  loggingConfigurationLocked = true;
+
+  if (logging.server) {
+    serverLogSink = createLogSink("server");
+    if (!serverLogSink.initialize()) {
+      console.error("Achieve listener was not started because server logging could not be initialized.");
+      return false;
+    }
+  }
+
+  if (logging.access) {
+    accessLogSink = createLogSink("access");
+    if (!accessLogSink.initialize()) {
+      if (serverLogSink) serverLogSink.close();
+      console.error("Achieve listener was not started because access logging could not be initialized.");
+      return false;
+    }
+  }
+
+  return true;
+}
 
 let reqCount = 0;
-let connectionArray;
-   // basePath is the root directory for applications. (Like webapps on Tomcat or htdocs on Apache httpd.)
-   // The default is the directory of the entry point or main module for the application.
-   // It can be reset by the app developer using .setAppPath(appDir);
- //  let basePath = path.normalize(require.main.filename.substring(0,require.main.filename.lastIndexOf(path.sep)));
-   let basePath = require.main.path;
-   let rootPath=basePath;
-   let relRootPath="";
-   let bCaching=false, bCachingCheck=false, rootDir=false, compress=false, showMimes=false;
+   // basePath is the explicitly configured root directory for applications.
+   let basePath;
+   let physicalBasePath;
+   let bCaching=false, bCachingCheck=false, compress=false, showMimes=false;
    let corsdomains=[];
-   let shortVersion = require('achieve/package.json').version;
+   let shortVersion = require('./package.json').version;
    let version = "HLL Achieve v" + shortVersion;
    let nv = nodeVersion();
    let etagString = nv + shortVersion;
    let defaultCharSet="utf-8";
-   let proxies=false;
-   let achieve_proxy=false;
-   let _this = this;
-
-exports.setProxy = function (prox) {
-  if (!proxies) proxies = {};
-  try {
-    for (var key in prox) proxies[key.replace(/\\/g,"/")] = prox[key];
-  } catch (e) {
-    console.log("error: problem with proxy object: " + e.message);
-  }
-}
 exports.showMimeTypes = function () {
   showMimes=true;
-}
+};
 exports.setCompress = function (on) {
   if (typeof on == "boolean") {
     compress=on;
-    if (compress) zlib = require('zlib');
+    if (compress) {
+      zlib = require('node:zlib');
+      streamPipeline = require('node:stream').pipeline;
+    }
   } else {
-    console.log("ERROR: setCompress(true) requires a boolean argument. (default: false)");
+    serverError("ERROR: setCompress(true) requires a boolean argument. (default: false)");
   }
-}
+};
 exports.setNodeEnv = function (env) {
   process.env.NODE_ENV=env;
-  console.log("NODE_ENV set to " + env);
-}
-exports.setRootDir = function (root) {
-  var theRootPath = path.join(basePath,root);
-  if (!fs.existsSync(theRootPath)) fs.mkdirSync(theRootPath);
-  if (fs.statSync(theRootPath).isDirectory()) {
-    rootDir=true;
-    rootPath=theRootPath;
-    relRootPath=path.join("/",root);
-  }
-}
+  serverEvent("CONFIG","NODE_ENV set to " + env);
+};
+exports.setRootDir = function () {
+  serverError("ERROR: setRootDir() is no longer supported. Use setAppPath() instead.");
+};
 exports.setAppPath = function (bp) {
+  let newPath=path.resolve(bp);
+  validateApplicationPath(newPath,"setAppPath() application path");
+  let newPhysicalPath=fs.realpathSync.native(newPath);
+  productionHelperCache.clear();
+  servletResolutionCache.clear();
+  servletResolutionAliases.clear();
+  basePath=newPath;
+  physicalBasePath=newPhysicalPath;
+};
+function validateApplicationPath(applicationPath,description="Application path") {
+  let stats;
   try {
-    let newPath = path.normalize(bp);
-    if (!fs.existsSync(newPath)) {
-      console.log("\nWARNING: App. Path: " + newPath + " does not exist.");
-    } else {
-      basePath = newPath;
-      rootPath = basePath;
-    }
-  } catch (err) {console.log(err);}
-}
-exports.setCaching = function (b) {
-  try {
-    if (b && fs.statSync(basePath).mtimeMs === undefined) {
-      bCaching=false;
-      console.log("\nFAILURE to set browser caching support.\nNode version must be v8 or higher.");
-    } else {
-      bCaching=b; // boolean
-    }
-    bCachingCheck=true;
+    stats=fs.statSync(applicationPath);
   } catch (err) {
-    console.log("ERROR setCaching: " + err);
+    throw new Error(description + " does not exist: " + applicationPath,{cause:err});
+  }
+  if (!stats.isDirectory()) {
+    throw new Error(description + " is not a directory: " + applicationPath);
   }
 }
-// CORS - not yet implemented
-exports.allowAccess = function (ad) {
-  let acds;
-  if (ad.length > 0) {
-    corsdomains = ad.split(",");
+function applicationPathReady() {
+  if (basePath === undefined) {
+    startupError("ERROR: Application space has not been configured. Use setAppPath() before starting the server.");
+    return false;
+  }
+  validateApplicationPath(basePath,"Configured application path");
+  physicalBasePath=fs.realpathSync.native(basePath);
+  return true;
+}
+function validRoutePath(value) {
+  if (typeof value !== "string" || value.length === 0 || value.charAt(0) !== "/") return false;
+  if (value.indexOf("?") !== -1 || value.indexOf("#") !== -1 || value.indexOf("\\") !== -1 || value.indexOf("\0") !== -1) return false;
+  if (path.posix.normalize(value) !== value) return false;
+  return !value.split("/").some(part => part === "." || part === "..");
+}
+exports.setRouteMap = function (configured) {
+  if (configured === null || typeof configured !== "object" ||
+      (Object.getPrototypeOf(configured) !== Object.prototype && Object.getPrototypeOf(configured) !== null)) {
+    throw new TypeError("setRouteMap() requires a plain object.");
+  }
+  let entries=Object.entries(configured);
+  if (entries.length === 0) throw new TypeError("setRouteMap() requires at least one route.");
+  let validated=new Map();
+  for (let [publicPath,targetPath] of entries) {
+    if (!validRoutePath(publicPath)) throw new TypeError("setRouteMap() contains an invalid public route: " + publicPath);
+    if (!validRoutePath(targetPath)) throw new TypeError("setRouteMap() contains an invalid mapped target for: " + publicPath);
+    if (!containedRequestPath(basePath,targetPath)) throw new TypeError("setRouteMap() mapped targets must remain beneath the application path.");
+    validated.set(publicPath,targetPath);
+  }
+  if (routeMap === undefined) routeMap=new Map();
+  for (let [publicPath,targetPath] of validated) routeMap.set(publicPath,targetPath);
+};
+exports.setPathMap = function (configured) {
+  if (configured === null || typeof configured !== "object" ||
+      (Object.getPrototypeOf(configured) !== Object.prototype && Object.getPrototypeOf(configured) !== null)) {
+    throw new TypeError("setPathMap() requires a plain object.");
+  }
+  let entries=Object.entries(configured);
+  if (entries.length === 0) throw new TypeError("setPathMap() requires at least one path mapping.");
+  let validated=new Map();
+  for (let [publicPath,targetPath] of entries) {
+    if (!validRoutePath(publicPath) || publicPath === "/" || !publicPath.endsWith("/")) {
+      throw new TypeError("setPathMap() contains an invalid public path (a non-root directory path ending in / is required): " + publicPath);
+    }
+    if (!validRoutePath(targetPath) || !targetPath.endsWith("/")) {
+      throw new TypeError("setPathMap() contains an invalid mapped target (a directory path ending in / is required) for: " + publicPath);
+    }
+    if (!containedRequestPath(basePath,targetPath)) throw new TypeError("setPathMap() mapped targets must remain beneath the application path.");
+    validated.set(publicPath,targetPath);
+  }
+  if (pathMap === undefined) pathMap=new Map();
+  for (let [publicPath,targetPath] of validated) pathMap.set(publicPath,targetPath);
+};
+const achieveOwnedMethods = new Set(["GET","HEAD","POST","OPTIONS","CONNECT"]);
+const advertisedBuiltInMethods = ["GET","HEAD","POST","OPTIONS"];
+const httpTokenPattern = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+exports.registerMethod = function (method,servletPath) {
+  if (typeof method !== "string" || method.length === 0) throw new TypeError("registerMethod() requires a nonempty method string.");
+  if (!httpTokenPattern.test(method)) throw new TypeError("registerMethod() requires a valid HTTP method token.");
+  if (achieveOwnedMethods.has(method.toUpperCase())) throw new RangeError(method + " is implemented by Achieve and cannot be registered.");
+  if (registeredMethods.has(method)) throw new RangeError(method + " is already registered.");
+  if (typeof servletPath !== "string" || servletPath.length === 0) throw new TypeError("registerMethod() requires a nonempty servlet path string.");
+  if (servletPath.indexOf("?") !== -1 || servletPath.indexOf("#") !== -1 ||
+      path.posix.isAbsolute(servletPath) || path.win32.isAbsolute(servletPath) ||
+      !servletModuleType(servletPath)) {
+    throw new TypeError("registerMethod() requires a relative .jss, .jss.cjs, or .jss.mjs servlet path.");
+  }
+  let fullPath=containedRequestPath(basePath,servletPath);
+  if (!fullPath) throw new TypeError("registerMethod() servlet path must remain beneath the application path.");
+  registeredMethods.set(method,path.relative(basePath,fullPath));
+};
+exports.setCaching = function (b) {
+  bCaching=b; // boolean
+  bCachingCheck=true;
+};
+// CORS
+function checkCorsPolicyPath(req,res,resourcePath) {
+    let origin=req.headers.origin;
+    let fetchSite=req.headers["sec-fetch-site"];
+
+    if (!origin) return true;
+    if (fetchSite === "same-origin") return true;
+
+    resourcePath=resourcePath.replace(/\\/g,"/");
+    let pos=resourcePath.lastIndexOf("/");
+    let requestPath=resourcePath.substring(0,pos+1);
+    let asset=resourcePath.substring(pos+1);
+
+    if (corsPolicyMatch(origin,requestPath,asset)) {
+        res.setHeader("Access-Control-Allow-Origin",origin);
+        res.appendHeader("Vary","Origin");
+        return true;
+    }
+
+    res.statusCode=403;
+    res.end();
+    return false;
+}
+function checkCorsPolicy(req,res,fileInfo) {
+    return checkCorsPolicyPath(req,res,fileInfo.path);
+}
+function checkCorsTarget(req,res,resourceTarget) {
+    let queryStart=resourceTarget.indexOf("?");
+    let resourcePath=queryStart === -1 ? resourceTarget : resourceTarget.substring(0,queryStart);
+    return checkCorsPolicyPath(req,res,resourcePath);
+}
+function normalizeCorsPath(path) {
+    path = path.trim();
+    if (!path || path === "*") return "*";
+    if (!path.startsWith("/")) path = "/" + path;
+    if (!path.endsWith("/")) path += "/";
+    return path;
+}
+exports.allowOrigins = function (origins, paths="*", assets="*") {
+    if (!Array.isArray(origins)) origins = [origins];
+    if (!Array.isArray(paths)) paths = [paths];
+    if (!Array.isArray(assets)) assets = [assets];
+
+    paths = paths.map(normalizeCorsPath);
+    let assetSet = new Set(assets);
+
+    for (let origin of origins) {
+        origin = origin.trim();
+        if (!corsPolicies.has(origin)) corsPolicies.set(origin, new Map());
+
+        let pathMap = corsPolicies.get(origin);
+        for (let path of paths) pathMap.set(path, {assets: assetSet});
+    }
+    developmentLog(corsPolicies);
+};
+function isAssetAllowed(policy, asset) {
+    if (policy.assets.has("*")) return true;
+    return policy.assets.has(asset);
+}
+function corsPolicyMatch(origin, path, asset) {
+    let pathMap = corsPolicies.get(origin);
+    if (!pathMap) pathMap = corsPolicies.get("*");
+    if (!pathMap) return;
+
+    let policy = findPathPolicy(pathMap, path);
+    if (!policy) return;
+
+    if (!isAssetAllowed(policy, asset)) return;
+
+    return policy;
+}
+function findPathPolicy(pathMap, requestPath) {
+    if (pathMap.has(requestPath)) return pathMap.get(requestPath);
+
+    let path = requestPath;
+
+    while (path.length > 1) {
+        let pos = path.lastIndexOf("/", path.length - 2);
+        if (pos < 0) break;
+
+        path = path.substring(0, pos + 1);
+        if (pathMap.has(path)) return pathMap.get(path);
+    }
+
+    return pathMap.get("*");
+}
+function methodNotSupportedMessage(req) {
+    return (
+        req.method +
+        " request method is not yet supported on the server: " +
+        version
+    );
+}
+
+function methodNotSupported(req, res) {
+    let message = methodNotSupportedMessage(req);
+
+    res.statusCode = 501;
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    if (mode === "development") developmentLog(message);
+    res.end(message);
+}
+
+function completeServletResolution(req,res,fileInfo,sendBody,servletCacheKey,accountInfo) {
+    if (accountInfo.code == 200) {
+      if (mode === "production") {
+        let servletIdentity=servletPhysicalIdentity(fileInfo.fullPath);
+        servletResolutionCache.set(servletIdentity,{
+          basePath:fileInfo.basePath,
+          path:fileInfo.path,
+          fullPath:fileInfo.fullPath,
+          dirPath:fileInfo.dirPath,
+          suffix:fileInfo.suffix,
+          contentType:fileInfo.contentType,
+          account:accountInfo.account
+        });
+        servletResolutionAliases.set(
+          servletRequestIdentity(fileInfo.basePath,servletCacheKey),
+          servletIdentity
+        );
+      }
+      if (res.destroyed || res.writableEnded) return;
+      return handlePreparedServlet(req,res,fileInfo,accountInfo.account,sendBody);
+    }
+    if (res.destroyed || res.writableEnded) return;
+    reportError(res,accountInfo.account,accountInfo.code,accountInfo.reason,sendBody);
+}
+
+function handleResolvedResource(req, res, fileInfo, sendBody = true, servletCacheKey) {
+ // display(fileInfo);
+   // If request is a directory, it must have a trailing slash (otherwise resources such as css and js won't be loaded).
+   if (fileInfo.redirect) {
+     var queryStart = fileInfo.path.indexOf("?");
+     var redirectPath = queryStart === -1 ? fileInfo.path : fileInfo.path.substring(0,queryStart);
+	   var newUrl = path.posix.join(redirectPath.replace(/\\/g,"/"), "/");
+     if (queryStart !== -1) newUrl += fileInfo.path.substring(queryStart);
+     res.statusCode = 301;
+     res.setHeader('Content-Type', 'text/plain');
+     res.setHeader('Location', newUrl);
+     if (sendBody) {
+       res.end('Redirecting to ' + newUrl);
+     } else {
+       res.end();
+     }
+   } else if (fileInfo.contentType === undefined) {
+     res.statusCode = 415;
+     res.setHeader('Content-Type', 'text/plain');
+     if (sendBody) {
+       res.end('Media type is not supported. Use server.addMimeType() in your application.'); // currently, defaults to text/plain
+     } else {
+       res.end();
+     }
+   // Files are served using the serveFile object in this application.
+   } else if (fileInfo.notAcceptable) {
+     reportError(res,fileInfo.fullPath,406,"No acceptable representation is available.",sendBody);
+   } else if (fileInfo.openError) {
+     let statusCode=fileInfo.openError.code === "ENOENT" ? 404 : 500;
+     let reason=statusCode === 404
+       ? "File not found: " + safeSourceIdentity(fileInfo.fullPath)
+       : "Error attempting to open " + safeSourceIdentity(fileInfo.fullPath) + ": " + rtErrorMsg(fileInfo.openError);
+     reportError(res,fileInfo.fullPath,statusCode,reason,sendBody);
+   } else if (fileInfo.serveFile) {
+     try {
+       let modified=staticModificationTime(res,fileInfo.stats);
+       if (evaluatePreconditions(req,res,true,fileInfo.etag,modified)) {
+         closeFileInfoDescriptor(fileInfo);
+         return;
+       }
+       setLastModified(res,modified);
+       new ServeFile(req,res,fileInfo,sendBody).init();
+     } catch (err) {
+       closeFileInfoDescriptor(fileInfo);
+       if (!res.headersSent) {
+         res.removeHeader('Content-Length');
+         res.removeHeader('Last-Modified');
+       }
+       reportError(res,fileInfo.fullPath,500,"Error attempting to serve " + safeSourceIdentity(fileInfo.fullPath),sendBody);
+     }
+   } else if (fileInfo.audioVisual) {
+     stream(req,res,fileInfo,sendBody);
+   // If file does not exist, return 404 File not found error.
+   } else if (fileInfo.noSuchFile) {
+	   reportError(res,fileInfo.fullPath,404,"File not found: " + fileInfo.fullPath,sendBody);
+   // Otherwise, a JavaScript file should be loaded.
+   } else {
+	   // Checks and adds JavaScript file.
+     if (servletModuleType(fileInfo.fullPath) == "module") {
+       getModuleAccount(fileInfo).then(function (accountInfo) {
+         completeServletResolution(req,res,fileInfo,sendBody,servletCacheKey,accountInfo);
+       });
+       return;
+     }
+     let accountInfo = getAccount(res,fileInfo);
+     return completeServletResolution(req,res,fileInfo,sendBody,servletCacheKey,accountInfo);
+   }
+}
+
+function servletResourcePath(resourceTarget) {
+    let queryStart=resourceTarget.indexOf("?");
+    return queryStart === -1
+      ? resourceTarget
+      : resourceTarget.substring(0,queryStart);
+}
+
+function servletPhysicalIdentity(fullPath) {
+    let identity=path.resolve(fullPath);
+    return process.platform === "win32" ? identity.toLowerCase() : identity;
+}
+
+function servletRequestIdentity(basePath,resourceTarget) {
+    let identity=containedRequestPath(basePath,servletResourcePath(resourceTarget));
+    if (!identity) return false;
+    return servletPhysicalIdentity(identity);
+}
+
+function cachedServletFileInfo(cached,req,resourceTarget) {
+    let queryStart=resourceTarget.indexOf("?");
+    return new FileInfo(
+      cached.basePath,
+      cached.path,
+      cached.fullPath,
+      cached.dirPath,
+      cached.suffix,
+      req.headers,
+      cached.contentType,
+      queryStart === -1 ? "" : resourceTarget.substring(queryStart+1),
+      false,
+      false,
+      false,
+      false,
+      "",
+      false
+    );
+}
+function handleUnexpectedRequestError(res,error,eventMessage,responseFailureMessage) {
+    serverError(eventMessage,error);
+    if (res.destroyed || res.writableEnded) return;
+    if (res.headersSent) {
+      try {
+        res.destroy();
+      } catch (destroyError) {
+        serverError("Failed to destroy incomplete response.",destroyError);
+      }
+      return;
+    }
+    try {
+      res.statusCode=500;
+      res.setHeader('Content-Type','text/plain;charset=utf-8');
+      res.end("Internal Server Error");
+    } catch (responseError) {
+      serverError(responseFailureMessage,responseError);
+      if (!res.destroyed) {
+        try {
+          res.destroy();
+        } catch (destroyError) {
+          serverError("Failed to destroy incomplete response.",destroyError);
+        }
+      }
+    }
+}
+function handlePreparedServlet(req,res,fileInfo,account,sendBody) {
+    if (evaluatePreconditions(req,res,true)) return;
+    try {
+      new startObject(req,res,fileInfo,account,sendBody).init();
+    } catch (err) {
+      handleUnexpectedRequestError(
+        res,
+        err,
+        "Unexpected error starting servlet.",
+        "Failed to send servlet startup error response."
+      );
+    }
+}
+
+function registeredHandlerFileInfo(req,basePath,servletPath) {
+    let fullPath=containedRequestPath(basePath,servletPath);
+    if (!fullPath || !servletModuleType(fullPath)) throw new Error("Invalid registered handler path: " + servletPath);
+    let stats=fs.statSync(fullPath);
+    if (!stats.isFile()) throw new Error("Registered handler is not a file: " + servletPath);
+    if (!containedPhysicalPath(fullPath)) throw new Error("Registered handler is outside the application path: " + servletPath);
+    let reload=moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs;
+    return new FileInfo(basePath,servletPath,fullPath,path.dirname(fullPath),"servlet",req.headers,
+      mimeList.servlet,"",false,false,false,reload,"",false);
+}
+function registeredHandlerFailure(req,res,servletPath,detail,error) {
+    serverError("Registered " + req.method + " handler " + servletPath + " failed: " + detail,error);
+    if (res.destroyed || res.writableEnded) return;
+    if (res.headersSent) return res.destroy();
+    reportError(res,null,500,"Registered method handler is unavailable.");
+}
+function invokeRegisteredServlet(req,res,fileInfo,account) {
+    res.setHeader('server',version);
+    res.setHeader('Content-Type','text/plain');
+    invokeServlet(req,res,fileInfo,account,{},true);
+}
+function completeRegisteredHandlerResolution(req,res,fileInfo,accountInfo) {
+    if (accountInfo.code != 200) return registeredHandlerFailure(req,res,fileInfo.path,accountInfo.reason);
+    if (mode === "production") {
+      servletResolutionCache.set(servletPhysicalIdentity(fileInfo.fullPath),{
+        basePath:fileInfo.basePath,path:fileInfo.path,fullPath:fileInfo.fullPath,
+        dirPath:fileInfo.dirPath,suffix:fileInfo.suffix,contentType:fileInfo.contentType,
+        account:accountInfo.account
+      });
+    }
+    if (!res.destroyed && !res.writableEnded) invokeRegisteredServlet(req,res,fileInfo,accountInfo.account);
+}
+function handleRegisteredMethod(req,res,basePath,resourceTarget) {
+    if (!checkCorsTarget(req,res,resourceTarget)) return;
+    let servletPath=registeredMethods.get(req.method);
+    let fileInfo;
+    try {
+      fileInfo=registeredHandlerFileInfo(req,basePath,servletPath);
+    } catch (err) {
+      return registeredHandlerFailure(req,res,servletPath,rtErrorMsg(err),err);
+    }
+    if (mode === "production") {
+      let cached=servletResolutionCache.get(servletPhysicalIdentity(fileInfo.fullPath));
+      if (cached) return invokeRegisteredServlet(req,res,fileInfo,cached.account);
+    }
+    if (servletModuleType(fileInfo.fullPath) == "module") {
+      getModuleAccount(fileInfo).then(function (accountInfo) {
+        completeRegisteredHandlerResolution(req,res,fileInfo,accountInfo);
+      });
+      return;
+    }
+    completeRegisteredHandlerResolution(req,res,fileInfo,getAccount(res,fileInfo));
+}
+function cachedServlet(basePath,resourceTarget) {
+    if (mode !== "production") return;
+    let servletIdentity=servletResolutionAliases.get(
+      servletRequestIdentity(basePath,resourceTarget)
+    );
+    if (!servletIdentity) return;
+    return servletResolutionCache.get(servletIdentity);
+}
+
+function mappedResourceTarget(resourceTarget) {
+    if (typeof resourceTarget !== "string") return;
+    let queryStart=resourceTarget.indexOf("?");
+    let publicPath=queryStart === -1 ? resourceTarget : resourceTarget.substring(0,queryStart);
+    let targetPath=routeMap === undefined ? undefined : routeMap.get(publicPath);
+    if (targetPath === undefined && pathMap !== undefined) {
+      let matchingSource;
+      for (let [sourcePath,mappedPath] of pathMap) {
+        if (publicPath.startsWith(sourcePath) &&
+            (matchingSource === undefined || sourcePath.length > matchingSource.length)) {
+          matchingSource=sourcePath;
+          targetPath=mappedPath + publicPath.substring(sourcePath.length);
+        }
+      }
+    }
+    if (targetPath === undefined) return;
+    return queryStart === -1 ? targetPath : targetPath + resourceTarget.substring(queryStart);
+}
+function protectedCompressionCacheTarget(basePath,resourceTarget) {
+    if (typeof resourceTarget !== "string") return false;
+    let queryStart=resourceTarget.indexOf("?");
+    let resourcePath=queryStart === -1 ? resourceTarget : resourceTarget.substring(0,queryStart);
+    let resolvedPath=containedRequestPath(basePath,resourcePath);
+    if (!resolvedPath) return false;
+    let cachePath=path.join(path.resolve(basePath),".compression-cache");
+    let relativePath=path.relative(cachePath,resolvedPath);
+    return relativePath === "" || (
+      relativePath !== ".." &&
+      !relativePath.startsWith(".." + path.sep) &&
+      !path.isAbsolute(relativePath)
+    );
+}
+function rejectProtectedCompressionCache(req,res,basePath,resourceTarget,sendBody = true) {
+    if (!protectedCompressionCacheTarget(basePath,resourceTarget)) return false;
+    reportError(res,resourceTarget,403,"Access to this resource is forbidden.",sendBody);
+    return true;
+}
+function checkResourceCors(req,res,fileInfo,publicTarget) {
+    let allowed;
+    try {
+      allowed=publicTarget === undefined
+        ? checkCorsPolicy(req,res,fileInfo)
+        : checkCorsTarget(req,res,publicTarget);
+    } catch (err) {
+      closeFileInfoDescriptor(fileInfo);
+      throw err;
+    }
+    if (!allowed) closeFileInfoDescriptor(fileInfo);
+    return allowed;
+}
+function handleGet(req, res, basePath, resourceTarget, publicTarget) {
+    let cached=cachedServlet(basePath,resourceTarget);
+    if (cached) {
+        let fileInfo=cachedServletFileInfo(cached,req,resourceTarget);
+        if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
+        handlePreparedServlet(req,res,fileInfo,cached.account,true);
+        return;
+    }
+    let fileInfo=setFileInfo(req,res,basePath,resourceTarget);
+    if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
+    handleResolvedResource(req,res,fileInfo,true,resourceTarget);
+}
+
+function handlePost (req, res, basePath, resourceTarget, publicTarget) {
+    let cached=cachedServlet(basePath,resourceTarget);
+    if (cached) {
+	  let fileInfo=cachedServletFileInfo(cached,req,resourceTarget);
+      if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
+      handlePreparedServlet(req,res,fileInfo,cached.account,true);
+      return;
+    }
+    let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
+	if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
+    handleResolvedResource(req, res, fileInfo, true, resourceTarget);
+}
+
+function handleHead (req, res, basePath, resourceTarget, publicTarget) {
+    let cached=cachedServlet(basePath,resourceTarget);
+    if (cached) {
+	  let fileInfo=cachedServletFileInfo(cached,req,resourceTarget);
+      if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
+      handlePreparedServlet(req,res,fileInfo,cached.account,false);
+      return;
+    }
+    let fileInfo = setFileInfo(req, res, basePath, resourceTarget);
+	if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
+    handleResolvedResource(req, res, fileInfo, false, resourceTarget);
+}
+function advertisedMethods() {
+    return advertisedBuiltInMethods.concat(Array.from(registeredMethods.keys())).join(", ");
+}
+function handleOptions(req,res,basePath,resourceTarget,publicTarget) {
+    let allow=advertisedMethods();
+    if (req.url === "*") {
+        if (mode === "development") developmentLog("OPTIONS * REQUEST");
+        res.statusCode=204;
+        res.setHeader("Allow",allow);
+        res.setHeader("server",version);
+        res.end();
+        return;
+    }
+
+    let fileInfo=setFileInfo(req,res,basePath,resourceTarget);
+    if (!checkResourceCors(req,res,fileInfo,publicTarget)) return;
+    closeFileInfoDescriptor(fileInfo);
+
+    if (mode === "development") developmentLog("OPTIONS REQUEST: " + req);
+    res.statusCode=204;
+    if (req.headers.origin && req.headers["access-control-request-method"]) {
+        res.setHeader("Access-Control-Allow-Methods",allow);
+        res.setHeader("Access-Control-Allow-Headers","Content-Type");
+    }
+    res.setHeader("Allow",allow);
+    res.setHeader("server",version);
+    res.end();
+}
+
+function dispatchMethod(req, res, basePath, resourceTarget) {
+    let mappedTarget;
+    switch (req.method) {
+        case "GET":
+            mappedTarget=mappedResourceTarget(resourceTarget);
+            if (rejectProtectedCompressionCache(req,res,basePath,
+                mappedTarget === undefined ? resourceTarget : mappedTarget)) return;
+            handleGet(req,res,basePath,mappedTarget === undefined ? resourceTarget : mappedTarget,
+              mappedTarget === undefined ? undefined : resourceTarget);
+            break;
+
+        case "POST":
+            mappedTarget=mappedResourceTarget(resourceTarget);
+            if (rejectProtectedCompressionCache(req,res,basePath,
+                mappedTarget === undefined ? resourceTarget : mappedTarget)) return;
+            handlePost(req,res,basePath,mappedTarget === undefined ? resourceTarget : mappedTarget,
+              mappedTarget === undefined ? undefined : resourceTarget);
+            break;
+
+        case "HEAD":
+            mappedTarget=mappedResourceTarget(resourceTarget);
+            if (rejectProtectedCompressionCache(req,res,basePath,
+                mappedTarget === undefined ? resourceTarget : mappedTarget,false)) return;
+            handleHead(req,res,basePath,mappedTarget === undefined ? resourceTarget : mappedTarget,
+              mappedTarget === undefined ? undefined : resourceTarget);
+            break;
+
+        case "OPTIONS":
+            mappedTarget=mappedResourceTarget(resourceTarget);
+            if (rejectProtectedCompressionCache(req,res,basePath,
+                mappedTarget === undefined ? resourceTarget : mappedTarget,false)) return;
+            handleOptions(req,res,basePath,mappedTarget === undefined ? resourceTarget : mappedTarget,
+              mappedTarget === undefined ? undefined : resourceTarget);
+            break;
+
+        default:
+            if (registeredMethods.has(req.method)) return handleRegisteredMethod(req,res,basePath,resourceTarget);
+            return methodNotSupported(req, res);
+    }
+}
+
+function validAuthorityTarget(target) {
+  if (typeof target !== "string") return false;
+
+  let host;
+  let port;
+  if (target.charAt(0) === "[") {
+    let hostEnd = target.indexOf("]");
+    if (hostEnd === -1 || target.charAt(hostEnd + 1) !== ":") return false;
+    host = target.substring(0,hostEnd + 1);
+    port = target.substring(hostEnd + 2);
   } else {
-    console.log("No domains in access list.");
-    return;
+    let portStart = target.lastIndexOf(":");
+    if (portStart <= 0 || target.indexOf(":") !== portStart) return false;
+    host = target.substring(0,portStart);
+    port = target.substring(portStart + 1);
   }
+
+  return (
+    validHostValue(host) &&
+    /^\d+$/.test(port) &&
+    Number(port) <= 65535
+  );
 }
+
+function rawPathContainsBackslash(target) {
+  let queryStart = target.indexOf("?");
+  let pathname = queryStart === -1
+    ? target
+    : target.substring(0,queryStart);
+  return pathname.indexOf("\\") !== -1;
+}
+
+function absoluteAuthorityHost(authority) {
+  if (authority.indexOf("@") !== -1) return false;
+  let hostValue = authority;
+
+  if (!validHostValue(hostValue)) return false;
+  if (hostValue.charAt(0) === "[") return hostValue;
+
+  let portStart = hostValue.lastIndexOf(":");
+  let host = portStart === -1
+    ? hostValue
+    : hostValue.substring(0,portStart);
+  return host.length > 0 ? hostValue : false;
+}
+
+function requestTarget(req) {
+  let rawTarget = req.url;
+
+  if (rawTarget.charAt(0) === "/") {
+    if (req.method === "CONNECT") return false;
+    if (rawPathContainsBackslash(rawTarget)) return false;
+    return {form:"origin",resourceTarget:rawTarget};
+  }
+
+  if (rawTarget === "*") {
+    if (req.method !== "OPTIONS") return false;
+    return {form:"asterisk"};
+  }
+
+  if (req.method === "CONNECT") {
+    if (!validAuthorityTarget(rawTarget)) return false;
+    return {form:"authority",authority:rawTarget};
+  }
+
+  if (rawPathContainsBackslash(rawTarget)) return false;
+  let scheme = rawTarget.match(/^https?:\/\//i);
+  if (!scheme || rawTarget.indexOf("#") !== -1) return false;
+
+  let authorityStart = scheme[0].length;
+  let pathStart = rawTarget.indexOf("/",authorityStart);
+  let queryStart = rawTarget.indexOf("?",authorityStart);
+  let resourceStart;
+  if (pathStart === -1) {
+    resourceStart = queryStart;
+  } else if (queryStart === -1) {
+    resourceStart = pathStart;
+  } else {
+    resourceStart = Math.min(pathStart,queryStart);
+  }
+  let authorityEnd = resourceStart === -1
+    ? rawTarget.length
+    : resourceStart;
+  let authority = absoluteAuthorityHost(
+    rawTarget.substring(authorityStart,authorityEnd)
+  );
+  if (!authority) return false;
+
+  let resourceTarget = resourceStart === -1
+    ? "/"
+    : rawTarget.substring(resourceStart);
+  if (resourceTarget.charAt(0) === "?") resourceTarget = "/" + resourceTarget;
+  return {
+    form:"absolute",
+    authority:authority,
+    resourceTarget:resourceTarget
+  };
+}
+
+function validHostValue(hostValue) {
+  if (typeof hostValue !== "string") return false;
+
+  let bracketedHost = hostValue.match(/^\[([^\]]+)\](?::([0-9]*))?$/);
+  if (bracketedHost) {
+    let address = bracketedHost[1];
+    return (
+      require("net").isIP(address) === 6 ||
+      /^v[0-9A-F]+\.[A-Za-z0-9._~!$&'()*+,;=:-]+$/i.test(address)
+    );
+  }
+
+  return /^(?:[A-Za-z0-9._~!$&'()*+,;=-]|%[0-9A-F]{2})*(?::[0-9]*)?$/i
+    .test(hostValue);
+}
+
+function normalizedHttp2Authority(authority,scheme) {
+  if (
+    typeof authority !== "string" ||
+    authority.length === 0 ||
+    !validHostValue(authority)
+  ) return false;
+
+  let host = authority;
+  let port;
+  if (authority.charAt(0) === "[") {
+    let hostEnd = authority.indexOf("]") + 1;
+    host = authority.substring(0,hostEnd);
+    if (authority.length > hostEnd) port = authority.substring(hostEnd + 1);
+  } else {
+    let portStart = authority.lastIndexOf(":");
+    if (portStart !== -1) {
+      host = authority.substring(0,portStart);
+      port = authority.substring(portStart + 1);
+    }
+  }
+  if (host.length === 0) return false;
+
+  if (
+    host.charAt(0) === "[" &&
+    require("net").isIP(host.substring(1,host.length - 1)) === 6
+  ) {
+    host = new URL("http://" + host).hostname;
+  } else {
+    host = host.replace(/%([0-9A-F]{2})/gi,function (encoding,hex) {
+      let character = String.fromCharCode(parseInt(hex,16));
+      return /^[A-Za-z0-9._~-]$/.test(character)
+        ? character
+        : "%" + hex.toUpperCase();
+    }).toLowerCase();
+  }
+
+  if (port !== undefined) {
+    port = port.replace(/^0+(?=\d)/,"");
+    let normalizedScheme = String(scheme).toLowerCase();
+    let defaultPort = normalizedScheme === "http"
+      ? "80"
+      : normalizedScheme === "https" ? "443" : undefined;
+    if (port === "" || defaultPort !== undefined && port === defaultPort) {
+      port = undefined;
+    }
+  }
+  return host + (port === undefined ? "" : ":" + port);
+}
+
+function validRequestAuthority(req) {
+  if (req.httpVersion === "2.0") {
+    let authority = req.headers[":authority"];
+    let host = req.headers.host;
+    if (authority === undefined && host === undefined) return false;
+
+    let scheme = req.headers[":scheme"];
+    let normalizedAuthority = authority === undefined
+      ? undefined
+      : normalizedHttp2Authority(authority,scheme);
+    let normalizedHost = host === undefined
+      ? undefined
+      : normalizedHttp2Authority(host,scheme);
+    if (
+      normalizedAuthority === false ||
+      normalizedHost === false
+    ) return false;
+    return (
+      normalizedAuthority === undefined ||
+      normalizedHost === undefined ||
+      normalizedAuthority === normalizedHost
+    );
+  }
+
+  if (req.httpVersion !== "1.1") return true;
+
+  let hostCount = 0;
+  let hostValue;
+  for (let i = 0; i < req.rawHeaders.length; i += 2) {
+    if (req.rawHeaders[i].toLowerCase() === "host") {
+      hostCount++;
+      if (hostCount > 1) return false;
+      hostValue = req.rawHeaders[i+1];
+    }
+  }
+
+  return hostCount === 1 && validHostValue(hostValue);
+}
+
+function connectResponseText(statusCode,statusMessage,contentType,body) {
+  return (
+    "HTTP/1.1 " + statusCode + " " + statusMessage + "\r\n" +
+    "Content-Type: " + contentType + "\r\n" +
+    "Content-Length: " + Buffer.byteLength(body,"utf8") + "\r\n" +
+    "Connection: close\r\n" +
+    "Date: " + new Date().toUTCString() + "\r\n" +
+    "\r\n" +
+    body
+  );
+}
+
+function handleConnectRequests(server) {
+  server.on('connect',function(req,socket,head) {
+    let recordAccess = createAccessRecorder(req);
+    let responseStatus = 500;
+    let responseStarted = false;
+    let responseCompleted = false;
+
+    function recordAborted() {
+      if (recordAccess) recordAccess(responseStatus,"aborted");
+    }
+
+    socket.once("error",recordAborted);
+    socket.once("close",function () {
+      if (!responseCompleted) recordAborted();
+    });
+
+    function endResponse(statusCode,statusMessage,contentType,body) {
+      responseStatus = statusCode;
+      if (!socket.writable) {
+        recordAborted();
+        socket.destroy();
+        return;
+      }
+
+      let responseText = connectResponseText(
+        statusCode,
+        statusMessage,
+        contentType,
+        body
+      );
+      responseStarted = true;
+      socket.end(responseText,function () {
+        responseCompleted = true;
+        if (recordAccess) recordAccess(statusCode,"complete");
+      });
+    }
+
+    try {
+      let targetInfo = requestTarget(req);
+      if (!targetInfo || !validRequestAuthority(req)) {
+        endResponse(
+          400,
+          "Bad Request",
+          "text/plain;charset=utf-8",
+          "Bad Request"
+        );
+        return;
+      }
+
+      let message = methodNotSupportedMessage(req);
+      if (mode === "development") developmentLog(message);
+      endResponse(
+        501,
+        "Not Implemented",
+        "text/plain; charset=utf-8",
+        message
+      );
+    } catch (err) {
+      serverError("Catchall error handling CONNECT.",err);
+      if (responseStarted || !socket.writable) {
+        recordAborted();
+        if (!socket.destroyed) socket.destroy();
+        return;
+      }
+
+      try {
+        endResponse(
+          500,
+          "Internal Server Error",
+          "text/plain;charset=utf-8",
+          "Internal Server Error"
+        );
+      } catch (responseError) {
+        serverError("Failed to send CONNECT catchall error response.",responseError);
+        recordAborted();
+        if (!socket.destroyed) socket.destroy();
+      }
+    }
+  });
+}
+
+function attachStartupLogging(server,protocol,port) {
+  server.once("listening",function () {
+    let serverName = protocol === "http"
+      ? "HTTP"
+      : protocol === "https"
+        ? "HTTPS"
+        : protocol === "http2.https"
+          ? "HTTP2 (secure)"
+          : "HTTP2 (insecure)";
+    let corsRules=[];
+    for (let [origin,pathMap] of corsPolicies) {
+      for (let [corsPath,policy] of pathMap) {
+        corsRules.push(origin + " " + corsPath + " [" + Array.from(policy.assets).join(", ") + "]");
+      }
+    }
+    let routes=routeMap
+      ? Array.from(routeMap,function ([publicPath,targetPath]) {
+          return publicPath + " -> " + targetPath;
+        })
+      : [];
+    let paths=pathMap
+      ? Array.from(pathMap,function ([publicPath,targetPath]) {
+          return publicPath + " -> " + targetPath;
+        })
+      : [];
+    let methods=Array.from(registeredMethods,function ([method,servletPath]) {
+      return method + " -> " + servletPath;
+    });
+    function startupDisplay(event,message) {
+      console.log(message);
+      serverEvent(event,message);
+    }
+    startupDisplay("START","\n" + version + " " + serverName + " is running on port " + port + ". (Node.js version " + process.version + ")");
+    startupDisplay("CONFIG","Path to server entry: " + serverEntryPath);
+    startupDisplay("CONFIG","Path to application base: " + basePath);
+    startupDisplay("CONFIG","Mode: " + mode);
+    startupDisplay("CONFIG","Node environment: " + process.env.NODE_ENV);
+    startupDisplay("CONFIG","Browser caching: " + (bCaching ? "on" : "off"));
+    startupDisplay("CONFIG","Static compression: " + (compress ? "on" : "off"));
+    startupDisplay("CONFIG","Buffered input limit: " + bufferedInputLimit + " bytes");
+    startupDisplay("CONFIG","Server logging: " + (logging.server ? "on" : "off"));
+    startupDisplay("CONFIG","Access logging: " + (logging.access ? "on" : "off"));
+    startupDisplay("CONFIG","Path to logs: " + logRoot);
+    startupDisplay("CONFIG","MIME type listing: " + (showMimes ? "on" : "off"));
+    startupDisplay("CONFIG","MIME types: " + Object.keys(mimeList).length + " configured");
+    startupDisplay("CONFIG","Audiovisual MIME types: " + Object.keys(avMimeList).length + " configured");
+    startupDisplay("CONFIG","Default character set: " + defaultCharSet);
+    startupDisplay("CONFIG","CORS policies: " + (corsRules.length ? corsRules.join("; ") : "none"));
+    startupDisplay("CONFIG","Route mappings: " + (routes.length ? routes.join("; ") : "none"));
+    startupDisplay("CONFIG","Path mappings: " + (paths.length ? paths.join("; ") : "none"));
+    startupDisplay("CONFIG","Registered methods: " + (methods.length ? methods.join(", ") : "none"));
+    console.log("");
+  });
+  server.on("error",function (err) {
+    if (server.listening) serverError(protocol + " listener error on port " + port + ": " + err.message,err);
+    else startupError(protocol + " listener error on port " + port + ": " + err.message,err);
+  });
+}
+
 var achieveApp = function (req, res) {
-  console.log(req.method);
+  attachAccessLogging(req,res);
+  if (mode === "development") developmentLog(req.method);
  try {
    // Get information about the requested file or application.
  //  let urlParsed = url.parse(req.headers.referer, true);
-   if (req.url.charAt(0) == '/') {
-     console.log("url: " + req.url + ", origin: " + req.connection.remoteAddress || req.headers['x-forwarded-for'] || request.socket.remoteAddress || req.connection.socket.remoteAddress);
-   } else {
-     console.log("url: " + req.url + ", origin: " + req.connection.remoteAddress || req.headers['x-forwarded-for'] || request.socket.remoteAddress || req.connection.socket.remoteAddress);
+   if (mode === "development") developmentLog("url: " + req.url + ", origin: " + req.socket.remoteAddress);
+   if (/#|%(?![0-9A-Fa-f]{2})/.test(req.url)) {
+     if (req.httpVersion === "2.0") {
+       // A nonzero reset emits an expected stream error; it is not a server failure.
+       req.stream.once("error",function () {});
+       req.stream.close(http2.constants.NGHTTP2_PROTOCOL_ERROR);
+     } else {
+       res.statusCode=400;
+       res.setHeader('Content-Type','text/plain;charset=utf-8');
+       res.end("Bad Request");
+     }
+     return;
+   }
+   let targetInfo = requestTarget(req);
+   if (!targetInfo || !validRequestAuthority(req)) {
      res.statusCode=400;
      res.setHeader('Content-Type','text/plain;charset=utf-8');
      res.end("Bad Request");
      return;
    }
-   
-/* local and remote differ when outside the lan
-   console.log("localAddress: " + req.socket.localAddress);
-   console.log("remoteAddress: " + req.socket.remoteAddress);
-   console.log("remoteAddress: " + req.connection.remoteAddress);
-*/
-   
-   
- //  res.setHeader('Access-Control-Allow-Headers', '*');
-  // res.setHeader('Access-Control-Allow-Origin', '*');
-  // res.ok = 1;
-   req.protocol = this.protocol;
-   let fileInfo = setFileInfo(req,res,basePath);
- // display(fileInfo);
-   // If request is a directory, it must have a trailing slash (otherwise resources such as css and js won't be loaded).
-   if (fileInfo.redirect) {
-     var qString = req.url.split("?");
-	   var newUrl = path.join(qString[0], "/");
-     if (qString.length == 2) newUrl = newUrl+"?"+qString[1];
-     res.statusCode = 301;
-     res.setHeader('Content-Type', 'text/plain');
-     res.setHeader('Location', newUrl);
-     res.end('Redirecting to ' + newUrl);
-   } else if (fileInfo.contentType === undefined) {
-     res.statusCode = 415;
-     res.setHeader('Content-Type', 'text/plain');
-     res.end('Media type is not supported. Use server.addMimeType() in your application.'); // currently, defaults to text/plain
-   // Files are served using the serveFile object in this application.
-   } else if (fileInfo.serveFile) {
-     try {
-	   if (fs.existsSync(fileInfo.fullPath)) {
-		 new ServeFile(req,res,fileInfo).init();
-	   } else {
-		 reportError(res,fileInfo.fullPath,404,"File not found: " + fileInfo.fullPath);
-	   }
-	 } catch (err) {
-		reportError(res,fileInfo.fullPath,500,"Error attempting to serve " + fileInfo.fullPath);
-	 }
-   } else if (fileInfo.audioVisual) {
-     // Bugs related to streaming video over http2.
-     if (false /*this.protocol == "http2.https" */) {
-       reportError(res,fileInfo.fullPath,500,"Video streaming not supported on HTTP2.");
-     } else {
-       stream(req,res,fileInfo);
-     }
-   // If file does not exist, return 404 File not found error.
-   } else if (fileInfo.noSuchFile) {
-	   reportError(res,fileInfo.fullPath,404,"File not found: " + fileInfo.fullPath);
-   // Otherwise, a JavaScript file should be loaded. 
-   } else {
-	   // Checks and adds JavaScript file.
-	   let accountInfo = getAccount(res,fileInfo);
-     if (accountInfo.code == 200) {
-	     try {
-		     // Executes the JavaScript.
-		     new startObject(req,res,fileInfo).init();
-	     } catch (err) {}
-	   } else {
-	     reportError(res,accountInfo.account,accountInfo.code,accountInfo.reason);
-	   }
-   }
- } catch (e) {
-   console.log("Catchall error, achieveApp: " + e.stack);
+   return dispatchMethod(req, res, basePath, targetInfo.resourceTarget);
+  } catch (e) {
+    handleUnexpectedRequestError(
+      res,
+      e,
+      "Catchall error in achieveApp.",
+      "Failed to send catchall error response."
+    );
+  }
  }
+function normalizedPort(port) {
+  if (typeof port === "string") {
+    let numericPort=port.trim();
+    if (!/^\d+$/.test(numericPort)) return false;
+    port=Number(numericPort);
+  }
+  if (typeof port !== "number" || !Number.isInteger(port)) return false;
+  return port;
+}
+function displayMimeTypes() {
+  if (!showMimes) return;
+  console.log("\nMIME Types:");
+  for (var type in mimeList) {
+      console.log(" " + type + ": " + mimeList[type]);
+  }
+  console.log("\nAudioVisual MIME Types:");
+  for (var atype in avMimeList) {
+      console.log(" " + atype + ": " + avMimeList[atype]);
+  }
 }
 exports.listen2 = function (ioptions) {
   http2 = require('http2');
@@ -191,7 +1470,7 @@ exports.listen2 = function (ioptions) {
   try {
   if (typeof ioptions === "object") {
     if (ioptions.key === undefined || ioptions.cert === undefined) {
-      console.log("FATAL ERROR: Security certification list is insufficient for SSL.");
+      startupError("FATAL ERROR: Security certification list is insufficient for SSL.");
       return;
     }
     ssl = true;
@@ -204,85 +1483,79 @@ exports.listen2 = function (ioptions) {
 
   if (sport === undefined) {
     sport=portDefault;
-  } else if (Number.isNaN(sport)) {
-    console.log("http2 port " + sport + " is not a number. Setting port to default: " + portDefault + ".");
+  } else if (normalizedPort(sport) === false) {
+    startupWarning("http2 port " + sport + " is not a number. Setting port to default: " + portDefault + ".");
     sport=portDefault;
-  } else if ((sport<1024 && sport != portDefault) || sport>49151) {
-    console.log("http2 port " + sport + " is outside acceptable range. (1024-49151) Setting port to default: " + portDefault + ".");
+  } else {
+    sport=normalizedPort(sport);
+  }
+  if ((sport<1024 && sport != portDefault) || sport>49151) {
+    startupWarning("http2 port " + sport + " is outside acceptable range. (1024-49151) Setting port to default: " + portDefault + ".");
     sport=portDefault;
   }
   } catch (err) {
-    console.log("Error setting port in listen2(). Setting port to default.")
+    startupWarning("Error setting port in listen2(). Setting port to default.")
     sport=portDefault;
   }
+  if (!applicationPathReady()) return;
   if (!bCachingCheck) exports.setCaching(bCaching);
+  if (!initializeLogging()) return;
 
   if (ssl) {
-    server = http2.createSecureServer(ioptions, achieveApp.bind({protocol:"http2.https"})).listen(sport);
+    server = http2.createSecureServer(ioptions, achieveApp);
   } else {
-    server = http2.createServer(achieveApp.bind({protocol:"http2.http"})).listen(sport);
+    server = http2.createServer(achieveApp);
   }
-
-  console.log("\n" + version + " HTTP2 " + (ssl ? "(secure)" : "(insecure)") + " is running on port " + sport + ". (Node.js version " + process.version + ")");
-  console.log("Path to application base: " + basePath);
-  console.log("Path to root application: " + rootPath);
-  console.log("Browser caching: " + (bCaching ? "on" : "off"));
-  console.log("Static compression: " + (compress ? "on" : "off"));
-  
-  console.log("\n");
+  attachStartupLogging(server,ssl ? "http2.https" : "http2.http",sport);
+  server.listen(sport);
+  displayMimeTypes();
   return server;
   
-}
+};
 exports.slisten = function (ioptions) {
   https = require('https');
   
   let server;
-  let tlsOptions;
   let sport;
 
   try {
   if (typeof ioptions !== "object") {
-    console.log("FATAL ERROR: slisten() requires an options object as argument.");
+    startupError("FATAL ERROR: slisten() requires an options object as argument.");
     return;
   }
   if (ioptions.key === undefined || ioptions.cert === undefined) {
-    console.log("FATAL ERROR: Security certification list is insufficient.");
+    startupError("FATAL ERROR: Security certification list is insufficient.");
     return;
   }
   sport = ioptions.httpsPort;
   if (sport === undefined) {
     sport=443;
-  } else if (Number.isNaN(sport)) {
-    console.log("https port " + sport + " is not a number. Setting port to default.");
+  } else if (normalizedPort(sport) === false) {
+    startupWarning("https port " + sport + " is not a number. Setting port to default.");
     sport=443;
-  } else if ((sport<1024 && sport!=443) || sport>49151) {
-    console.log("https port " + sport + " is outside acceptable range. (1024-49151) Setting port to default.");
+  } else {
+    sport=normalizedPort(sport);
+  }
+  if ((sport<1024 && sport!=443) || sport>49151) {
+    startupWarning("https port " + sport + " is outside acceptable range. (1024-49151) Setting port to default.");
     sport=443;
   }
   } catch (err) {
-    console.log("Error setting port in slisten(). Setting port to default.")
+    startupWarning("Error setting port in slisten(). Setting port to default.")
     sport=443;
   }
+  if (!applicationPathReady()) return;
   if (!bCachingCheck) exports.setCaching(bCaching);
+  if (!initializeLogging()) return;
   
-  server = https.createServer(ioptions, achieveApp.bind({protocol:"https"})).listen(sport);
-/*
-  server.on('connection', function (socket) {
-    console.log("*********** CONNECTION : " + JSON.stringify(socket));
-    connectionArray = socket;
-  });
-*/
-
-  console.log("\n" + version + " HTTPS is running on port " + sport + ". (Node.js version " + process.version + ")");
-  console.log("Path to application base: " + basePath);
-  console.log("Path to root application: " + rootPath);
-  console.log("Browser caching: " + (bCaching ? "on" : "off"));
-  console.log("Static compression: " + (compress ? "on" : "off"));
-  
-  console.log("\n");
+  server = https.createServer(ioptions, achieveApp);
+  handleConnectRequests(server);
+  attachStartupLogging(server,"https",sport);
+  server.listen(sport);
+  displayMimeTypes();
   return server;
   
-}
+};
 exports.listen = function (port) {
   http = require('http');
     
@@ -292,54 +1565,31 @@ exports.listen = function (port) {
   
   if (port === undefined) {
     port=80;
-  } else if (Number.isNaN(port)) {
-    console.log(port + " is not a number. Setting port to default.");
+  } else if (normalizedPort(port) === false) {
+    startupWarning(port + " is not a number. Setting port to default.");
     port=80;
-  } else if ((port<1024 && port != 80) || port>49151) {
-    console.log("Port " + port + " is outside acceptable range. (1024-49151) Setting port to default.");
+  } else {
+    port=normalizedPort(port);
+  }
+  if ((port<1024 && port != 80) || port>49151) {
+    startupWarning("Port " + port + " is outside acceptable range. (1024-49151) Setting port to default.");
     port=80;
   }
   } catch (err) {
-    console.log("Error setting port in listen(). Setting port to default.")
+    startupWarning("Error setting port in listen(). Setting port to default.")
     port=80;
   }
+  if (!applicationPathReady()) return;
   if (!bCachingCheck) exports.setCaching(bCaching);
+  if (!initializeLogging()) return;
   
-  server = http.createServer(achieveApp.bind({protocol:"http"})).listen(port);
-
-  console.log("\n" + version + " HTTP is running on port " + port + ". (Node.js version " + process.version + ")");
-  console.log("Path to application base: " + basePath);
-  console.log("Path to root application: " + rootPath);
-  console.log("Browser caching: " + (bCaching ? "on" : "off"));
-  console.log("Static compression: " + (compress ? "on" : "off"));
-  
-  if (showMimes) {
-    console.log("\nMIME Types:");
-    for (var type in mimeList) {
-        console.log(" " + type + ": " + mimeList[type]);
-    }
-    console.log("\nAudioVisual MIME Types:");
-    for (var atype in avMimeList) {
-        console.log(" " + atype + ": " + avMimeList[atype]);
-    }
-  }
-  console.log("\n");
+  server = http.createServer(achieveApp);
+  handleConnectRequests(server);
+  attachStartupLogging(server,"http",port);
+  server.listen(port);
+  displayMimeTypes();
   return server;
-}
-// extension offers a way to add functionality to the server, which will be available via the context object.
-// NOT YET IMPLEMENTED
-exports.extension = {};
-exports.addExtension = function (name,obj) {
-  if (obj === undefined || name.length < 1) {
-    console.log("addExtension() error: Two arguments required. First is a string representing the name of the extension. The second is the value of the extension.");
-  }
-  var nameType=true;
-  if (typeof name == "string") {
-    this.extension[name]=obj;
-  } else {
-    console.log("addExtension() error: First argument must be a valid string for name of the extension.");
-  }
-}
+};
 // Supported MIME types, based on file extensions
 // You may add new MIME types.
 exports.addMimeType = function (ext, mime) {
@@ -351,14 +1601,18 @@ exports.addMimeType = function (ext, mime) {
   if (extType && ext.indexOf('.') == 0) ext = ext.substring(1);
   if (extType && ext.indexOf('/') > -1) extForm=false;
   if (mimeType && mime.indexOf('/') < 1) mimeForm=false;
+  if (extType && ext.toLowerCase() == "jss") {
+    serverError(".jss is reserved for protected Achieve server-side source and cannot be registered as a public MIME type.");
+    return;
+  }
   if (extType && mimeType && extForm && mimeForm) {
     mimeList[ext]=mime;
   } else {
-    if (!extType || !extForm) console.log("addMimeType(extension,mime) error: First argument must be a file suffix string such as 'html'");
-    if (!mimeType || !mimeForm) console.log("addMimeType(extension,mime) error: Second argument must be a MIME type string such as 'text/html'");
+    if (!extType || !extForm) serverError("addMimeType(extension,mime) error: First argument must be a file suffix string such as 'html'");
+    if (!mimeType || !mimeForm) serverError("addMimeType(extension,mime) error: Second argument must be a MIME type string such as 'text/html'");
   }
-  } catch (err) {console.log(err);}
-}
+  } catch (err) {serverError("addMimeType() failed.",err);}
+};
 exports.addAVMimeType = function (ext, mime) {
   try {
   ext=ext.trim(); mime=mime.trim();
@@ -371,11 +1625,11 @@ exports.addAVMimeType = function (ext, mime) {
   if (extType && mimeType && extForm && mimeForm) {
     avMimeList[ext]=mime;
   } else {
-    if (!extType || !extForm) console.log("addAVMimeType(extension,mime) error: First argument must be a file suffix string such as 'html'");
-    if (!mimeType || !mimeForm) console.log("addAVMimeType(extension,mime) error: Second argument must be a MIME type string such as 'text/html'");
+    if (!extType || !extForm) serverError("addAVMimeType(extension,mime) error: First argument must be a file suffix string such as 'html'");
+    if (!mimeType || !mimeForm) serverError("addAVMimeType(extension,mime) error: Second argument must be a MIME type string such as 'text/html'");
   }
-  } catch (err) {console.log(err);}
-}
+  } catch (err) {serverError("addAVMimeType() failed.",err);}
+};
 // "servlet" is not a file extension. It is used by this service to indicate running (not serving) js code.
 // "servlet" is required by this service. Default response MIME type for servlet is plain text, UTF-8
 let mimeList = {
@@ -383,6 +1637,8 @@ let mimeList = {
   htm: "text/html",
   css: "text/css",
   js: "application/javascript",
+  mjs: "application/javascript",
+  cjs: "application/javascript",
   xml: "application/xml",
   svg: "image/svg+xml",
   jpg: "image/jpeg",
@@ -404,19 +1660,19 @@ let avMimeList = {
   mp3: "audio/mpeg3",
   oga: "audio/ogg"
 };
-function reportError (res,account,statusCode,reason) {
+function reportError (res,account,statusCode,reason,sendBody = true) {
   if (statusCode === undefined) statusCode = 500;
-  try {
-    delete require.cache[require.resolve(account)];
-  } catch (err) {
-  } finally {
-	  console.log(statusCode + ": " + reason);
-    res.statusCode=statusCode;
-    res.setHeader('Content-Type','text/plain;charset=utf-8');
+  if (statusCode >= 500) serverError(statusCode + ": " + reason);
+  else if (mode === "development") developmentLog(statusCode + ": " + reason);
+  res.statusCode=statusCode;
+  res.setHeader('Content-Type','text/plain;charset=utf-8');
+  if (sendBody) {
     res.end(reason);
+  } else {
+    res.end();
   }
 }
-function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag,audioVisual,proxyOptions) {
+function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,redirect,noSuchFile,reload,etag,audioVisual,notAcceptable = false,fileDescriptor,stats,openError) {
   this.basePath = basePath;
   this.path = path;
   this.fullPath = fullPath;
@@ -431,20 +1687,188 @@ function FileInfo (basePath,path,fullPath,dirPath,suffix,headers,contentType,que
   this.reload = reload;
   this.etag = etag;
   this.audioVisual = audioVisual;
-  this.proxyOptions = proxyOptions;
+  this.notAcceptable = notAcceptable;
+  this.fileDescriptor = fileDescriptor;
+  this.stats = stats;
+  this.openError = openError;
 }
-function Context (req,res,parms,dirPath,load,proxyOptions=false,proxies=false,proxy) {
+function closeFileInfoDescriptor (fileInfo) {
+  if (fileInfo.fileDescriptor === undefined) return;
+  let fileDescriptor=fileInfo.fileDescriptor;
+  fileInfo.fileDescriptor=undefined;
+  try {
+    fs.closeSync(fileDescriptor);
+  } catch (err) {
+    serverError("Error closing " + safeSourceIdentity(fileInfo.fullPath) + ": " + rtErrorMsg(err),err);
+  }
+}
+function hasEntityTagPrecondition (req) {
+  return (
+    req.headers['if-match'] !== undefined ||
+    req.headers['if-none-match'] !== undefined
+  );
+}
+function representationETag (mtimeMs,size,coding) {
+  var rawVal = String(mtimeMs) + ":" + String(size) + ":" + etagString;
+  return '"' + Buffer.from(rawVal).toString("base64url") + '-' + coding + '"';
+}
+function entityTagList (fieldValue) {
+  let result=[];
+  let member="";
+  let quoted=false;
+  for (let character of fieldValue) {
+    if (character === '"') quoted=!quoted;
+    if (character === "," && !quoted) {
+      result.push(member.trim());
+      member="";
+    } else {
+      member+=character;
+    }
+  }
+  result.push(member.trim());
+  return result;
+}
+function entityTag (value) {
+  let tag=value;
+  let weak=false;
+  if (tag.indexOf("W/") === 0) {
+    weak=true;
+    tag=tag.substring(2);
+  }
+  if (
+    tag.length < 2 ||
+    tag.charAt(0) !== '"' ||
+    tag.charAt(tag.length-1) !== '"' ||
+    tag.substring(1,tag.length-1).indexOf('"') !== -1
+  ) return false;
+  return {weak:weak,tag:tag};
+}
+function entityTagFieldMatches (fieldValue,currentETag,weakComparison) {
+  if (currentETag === undefined || currentETag === "") return false;
+  let current=entityTag(currentETag);
+  if (!current) return false;
+  for (let member of entityTagList(fieldValue)) {
+    let candidate=entityTag(member);
+    if (!candidate) continue;
+    if (weakComparison) {
+      if (candidate.tag === current.tag) return true;
+    } else if (!candidate.weak && !current.weak && candidate.tag === current.tag) {
+      return true;
+    }
+  }
+  return false;
+}
+// Use one origination time for Date, the future-mtime clamp, and comparisons.
+// The opened representation's original stats remain untouched (notably for ETags).
+function staticModificationTime (res,stats) {
+  let now=Date.now();
+  res.setHeader('Date',new Date(now).toUTCString());
+  return Math.floor(Math.min(stats.mtimeMs,now)/1000);
+}
+function setLastModified (res,modified) {
+  if (bCaching && modified !== undefined) {
+    res.setHeader('Last-Modified',new Date(modified*1000).toUTCString());
+  }
+}
+// Accept the three HTTP-date forms, not Date.parse's non-HTTP extensions/lists.
+function parseHTTPDate (value) {
+  if (typeof value !== 'string') return undefined;
+  let match=/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d{2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4}) (\d{2}):(\d{2}):(\d{2}) GMT$/.exec(value);
+  let obsolete=false;
+  if (!match) {
+    match=/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), (\d{2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{2}) (\d{2}):(\d{2}):(\d{2}) GMT$/.exec(value);
+    obsolete=!!match;
+  }
+  if (!match) {
+    let asc=/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) ( \d|\d{2}) (\d{2}):(\d{2}):(\d{2}) (\d{4})$/.exec(value);
+    if (!asc) return undefined;
+    match=[asc[0],asc[1],asc[3],asc[2],asc[7],asc[4],asc[5],asc[6]];
+  }
+  let day=Number(match[2]),month=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(match[3]);
+  let year=Number(match[4]),hour=Number(match[5]),minute=Number(match[6]),second=Number(match[7]);
+  if (hour>23 || minute>59 || second>60 || day<1) return undefined;
+  let date=new Date(0);
+  if (obsolete) year+=Math.floor(new Date(Date.now()).getUTCFullYear()/100)*100;
+  date.setUTCFullYear(year,month,day);
+  date.setUTCHours(hour,minute,Math.min(second,59),0);
+  if (obsolete) {
+    let limit=new Date(Date.now());
+    limit.setUTCFullYear(limit.getUTCFullYear()+50);
+    if (date>limit) { year-=100; date.setUTCFullYear(year); }
+  }
+  if (date.getUTCFullYear()!==year || date.getUTCMonth()!==month || date.getUTCDate()!==day) return undefined;
+  return date.getTime()/1000+(second===60 ? 1 : 0);
+}
+function evaluatePreconditions (req,res,exists,currentETag,modified) {
+  let ifMatch=req.headers['if-match'];
+  if (ifMatch !== undefined) {
+    let ifMatchResult = ifMatch.trim() === "*"
+      ? exists
+      : entityTagFieldMatches(ifMatch,currentETag,false);
+    if (!ifMatchResult) {
+      res.statusCode=412;
+      res.end();
+      return true;
+    }
+  } else if (modified !== undefined) {
+    let unmodified=parseHTTPDate(req.headers['if-unmodified-since']);
+    if (unmodified !== undefined && modified>unmodified) {
+      res.statusCode=412;
+      res.end();
+      return true;
+    }
+  }
+
+  let ifNoneMatch=req.headers['if-none-match'];
+  if (ifNoneMatch !== undefined) {
+    let ifNoneMatchResult = ifNoneMatch.trim() === "*"
+      ? exists
+      : entityTagFieldMatches(ifNoneMatch,currentETag,true);
+    if (ifNoneMatchResult) {
+      if (req.method === "GET" || req.method === "HEAD") {
+        if (currentETag) res.setHeader("ETag",currentETag);
+        setLastModified(res,modified);
+        res.statusCode=304;
+      } else {
+        res.statusCode=412;
+      }
+      res.end();
+      return true;
+    }
+  } else if (modified !== undefined && (req.method === 'GET' || req.method === 'HEAD')) {
+    let since=parseHTTPDate(req.headers['if-modified-since']);
+    if (since !== undefined && modified<=since) {
+      if (currentETag) res.setHeader('ETag',currentETag);
+      setLastModified(res,modified);
+      res.statusCode=304;
+      res.end();
+      return true;
+    }
+  }
+  return false;
+}
+function Context (req,res,parms,dirPath,appPath,load) {
+  let autoEnd=true;
   this.request = req;
   this.response = res;
   this.parms = parms; // deprecate
   this.params = parms;
   this.dirPath = dirPath;
+  this.appPath = appPath;
   this.load = load;
-  this.proxy = proxy;
-  this.proxyOptions = proxyOptions;
-  this.proxies = proxies;
   this.rtErrorMsg = rtErrorMsg;
-  this.allowAsync = false;
+  Object.defineProperties(this,{
+    autoEnd:{
+      enumerable:true,
+      get:function () { return autoEnd; },
+      set:function (value) { autoEnd=Boolean(value); }
+    },
+    allowAsync:{
+      enumerable:true,
+      get:function () { return !autoEnd; },
+      set:function (value) { autoEnd=!Boolean(value); }
+    }
+  });
 }
 function PathInfo (filePath,reload,action,stats) {
   this.filePath = filePath;
@@ -452,49 +1876,112 @@ function PathInfo (filePath,reload,action,stats) {
   this.action = action;
   this.stats = stats;
 }
-function checkPath (basePath,relativePath) {
+function containedRequestPath (boundaryPath,requestPath) {
+  let boundary = path.resolve(boundaryPath);
+  let candidate = path.join(boundary,requestPath);
+  let relativeCandidate = path.relative(boundary,candidate);
+
+  if (
+    relativeCandidate === ".." ||
+    relativeCandidate.startsWith(".." + path.sep) ||
+    path.isAbsolute(relativeCandidate)
+  ) {
+    return false;
+  }
+
+  return candidate;
+}
+function containedPhysicalPath (candidatePath) {
+  let physicalCandidate;
+  try {
+    physicalCandidate=fs.realpathSync.native(candidatePath);
+  } catch (err) {
+    return false;
+  }
+  let relativeCandidate=path.relative(physicalBasePath,physicalCandidate);
+  if (
+    relativeCandidate === ".." ||
+    relativeCandidate.startsWith(".." + path.sep) ||
+    path.isAbsolute(relativeCandidate)
+  ) {
+    return false;
+  }
+  return physicalCandidate;
+}
+function servletModuleType (filePath) {
+  let lowerPath=filePath.toLowerCase();
+  if (lowerPath.endsWith(".jss.mjs")) return "module";
+  if (lowerPath.endsWith(".jss.cjs") || lowerPath.endsWith(".jss")) return "commonjs";
+  return false;
+}
+function protectedServletPath (filePath) {
+  return /\.jss(?:\.|$)/i.test(path.basename(filePath));
+}
+function checkPath (basePath,relativePath,directoryForm) {
   // Build full path.
   let action="";
-  if (relativePath.length == 0) relativePath="/";
-  let fullPath = path.join(basePath,relativePath);
-  let stats, checkPath;
+  let fullPath = containedRequestPath(basePath,relativePath);
+  let stats, checkPath, physicalPath;
   let reload=false;
-  if (rootDir && (fs.existsSync(rootPath+relativePath) || fs.existsSync(rootPath+relativePath+".js"))) {
-    fullPath = path.join(rootPath,relativePath);
-    relativePath = path.join(relRootPath,relativePath);
+
+  if (!fullPath) {
+    return new PathInfo(relativePath,false,"noSuchFile",stats);
   }
+
     try {
       // Does fullPath exist?
 	    stats = fs.statSync(fullPath); 
     } catch (err) {
-          
-    if (fs.existsSync(fullPath+".js")) {
-	    stats = fs.statSync(fullPath+".js");
+    if (protectedServletPath(fullPath)) {
+      return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
+    }
+    stats = fs.statSync(fullPath+".js",{
+      throwIfNoEntry:false
+    });
+    if (stats !== undefined) {
+      physicalPath=containedPhysicalPath(fullPath+".js");
+      if (!physicalPath || protectedServletPath(physicalPath)) {
+        return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
+      }
 	    if (moduleLoadTimes[fullPath+".js"] === undefined || moduleLoadTimes[fullPath+".js"] < stats.mtimeMs) reload = true;
-	    return new PathInfo(path.normalize(relativePath),reload,"servlet",stats);
-	  } 
+	    return new PathInfo(path.normalize(relativePath+".js"),reload,"servlet",stats);
+	  }
     return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
     }
   // If fullPath points to a file, return the relative path.
-  if (stats.isFile()) return new PathInfo(path.normalize(relativePath),true,"serveFile",stats);
+  if (stats.isFile()) {
+    physicalPath=containedPhysicalPath(fullPath);
+    if (!physicalPath) return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
+    if (servletModuleType(fullPath)) {
+      if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) reload = true;
+      return new PathInfo(path.normalize(relativePath),reload,"servlet",stats);
+    }
+    if (protectedServletPath(fullPath) || protectedServletPath(physicalPath)) {
+      return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
+    }
+    return new PathInfo(path.normalize(relativePath),true,"serveFile",stats);
+  }
   // If fullPath points to a directory:
   if (stats.isDirectory()) {
+	physicalPath=containedPhysicalPath(fullPath);
+    if (!physicalPath) return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
 	// directory requests without trailing '/' are redirected with '/' added
-    if (fullPath.charAt(fullPath.length-1) != path.sep) return new PathInfo(path.normalize(relativePath),false,"redirect",stats);
+    if (!directoryForm) return new PathInfo(path.normalize(relativePath),false,"redirect",stats);
 	  // Check for default files like index.html and index.js
 	  for (let df of defaultFiles) {
       checkPath = path.join(fullPath,df);
 	    if (fs.existsSync(checkPath)) {
-		    if (df == "index.js") {
+		let physicalDefault=containedPhysicalPath(checkPath);
+		if (!physicalDefault || (!servletModuleType(checkPath) && protectedServletPath(physicalDefault))) continue;
+		  if (servletModuleType(checkPath) || df == "index.js") {
 		  	  stats = fs.statSync(checkPath);
 			    if (moduleLoadTimes[checkPath] === undefined || moduleLoadTimes[checkPath] < stats.mtimeMs) reload = true;
-			    df = "index";
           action = "servlet";
 		    } else {
           stats = fs.statSync(checkPath);
           action = "serveFile";
         }
-		    return new PathInfo(path.join(relativePath,df),reload,action,stats);
+		return new PathInfo(path.join(relativePath,df),reload,action,stats);
 	    }
 	  }
   }
@@ -503,71 +1990,44 @@ function checkPath (basePath,relativePath) {
 let defaultFiles = [
   "index.html",
   "index.htm",
+  "index.jss",
+  "index.jss.mjs",
+  "index.jss.cjs",
   "index.js"
 ];
-function checkProxies (reqPath) {
-  let proxyRequest = false;
-  Object.keys(proxies).forEach(proxy => {
-    if (reqPath.startsWith(proxy)) {
-      proxyRequest = {};
-      proxyRequest.options = {};
-      proxyRequest.url = proxy;
-      Object.assign(proxyRequest.options, proxies[proxy]);
-      proxyRequest.options.path = reqPath.substring(proxy.length);
-      return proxyRequest;
-    }
-  });
-  return proxyRequest;
-}
-function setFileInfo (req, res, basePath) {
+function setFileInfo (req, res, basePath, requestUrl) {
    let serveFile=true;
    let headers=req.headers;
    let fullPath="", suffix="", queryString="", contentType="",dirPath="",etag="";
-   if (!headers['accept-encoding']) headers['accept-encoding'] = '';  // gzip, etc. 
+   let fileDescriptor, representationStats, openError, etagCoding="i";
    let reload=false;
    let thisBasePath=basePath;
-   let proxyOptions="";
    let audioVisual = false;
-console.log("req.url: " + req.url);
-   if (proxies) {
-     let proxyRequest = checkProxies(req.url);
-     if (proxyRequest) {
-       proxyOptions = proxyRequest.options;
-       proxyOptions.url = req.url = proxyRequest.url;
-     //  proxyOptions.connectionArray = connectionArray;
-       achieve_proxy = _this.loadModule('achieve-proxy');
-     } else {
-       // console.log("proxyRequest not true: " + proxyRequest);
-     }
-   }
-   let pathObj = url.parse(req.url,true);
-   let uncheckedPath = pathObj.pathname;
-   // If undefined, noSuchFile in FileInfo object is set to true.
-   if (uncheckedPath === undefined) return new FileInfo(thisBasePath,req.url,fullPath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
-   // Check to see if the ROOT directory is used, and if so; whether it still exists
- //  if (rootDir && uncheckedPath.lastIndexOf("/") == 0) thisBasePath = rootPath;
-   // checkPath returns path request after performing various checks, (See checkPath() for details.)
-   let checkedPath = checkPath(thisBasePath,uncheckedPath);
-   if (checkedPath.action == "noSuchFile") return new FileInfo(thisBasePath,req.url,checkedPath.filePath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual,proxyOptions);
+   let notAcceptable = false;
+   let identityAllowed = true;
+   if (mode === "development") developmentLog("req.url: " + req.url);
+   let queryStart = requestUrl.indexOf("?");
+   let uncheckedPath = queryStart === -1
+     ? requestUrl
+     : requestUrl.substring(0,queryStart);
+   queryString = queryStart === -1
+     ? ""
+     : requestUrl.substring(queryStart + 1);
+    // checkPath returns path request after performing various checks, (See checkPath() for details.)
+   let checkedPath = checkPath(thisBasePath,uncheckedPath,uncheckedPath.endsWith("/"));
+   if (checkedPath.action == "noSuchFile") return new FileInfo(thisBasePath,requestUrl,checkedPath.filePath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual);
    // If null, redirect in FileInfo object is set to true. (Needs redirect to add trailing slash.)
-   if (checkedPath.action == "redirect") return new FileInfo(thisBasePath,req.url,fullPath,dirPath,suffix,headers,contentType,queryString,false,true,false,reload,etag,audioVisual,proxyOptions);
-   let urlArray = req.url.split("?");
+   if (checkedPath.action == "redirect") return new FileInfo(thisBasePath,requestUrl,fullPath,dirPath,suffix,headers,contentType,queryString,false,true,false,reload,etag,audioVisual);
    let currentPath = checkedPath.filePath;
-   queryString = urlArray[1] || ""; // without '?'
    suffix = path.extname(currentPath).substring(1) || "";
    fullPath = path.join(thisBasePath,currentPath);
    dirPath = path.dirname(fullPath);
-   if (suffix.length == 0) {
-	 // Requests for JavaScript files without .js suffix are executed rather than served.
-	 if (fs.existsSync(fullPath+".js")) {
-	   suffix = "servlet"; // This special app suffix does not indicate MIME type.
-	   currentPath += ".js";
-	   fullPath += ".js";
-	   serveFile=false;
-     } else {
+   if (checkedPath.action === "servlet") {
+	 suffix = "servlet"; // This special app suffix does not indicate MIME type.
+	 serveFile=false;
+   } else if (suffix.length == 0) {
 	   // If file exists with no suffix, attempt to serve it as text.
 	   suffix = "txt";
-     }
    }
    // Get MIME type.
    contentType = mimeList[suffix];
@@ -584,69 +2044,231 @@ console.log("req.url: " + req.url);
      }
    }
    if (serveFile) {
-     // For browser caching support
-     if (bCaching) {
-       var rawVal = parseInt(Math.floor(checkedPath.stats.mtimeMs) + etagString);
-       etag = '"' + Base64.fromNumber(rawVal) + '"';
-     } else {
-       etag='';
-     }
+
      // For compression
      if (compress && (contentType.indexOf("text") == 0 || contentType.indexOf("application") == 0)) {
+       res.setHeader("Vary","Accept-Encoding");
        let enc = getEncoding(req);
-       if (enc.check) {
-         let ccPath = checkCPath(fullPath,enc.ext,checkedPath.stats.mtimeMs);
-         currentPath += enc.ext;
-         res.setHeader("Content-Encoding",enc.contentEncoding);
-       }
-     }
-   }
-   return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual,proxyOptions);
-}
-function checkCPath (path,ext,oAge) {
-  try {
-    if (fs.existsSync(path+ext)) {
-      let cstats = fs.statSync(path+ext);
-      if (oAge > cstats.mtimeMs) {
-        if (ext == ".gz") {
-          fs.writeFileSync(path+ext,zlib.gzipSync(fs.readFileSync(path)));
-        } else if (ext == ".zl") {
-          fs.writeFileSync(path+ext,zlib.deflateSync(fs.readFileSync(path)));
+       identityAllowed = enc.identityQuality != 0;
+        let schedule = true;
+        for (let candidate of enc.candidates) {
+          if (candidate.quality < enc.identityQuality) break;
+          let ccPath = checkCPath(fullPath,candidate.ext,checkedPath.stats,thisBasePath,schedule);
+          schedule = false;
+          if (ccPath !== false) {
+            currentPath = path.relative(thisBasePath,ccPath);
+            res.setHeader("Content-Encoding",candidate.contentEncoding);
+            etagCoding = candidate.contentEncoding == "gzip" ? "g" : "d";
+            break;
+          }
+        }
+        if (etagCoding == "i" && enc.identityQuality == 0) notAcceptable = true;
+      }
+    }
+    if (!notAcceptable && (serveFile || audioVisual)) {
+      let representationPath=path.join(thisBasePath,currentPath);
+      function openRepresentation() {
+        fileDescriptor=fs.openSync(representationPath,"r");
+        representationStats=fs.fstatSync(fileDescriptor);
+        if (!representationStats.isFile()) {
+          let err=new Error("Selected representation is not a regular file.");
+          err.code="EISDIR";
+          throw err;
         }
       }
-    } else {
-      if (ext == ".gz") {
-        fs.writeFileSync(path+ext,zlib.gzipSync(fs.readFileSync(path)));
-      } else if (ext == ".zl") {
-        fs.writeFileSync(path+ext,zlib.deflateSync(fs.readFileSync(path)));
+      try {
+        openRepresentation();
+      } catch (err) {
+        openError=err;
+        if (fileDescriptor !== undefined) {
+          try {
+            fs.closeSync(fileDescriptor);
+          } catch (closeError) {
+            serverError("Error closing " + safeSourceIdentity(representationPath) + ": " + rtErrorMsg(closeError),closeError);
+          }
+          fileDescriptor=undefined;
+        }
+      }
+      if (openError && etagCoding != "i") {
+        res.removeHeader("Content-Encoding");
+        currentPath=checkedPath.filePath;
+        representationPath=fullPath;
+        representationStats=undefined;
+        openError=undefined;
+        etagCoding="i";
+        if (!identityAllowed) {
+          notAcceptable=true;
+        } else {
+          try {
+            openRepresentation();
+          } catch (err) {
+            openError=err;
+            if (fileDescriptor !== undefined) {
+              try {
+                fs.closeSync(fileDescriptor);
+              } catch (closeError) {
+                serverError("Error closing " + safeSourceIdentity(representationPath) + ": " + rtErrorMsg(closeError),closeError);
+              }
+              fileDescriptor=undefined;
+            }
+          }
+        }
+      }
+      if (!notAcceptable && !openError && serveFile && (bCaching || hasEntityTagPrecondition(req))) {
+        etag = representationETag(representationStats.mtimeMs,representationStats.size,etagCoding);
       }
     }
-  } catch (err) {
-    console.log(path + "  Compression failed.\n" + err);
+    return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual,notAcceptable,fileDescriptor,representationStats,openError);
+}
+function removeCompressionTemp (tempPath,callback) {
+  fs.unlink(tempPath,function (err) {
+    if (err && err.code !== "ENOENT") {
+      serverError(tempPath + "  Compression temporary-file cleanup failed.",err);
+    }
+    callback();
+  });
+}
+function compressionArtifactPath (basePath,sourcePath,ext) {
+  let cachePath=path.join(basePath,".compression-cache");
+  let cacheRelative=path.relative(cachePath,sourcePath);
+  if (
+    cacheRelative === "" ||
+    (
+      cacheRelative !== ".." &&
+      !cacheRelative.startsWith(".." + path.sep) &&
+      !path.isAbsolute(cacheRelative)
+    )
+  ) {
     return false;
   }
+  return path.join(cachePath,path.relative(basePath,sourcePath)) + ext;
 }
-function encodeData (check,contentEncoding,ext) {
-  this.check = check;
-  this.contentEncoding = contentEncoding;
-  this.ext = ext;
+function scheduleCompressedArtifact (sourcePath,artifactPath,ext,sourceStats) {
+  if (compressionJobs.has(artifactPath)) return;
+  compressionJobs.add(artifactPath);
+
+  let sourceMtimeMs=sourceStats.mtimeMs;
+  let sourceSize=sourceStats.size;
+  let tempPath = artifactPath +
+    ".tmp-" + process.pid +
+    "-" + Date.now() +
+    "-" + (++compressionTempSequence);
+
+  function clearJob () {
+    compressionJobs.delete(artifactPath);
+  }
+  function fail (message,err) {
+    serverError(message,err);
+    removeCompressionTemp(tempPath,clearJob);
+  }
+
+  fs.mkdir(path.dirname(artifactPath),{recursive:true},function (err) {
+    if (err) {
+      serverError(artifactPath + "  Compression cache directory creation failed.",err);
+      clearJob();
+      return;
+    }
+    try {
+      let compressor = ext == ".gz"
+        ? zlib.createGzip()
+        : zlib.createDeflate();
+      streamPipeline(
+        fs.createReadStream(sourcePath),
+        compressor,
+        fs.createWriteStream(tempPath,{flags:"wx"}),
+        function (err) {
+          if (err) {
+            fail(sourcePath + "  Compression failed.",err);
+            return;
+          }
+          fs.stat(sourcePath,function (err,currentStats) {
+            if (err) {
+              fail(sourcePath + "  Compression source restat failed.",err);
+              return;
+            }
+            if (
+              currentStats.mtimeMs !== sourceMtimeMs ||
+              currentStats.size !== sourceSize
+            ) {
+              removeCompressionTemp(tempPath,clearJob);
+              return;
+            }
+            fs.rename(tempPath,artifactPath,function (err) {
+              if (err) {
+                fail(artifactPath + "  Compression artifact publication failed.",err);
+                return;
+              }
+              clearJob();
+            });
+          });
+        }
+      );
+    } catch (err) {
+      fail(sourcePath + "  Compression failed.",err);
+    }
+  });
+}
+function checkCPath (path,ext,sourceStats,basePath,schedule = true) {
+  let artifactPath=compressionArtifactPath(basePath,path,ext);
+  if (!artifactPath) return false;
+  try {
+    if (fs.existsSync(artifactPath)) {
+      let cstats = fs.statSync(artifactPath);
+      if (sourceStats.mtimeMs <= cstats.mtimeMs) return artifactPath;
+    }
+  } catch (err) {
+    serverError(path + "  Compression failed.",err);
+    return false;
+  }
+  if (schedule) scheduleCompressedArtifact(path,artifactPath,ext,sourceStats);
+  return false;
+}
+function encodingQuality (value) {
+  if (!/^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/.test(value)) return false;
+  let parts=value.split(".");
+  let fraction=(parts[1] || "").padEnd(3,"0");
+  return Number(parts[0])*1000+Number(fraction);
 }
 function getEncoding (req) {
-  let acceptEncoding = req.headers['accept-encoding'];
-  if (acceptEncoding === undefined) {
-    return "";
-  } else {
-    let aeList = acceptEncoding.split(",");
-    for (let adItem of aeList) {
-      if (adItem == "gzip") {
-        return new encodeData(true,"gzip",".gz");
-      } else if (adItem == "deflate") {
-        return new encodeData(true,"deflate",".zl");
-      } else {
-        return new encodeData(false);
+  let acceptEncoding=req.headers['accept-encoding'];
+  let qualities={};
+  if (acceptEncoding !== undefined && acceptEncoding !== "") {
+    for (let fieldMember of acceptEncoding.split(",")) {
+      let member=fieldMember.trim();
+      if (member === "") continue;
+      let parts=member.split(";");
+      if (parts.length > 2) continue;
+      let coding=parts[0].trim().toLowerCase();
+      if (!/^[!#$%&'*+\-.^_`|~0-9a-z]+$/.test(coding)) continue;
+      let quality=1000;
+      if (parts.length == 2) {
+        let match=/^q=(.*)$/i.exec(parts[1].trim());
+        if (!match) continue;
+        quality=encodingQuality(match[1]);
+        if (quality === false) continue;
+      }
+      if (
+        coding == "gzip" ||
+        coding == "deflate" ||
+        coding == "identity" ||
+        coding == "*"
+      ) {
+        if (qualities[coding] === undefined || quality > qualities[coding]) {
+          qualities[coding]=quality;
+        }
       }
     }
   }
+  let gzipQuality=qualities.gzip === undefined ? qualities["*"] : qualities.gzip;
+  let deflateQuality=qualities.deflate === undefined ? qualities["*"] : qualities.deflate;
+  let identityQuality=qualities.identity === undefined
+    ? (qualities["*"] === 0 ? 0 : 1000)
+    : qualities.identity;
+  let candidates=[];
+  if (gzipQuality > 0) candidates.push({contentEncoding:"gzip",ext:".gz",quality:gzipQuality});
+  if (deflateQuality > 0) candidates.push({contentEncoding:"deflate",ext:".zl",quality:deflateQuality});
+  if (candidates.length == 2 && candidates[1].quality > candidates[0].quality) candidates.reverse();
+  return {candidates:candidates,identityQuality:identityQuality};
 }
 function nodeVersion () {
   var result="";
@@ -655,11 +2277,12 @@ function nodeVersion () {
   return result;
 }
 function display (fi) {
-  console.log("\nFile Info: " + reqCount++);
+  if (mode !== "development") return;
+  developmentLog("\nFile Info: " + reqCount++);
   var propValue;
   for(var propName in fi) {
     propValue = fi[propName];
-    console.log("  " + propName,propValue);
+    developmentLog("  " + propName,propValue);
   }
 }
 function Account (account,start,code,reason) {
@@ -676,24 +2299,30 @@ function getAccount (res,fileInfo) {
 	let accountInfo; // for the new Account object
 	let code = 200;  // default
 	let reason;  // reason for error
+	let loadedMtime;
 	// Redundant check. Was also checked in setFileInfo()
 	if (!fs.existsSync(startPage)) {
 	  code = 404;
-	  reason = startPage + " not found.";
+	  reason = safeSourceIdentity(startPage) + " not found.";
 	  accountInfo = new Account(null,startPage,code,reason);
 	  return accountInfo;
     }
 	try {
 	  // Load the page and get its handle.
-    if (fileInfo.reload) delete require.cache[require.resolve(startPage)];
+    if (fileInfo.reload) {
+      loadedMtime = fs.statSync(startPage).mtimeMs;
+      delete require.cache[require.resolve(startPage)];
+    }
 	  accountRoot = require(startPage);
 	  // Make sure that the required servlet(context) function exists in the loaded file.
 	  // This is how this system automatically runs code in the newly loaded file. 
 	  if (typeof accountRoot.servlet !== 'function') {
 		  code = 500;
-		  reason = startPage + " does not have a valid servlet() function.";
+		  reason = safeSourceIdentity(startPage) + " does not have a valid servlet() function.";
       delete require.cache[require.resolve(startPage)];
-	  }
+	  } else if (fileInfo.reload) {
+      moduleLoadTimes[startPage] = loadedMtime;
+    }
 	} catch (err) {
      code = 500;
 	   reason = "Failed to load module: " + rtErrorMsg(err);
@@ -702,145 +2331,196 @@ function getAccount (res,fileInfo) {
   accountInfo = new Account(accountRoot,startPage,code,reason);
 	return accountInfo;
 }
-// startObject's init() method runs the code that was loaded by getAccount()
-// It will get parameter values from the request and call the loaded application's init() method.
-function startObject (req,res,fileInfo) {
-  this.req = req;
-  this.res = res;
-  this.fileInfo = fileInfo;
-  this.load = load;
-  // this.init() is called to extract data from request, run the application, and send response
-  this.init = function () {
-	let request = this.req;
-	let response = this.res;
-  let goodPath = false;
-	let fsapp = this.fsapp;
-  let fileInfo = this.fileInfo;
-  let myAppPath = this.fileInfo.fullPath;
-	let shortPath = this.fileInfo.path;
-	let reload = this.fileInfo.reload;
-  let load = this.load;
-	let contentType = this.fileInfo.contentType;
-    let myApp;
-	// Load the application file if it exists.
-  if (fs.existsSync(myAppPath)) {
-	  if (reload) {
-		  delete require.cache[require.resolve(myAppPath)];
-		  moduleLoadTimes[myAppPath] = fs.statSync(myAppPath).mtimeMs; // new Date().getTime();
-	  }
-    myApp = require(myAppPath);
-	  goodPath = true;
-  }
-	// This service loads the application file and calls exports.servlet(context)
-    if (goodPath && typeof myApp.servlet == 'function') {
-	  // Extract data sent from the browser for POST or GET
-	  let queryData="";
-    let wmsg;
-    let content;
-    response.setHeader('server', version);
-    response.setHeader('Content-Type','text/plain');
 
-        if (this.req.method == "POST") {
-          console.log("using POST");
-	      this.req.on('data', function(data) {
-			try {
-              queryData += data;
-              if(queryData.length > 1e6) {
-                queryData = "";
-              }
-			} catch (err) {
-		      console.log("Error processing data: " + err.stack);
-		    }
-          });
-          this.req.on('end', function() {
-			try {
-        request.post = querystring.parse(queryData);
-        let boundLoader = load.bind({request:request,response:response,dirPath:fileInfo.dirPath});
-        // This is where the application code is "called"
-        context = new Context(request,response,request.post,fileInfo.dirPath,boundLoader,fileInfo.proxyOptions,proxies,achieve_proxy);
-        let content = myApp.servlet(context);
-        if (response.finished || context.allowAsync) {
-          console.log("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
-          return;
-        } else if (content === undefined || content === null) {
-          wmsg="WARNING: Return value from servlet " + fileInfo.path + " is " + content + ".";
-          response.statusCode=500;
-			    response.write(wmsg);
-          response.end();
-          console.log(wmsg);
-          return;
-        }
-          response.statusCode=200;
-			    response.write(content,'binary');
-          response.end(null,'binary');
-		    } catch (err) {
-          if (response.finished || context.allowAsync) {
-          console.log("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
-          return;
-          }
-          wmsg="WARNING: Return value from servlet " + fileInfo.path + " is " + content + ". " + rtErrorMsg(err);
-          console.log(wmsg);
-          wmsg="post Return type from servlet is " + typeof content + ". " + rtErrorMsg(err);
-          response.statusCode=500;
-			    response.write(wmsg);
-          response.end();
-          console.log(wmsg);
-		  	}
-	      });
-        } else if (this.req.method == "GET") {
-          console.log("using GET");
-          let context;
-		  try {
-        request.get =  querystring.parse(fileInfo.queryString);
-		  	let boundLoader = load.bind({request:request,response:response,dirPath:fileInfo.dirPath});
-        // This is where the application code is "called"
-        context = new Context(request,response,request.get,fileInfo.dirPath,boundLoader,fileInfo.proxyOptions,proxies,achieve_proxy);
-        let content = myApp.servlet(context);
-        if (response.finished || context.allowAsync) {
-          console.log("INFO: GET " + fileInfo.path + " session ended or will end by application.");
-          return;
-        }
-        response.statusCode=200;
-			  response.write(content);
-        response.end();
-		  } catch (err) {
-        if (response.finished || context.allowAsync) {
-          console.log("INFO: POST " + fileInfo.path + " Session ended or will end by application.");
-          return;
-        }
-        wmsg="get Return type from servlet is " + typeof content + ". " + rtErrorMsg(err);
-        response.statusCode=500;
-        response.end(wmsg);
-        console.log(wmsg);
-		  }
-        } else if (this.req.method == "HEAD") {
-          console.log("using HEAD");
-          response.statusCode = 200;
-          response.setHeader('server',version);
-          if (bCaching) response.setHeader('etag',fileInfo.etag);
-          response.setHeader('content-type', fileInfo.contentType);
-          response.end();
-        } else if (this.req.method == "OPTIONS") {
-          console.log("OPTIONS REQUEST: " + this.req);
-          response.statusCode = 204;
-          response.setHeader('access-control-allow-headers', '*');
-          response.setHeader('access-control-allow-origin', "*");
-          response.setHeader('access-control-max-age', 86400);
-          response.setHeader('date', new Date());
-          response.setHeader('allow', "GET, HEAD, POST, OPTIONS");
-          response.setHeader('server', version);
-          response.end();
-        } else {
-          response.statusCode = 501;
-          console.log(this.req.method + " request method is not yet supported on the server: " + version);
-          response.end(this.req.method + " request method is not yet supported on the server: " + version);
-        }
-    } else if (goodPath) {
-	    response.write("No .servlet function in file: " + myAppPath);
-	    response.end();
+async function importESMFile (fullPath) {
+  let moduleUrl=pathToFileURL(path.resolve(fullPath)).href;
+  let mtimeMs;
+  try {
+    if (mode !== "production") {
+      mtimeMs=fs.statSync(fullPath).mtimeMs;
+      moduleUrl += "?achieve-mtime=" + encodeURIComponent(mtimeMs);
+    }
+    return {
+      loadedModule:await import(moduleUrl),
+      mtimeMs
+    };
+  } catch (err) {
+    if (err !== null && (typeof err === "object" || typeof err === "function")) {
+      try {
+        Object.defineProperty(err,esmLoadContext,{value:fullPath});
+      } catch (contextError) {
+      }
+    }
+    throw err;
+  }
+}
+
+async function getModuleAccount (fileInfo) {
+  let startPage=fileInfo.fullPath;
+  let code=200;
+  let reason;
+  let accountRoot=null;
+  let loadedMtime;
+
+  if (!fs.existsSync(startPage)) {
+    return new Account(
+      null,
+      startPage,
+      404,
+      safeSourceIdentity(startPage) + " not found."
+    );
+  }
+
+  try {
+    let importedModule=await importESMFile(startPage);
+    loadedMtime=importedModule.mtimeMs;
+    let moduleNamespace=importedModule.loadedModule;
+    if (typeof moduleNamespace.servlet !== "function") {
+      code=500;
+      reason=safeSourceIdentity(startPage) + " does not have a valid servlet() function.";
     } else {
-	    response.write(myAppPath + " not found.");
-	    response.end();
+      accountRoot={servlet:moduleNamespace.servlet};
+      moduleLoadTimes[startPage]=loadedMtime;
+    }
+  } catch (err) {
+    code=500;
+    reason="Failed to load module: " + rtErrorMsg(err);
+  }
+  return new Account(accountRoot,startPage,code,reason);
+}
+
+// Invoke a loaded servlet with an already prepared parameter object.
+function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
+  let context;
+  let wmsg;
+  function applicationOwned() {
+    if (mode === "development") developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
+  }
+  function complete(content) {
+    if (response.writableEnded || response.destroyed) {
+      applicationOwned();
+      return;
+    }
+    if (content === undefined || content === null) {
+      if (mode === "development") developmentLog("INFO: Return from " + fileInfo.path.split(path.sep).join("/") + " is " + String(content) + ".");
+      if (response.statusCode === 200) response.statusCode=204;
+      response.end();
+      return;
+    }
+    response.end(sendBody ? content : undefined);
+  }
+  function fail(err) {
+    if (response.headersSent) {
+      wmsg=rtErrorMsg(err);
+      serverError(wmsg,err);
+      if (!response.writableEnded && !response.destroyed) response.destroy();
+      return;
+    }
+    if (response.writableEnded || response.destroyed) {
+      applicationOwned();
+      return;
+    }
+    wmsg=rtErrorMsg(err);
+    response.statusCode=500;
+    response.write(wmsg);
+    response.end();
+    serverError(wmsg,err);
+  }
+  try {
+    let loaderState={request:request,response:response,dirPath:fileInfo.dirPath};
+    let boundLoader=load.bind(loaderState);
+    context=new Context(request,response,params,fileInfo.dirPath,fileInfo.basePath,boundLoader);
+    let content=myApp.servlet(context);
+    if (!context.autoEnd) {
+      applicationOwned();
+      return;
+    }
+    if (content !== null &&
+        (typeof content === "object" || typeof content === "function") &&
+        typeof content.then === "function") {
+      Promise.resolve(content).then(function (resolvedContent) {
+        try {
+          complete(resolvedContent);
+        } catch (err) {
+          fail(err);
+        }
+      },function (err) {
+        fail(err);
+      });
+      return;
+    }
+    complete(content);
+  } catch (err) {
+    fail(err);
+  }
+}
+// startObject parses parameters for Achieve-owned methods before invoking a servlet.
+function startObject (req,res,fileInfo,myApp,sendBody = true) {
+  this.req=req;
+  this.res=res;
+  this.fileInfo=fileInfo;
+  this.myApp=myApp;
+  this.sendBody=sendBody;
+  this.init=function () {
+    let request=this.req;
+    let response=this.res;
+    let fileInfo=this.fileInfo;
+    let myApp=this.myApp;
+    let sendBody=this.sendBody;
+    let queryChunks=[];
+    response.setHeader('server',version);
+    response.setHeader('Content-Type','text/plain');
+    if (request.method == "POST") {
+      if (mode === "development") developmentLog("using POST");
+      let contentTypeHeader=request.headers["content-type"];
+      let contentType=(contentTypeHeader || "").split(";")[0].trim().toLowerCase();
+      if (contentTypeHeader === undefined) serverWarning("WARNING: POST request has no Content-Type; Achieve is treating the input as application/x-www-form-urlencoded.");
+      if (contentType != "" && contentType != "application/json" && contentType != "application/x-www-form-urlencoded") {
+        invokeServlet(request,response,fileInfo,myApp,{},sendBody);
+        return;
+      }
+      let inputBytes=0;
+      let inputFailed=false;
+      function discardBufferedInput() {
+        inputFailed=true;
+        queryChunks.length=0;
+        inputBytes=0;
+      }
+      request.on("aborted",discardBufferedInput);
+      request.on("error",discardBufferedInput);
+      request.on("data",function (data) {
+        if (inputFailed) return;
+        inputBytes += data.length;
+        if (inputBytes > bufferedInputLimit) {
+          discardBufferedInput();
+          response.statusCode=413;
+          response.end("Payload Too Large");
+          return;
+        }
+        queryChunks.push(data);
+      });
+      request.on("end",function () {
+        if (inputFailed || response.writableEnded) return;
+        let queryData=Buffer.concat(queryChunks,inputBytes).toString("utf8");
+        let params;
+        if (contentType == "application/json") {
+          try {
+            params=JSON.parse(queryData);
+          } catch (err) {
+            response.statusCode=400;
+            response.end("Bad Request: Invalid JSON data.");
+            serverError("Invalid JSON data received.",err);
+            return;
+          }
+        } else {
+          params=querystring.parse(queryData);
+        }
+        invokeServlet(request,response,fileInfo,myApp,params,sendBody);
+      });
+    } else if (request.method == "GET" || request.method == "HEAD") {
+      invokeServlet(request,response,fileInfo,myApp,querystring.parse(fileInfo.queryString),sendBody);
+    } else {
+      methodNotSupported(request,response);
     }
   };
 }
@@ -850,45 +2530,368 @@ function startObject (req,res,fileInfo) {
 // returned so that it can be be sent to browser and displayed in its console.
 // (Display in browser console requires cooperating AJAX handling in the browser
 //    when http response status code != 200; console.error(..responseText))
+function safeSourceIdentity (sourcePath) {
+  var source = sourcePath;
+  if (source.toLowerCase().indexOf("file:///") === 0) {
+    source = source.substring(7);
+    try {
+      source = decodeURIComponent(source);
+    } catch (decodeError) {
+    }
+    if (/^\/[A-Za-z]:\//.test(source)) source = source.substring(1);
+  }
+
+  source = source.replace(/\\/g,"/");
+  var location = "";
+  var locationMatch = source.match(/(:\d+(?::\d+)?)$/);
+  if (locationMatch) {
+    location = locationMatch[1];
+    source = source.substring(0,source.length-location.length);
+  }
+
+  var approvedRoots = [basePath];
+  for (var root of approvedRoots) {
+    if (typeof root !== "string" || root.length === 0) continue;
+    var normalizedRoot = root.replace(/\\/g,"/").replace(/\/$/,"");
+    var compareSource = source;
+    var compareRoot = normalizedRoot;
+    if (/^[A-Za-z]:\//.test(source) || source.indexOf("//") === 0) {
+      compareSource = source.toLowerCase();
+      compareRoot = normalizedRoot.toLowerCase();
+    }
+    if (
+      compareSource === compareRoot ||
+      compareSource.indexOf(compareRoot + "/") === 0
+    ) {
+      var relativeSource = source.substring(normalizedRoot.length).replace(/^\/+/,"");
+      if (
+        relativeSource.length > 0 &&
+        relativeSource.split("/").indexOf("..") === -1
+      ) {
+        return relativeSource + location;
+      }
+    }
+  }
+
+  var pathParts = source.split("/");
+  var basename = pathParts[pathParts.length-1];
+  if (!basename || basename === "." || basename === "..") return "[path]";
+  return basename + location;
+}
+
+function replaceAbsoluteSourcePaths (message) {
+  var result = message;
+  result = result.replace(/file:\/\/\/[^'")\r\n]+/gi,function(sourcePath) {
+    return safeSourceIdentity(sourcePath);
+  });
+  result = result.replace(/[A-Za-z]:[\\\/][^'")\r\n]+/g,function(sourcePath) {
+    return safeSourceIdentity(sourcePath);
+  });
+  result = result.replace(/(?:\\\\|\/\/)[^'")\r\n]+/g,function(sourcePath) {
+    return safeSourceIdentity(sourcePath);
+  });
+  result = result.replace(/(^|[\s'("=,:])(\/[^\/'")\r\n][^'")\r\n]*)/g,function(match,prefix,sourcePath) {
+    return prefix + safeSourceIdentity(sourcePath);
+  });
+  return result;
+}
+
+function sanitizeDeveloperErrorText (message) {
+  var result = replaceAbsoluteSourcePaths(message);
+  result = result.replace(/\b(?:node:)?internal\/[^\s)]+/g,"");
+  result = result.replace(/\b(?:loader|vm):\d+:\d+\b/g,"");
+  result = result.replace(/\bachieve\.js:\d+(?::\d+)?\b/gi,"");
+  result = result.replace(/\s+imported from achieve\.js\b/gi,"");
+  result = replaceAbsoluteSourcePaths(result);
+  return result.trim();
+}
+
+function runtimeErrorHeadline (err,message) {
+  if (
+    err !== null &&
+    (typeof err === "object" || typeof err === "function") &&
+    err.code === "ENOENT"
+  ) {
+    var missingPath = typeof err.path === "string" ? safeSourceIdentity(err.path) : "";
+    return missingPath && missingPath !== "[path]"
+      ? "File not found: " + missingPath
+      : "File not found.";
+  }
+  return sanitizeDeveloperErrorText(message);
+}
+
+function runtimeFunctionName (functionName) {
+  var name = functionName.trim();
+  if (name.indexOf("Object.") === 0) name = name.substring(7);
+  if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name)) return "";
+  return name;
+}
+
+function isInternalRuntimeSource (sourcePath) {
+  var source = sourcePath.replace(/\\/g,"/").toLowerCase();
+  return (
+    source.indexOf("node:internal/") === 0 ||
+    source.indexOf("internal/") === 0 ||
+    source.indexOf("loader:") === 0 ||
+    source.indexOf("vm:") === 0 ||
+    source === "native" ||
+    /(^|\/)achieve\.js:\d+:\d+$/.test(source)
+  );
+}
+
+function displayedRuntimeSource (sourcePath) {
+  return sourcePath.replace(/\?achieve-mtime=[^:]*(:\d+:\d+)$/,"$1");
+}
+
+function isApplicationRuntimeSource (sourcePath) {
+  if (typeof basePath !== "string") return false;
+  var source = displayedRuntimeSource(sourcePath);
+  var location = source.match(/(:\d+(?::\d+)?)$/);
+  if (!location) return false;
+  source = source.substring(0,source.length-location[1].length);
+  if (source.toLowerCase().indexOf("file:///") === 0) {
+    source = source.substring(7);
+    try {
+      source = decodeURIComponent(source);
+    } catch (decodeError) {
+    }
+    if (/^\/[A-Za-z]:\//.test(source)) source = source.substring(1);
+  }
+  source = source.replace(/\\/g,"/");
+  if (source.toLowerCase().indexOf("/node_modules/") !== -1) return false;
+
+  var normalizedRoot = basePath.replace(/\\/g,"/").replace(/\/$/,"");
+  var compareSource = source;
+  var compareRoot = normalizedRoot;
+  if (/^[A-Za-z]:\//.test(source) || source.indexOf("//") === 0) {
+    compareSource = source.toLowerCase();
+    compareRoot = normalizedRoot.toLowerCase();
+  }
+  return compareSource.indexOf(compareRoot + "/") === 0;
+}
+
+function runtimeStackFrame (stackLine,applicationOnly = false) {
+  var line = stackLine.trim();
+  if (line.indexOf("at ") !== 0) return "";
+
+  var frame = line.substring(3).trim();
+  var functionName = "";
+  var sourcePath = frame;
+  var frameMatch = frame.match(/^([^()]+) \(([^()]+)\)$/);
+  if (frameMatch) {
+    functionName = runtimeFunctionName(frameMatch[1]);
+    sourcePath = frameMatch[2];
+  }
+
+  if (!/[^\s]:\d+:\d+$/.test(sourcePath)) return "";
+  if (isInternalRuntimeSource(sourcePath)) return "";
+  if (applicationOnly && !isApplicationRuntimeSource(sourcePath)) return "";
+
+  var sourceIdentity = safeSourceIdentity(displayedRuntimeSource(sourcePath));
+  if (sourceIdentity === "[path]") return "";
+  return sourceIdentity;
+}
+
+function syntaxStackReason (stack) {
+  var stackLines = stack.split('\n');
+  var sourcePath = stackLines[0].trim();
+  if (!/:\d+(?::\d+)?$/.test(sourcePath)) return "";
+
+  var lowerSourcePath = sourcePath.toLowerCase();
+  if (
+    lowerSourcePath.indexOf("node:internal/") === 0 ||
+    lowerSourcePath.indexOf("internal/") === 0 ||
+    lowerSourcePath.indexOf("loader:") === 0 ||
+    lowerSourcePath.indexOf("vm:") === 0 ||
+    /(^|[\\/])achieve\.js:\d+(?::\d+)?$/.test(lowerSourcePath)
+  ) return "";
+
+  var headline = "";
+  for (var stackLine of stackLines) {
+    var candidate = stackLine.trim();
+    if (/^SyntaxError(?:\s*:|$)/.test(candidate)) {
+      headline = sanitizeDeveloperErrorText(candidate);
+      break;
+    }
+  }
+  if (!headline) return "";
+
+  var sourceIdentity = safeSourceIdentity(sourcePath);
+  if (sourceIdentity === "[path]") return headline;
+  return headline + " " + sourceIdentity;
+}
+
+function formatRuntimeErrorMessage (err,shortPath="",code=500) {
+  var stack;
+  if (err !== null && (typeof err === "object" || typeof err === "function")) {
+    try {
+      if (typeof err.stack === "string") stack = err.stack;
+    } catch (stackError) {
+    }
+  }
+
+  if (stack !== undefined) {
+    var normalizedStack = stack.replace(/\\/g,"/");
+    var syntaxReason = syntaxStackReason(normalizedStack);
+    if (syntaxReason) return syntaxReason;
+
+    var firstLineEnd = normalizedStack.indexOf('\n');
+    if (firstLineEnd === -1) return runtimeErrorHeadline(err,normalizedStack);
+
+    var part1 = normalizedStack.substring(0,firstLineEnd);
+    if (/^[A-Za-z_$][A-Za-z0-9_$]*Error:/.test(part1) || /^Error:/.test(part1)) {
+      var headline = runtimeErrorHeadline(err,part1);
+      var stackLines = normalizedStack.substring(firstLineEnd+1).split('\n');
+      for (var stackLine of stackLines) {
+        var applicationFrame = runtimeStackFrame(stackLine,true);
+        if (applicationFrame) return headline + " " + applicationFrame;
+      }
+      for (var stackLine of stackLines) {
+        var usefulFrame = runtimeStackFrame(stackLine);
+        if (usefulFrame) return headline + " " + usefulFrame;
+      }
+      if (headline.length > 0) return headline;
+    }
+
+    var part2 = normalizedStack.substring(part1.length);
+    var closingParenthesis = part2.indexOf(')');
+    if (closingParenthesis !== -1) {
+      part2 = part2.substring(0,closingParenthesis);
+      var openingParenthesis = part2.lastIndexOf('(');
+      if (openingParenthesis !== -1) {
+        var fallbackSource = part2.substring(openingParenthesis+1);
+        part2 = isInternalRuntimeSource(fallbackSource)
+          ? ""
+          : safeSourceIdentity(fallbackSource);
+      } else {
+        var fallbackSource = part2.trim().replace(/^at\s+/,"");
+        part2 = isInternalRuntimeSource(fallbackSource)
+          ? ""
+          : fallbackSource.substring(fallbackSource.lastIndexOf('/')+1);
+      }
+    } else {
+      part2 = "";
+    }
+    var reason = sanitizeDeveloperErrorText((part1 + " " + part2).trim());
+    if (reason.length > 0) return reason;
+  }
+
+  if (err !== null && (typeof err === "object" || typeof err === "function")) {
+    try {
+      var errorName = typeof err.name === "string" ? err.name : "";
+      var errorMessage = typeof err.message === "string" ? err.message : "";
+      if (errorName && errorMessage) return runtimeErrorHeadline(err,errorName + ": " + errorMessage);
+      if (errorName) return sanitizeDeveloperErrorText(errorName);
+      if (errorMessage) return runtimeErrorHeadline(err,errorMessage);
+    } catch (errorPropertyError) {
+    }
+  }
+
+  if (err === null) return "Thrown value: null";
+  if (err === undefined) return "Thrown value: undefined";
+  if (typeof err === "object") return "Thrown value: [object Object]";
+  if (typeof err === "function") return "Thrown value: [function]";
+  try {
+    return sanitizeDeveloperErrorText("Thrown value: " + String(err));
+  } catch (stringError) {
+    return "Thrown value: [unprintable]";
+  }
+}
+function runtimeErrorHasApplicationSource (err) {
+  if (err === null || (typeof err !== "object" && typeof err !== "function")) return false;
+  try {
+    if (typeof err.stack !== "string") return false;
+    var stackLines = err.stack.replace(/\\/g,"/").split('\n');
+    if (stackLines.length > 0 && isApplicationRuntimeSource(stackLines[0].trim())) return true;
+    for (var stackLine of stackLines) {
+      if (runtimeStackFrame(stackLine,true)) return true;
+    }
+  } catch (stackError) {
+  }
+  return false;
+}
 function rtErrorMsg (err,shortPath="",code=500) {
-  err.stack = err.stack.replace(/\\/g,"/");
-  var part1 = err.stack.substring(0,err.stack.indexOf('\n'));
-  var part2 = err.stack.substring(part1.length);
-  part2 = part2.substring(0,part2.indexOf(')'));
-  part2 = part2.substring(part2.lastIndexOf('/')+1);
-  var reason = "Runtime error: " + part1 + " " + part2;
-  console.log("Error running servlet: " + reason);
+  var reason = formatRuntimeErrorMessage(err,shortPath,code);
+  if (
+    err !== null &&
+    (typeof err === "object" || typeof err === "function") &&
+    err[esmLoadContext] &&
+    !runtimeErrorHasApplicationSource(err)
+  ) {
+    var loadContext = safeSourceIdentity(err[esmLoadContext]);
+    if (loadContext !== "[path]") reason += " (while loading " + loadContext + ")";
+  }
   return reason;
 }
 // 537().init() sets up event driven streaming file serves
 // The final event also deletes the loaded file reference from the Node.js cache
-function ServeFile (req,res,fileInfo) {
+function ServeFile (req,res,fileInfo,sendBody = true) {
   this.res = res;
   this.req = req;
-  this.fp = fileInfo.basePath+fileInfo.path;
+  this.fp = path.join(fileInfo.basePath,fileInfo.path);
   this.contentType = fileInfo.contentType;
+  this.sendBody = sendBody;
   this.init = function () {
 	let response = this.res;
 	let filePath = this.fp;
   let request = this.req;
+  let sendBody = this.sendBody;
   
   let ext="";
 
-  if(bCaching && validCached(fileInfo,response)) return;
-   
    res.setHeader('content-type', fileInfo.contentType);
    res.setHeader('server', version);
-   if (bCaching) res.setHeader('etag', fileInfo.etag);
+   if (fileInfo.etag) res.setHeader('etag', fileInfo.etag);
    res.statusCode = 200;
-   
-   let readStream = fs.createReadStream(filePath)
-   .on ('error', function (err) {
-     console.log(err.message);
-     res.setHeader('content-type', 'text/plain');
-     res.statusCode = 500;
-     res.end(err.message);
+   res.setHeader('Content-Length', fileInfo.stats.size);
+   if (!sendBody || fileInfo.stats.size === 0) {
+     closeFileInfoDescriptor(fileInfo);
+     response.end();
+     return;
+   }
+
+   let readStream;
+   function streamError (err) {
+     serverError(err.message,err);
+     if (response.destroyed || response.writableEnded) {
+       return;
+     }
+     if (!response.headersSent) {
+       response.removeHeader('Content-Length');
+       response.removeHeader('Last-Modified');
+       response.setHeader('content-type', 'text/plain;charset=utf-8');
+       response.statusCode = 500;
+       response.end("Error attempting to serve " + safeSourceIdentity(filePath));
+     } else {
+       response.destroy();
+     }
+   }
+
+   try {
+     readStream = fs.createReadStream(filePath,{
+       fd:fileInfo.fileDescriptor,
+       autoClose:true,
+       start:0,
+       end:fileInfo.stats.size - 1
+     });
+     fileInfo.fileDescriptor=undefined;
+   } catch (err) {
+     closeFileInfoDescriptor(fileInfo);
+     streamError(err);
+     return;
+   }
+
+   readStream.on('error',streamError);
+   if (response.destroyed || response.writableEnded) {
+     readStream.destroy();
+     return;
+   }
+   readStream.pipe(response);
+   response.on('close',function () {
+     if (!response.writableEnded) {
+       readStream.destroy();
+     }
    });
-  readStream.pipe(res);
   };
 }
 // Not implemented - input object to be sent to JavaScript application
@@ -910,112 +2913,68 @@ function output (response,ext,charset,mimeType) {
 // To provide servlet characteristics to locally installed node modules
 // including achieve itself
 exports.loadModule = function (moduleName) {
-  let fullPath;
-  let localModulePath = require.main.paths[0];
   try {
-    fullPath = path.normalize(localModulePath +'/'+moduleName+'/'+moduleName+'.js');
-    stats = fs.statSync(fullPath);
-	  if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
-	    delete require.cache[require.resolve(fullPath)];
-      moduleLoadTimes[fullPath] = stats.mtimeMs; // new Date().getTime();
-	  }
-    return require(moduleName);
+    let fullPath = applicationRequire.resolve(moduleName);
+    const stats = fs.statSync(fullPath);
+    if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
+      delete require.cache[fullPath];
+      moduleLoadTimes[fullPath] = stats.mtimeMs;
+    }
+    return applicationRequire(moduleName);
   } catch (err) {
-    console.log("loadModule: " + rtErrorMsg(err));
+    serverError("loadModule: " + rtErrorMsg(err),err);
   }
+};
+function loadCommonJSModule (filePath) {
+  let dirname=this.dirPath;
+  let fullPath = path.join(dirname,filePath);
+  if (mode === "production" && productionHelperCache.has(fullPath)) {
+    return productionHelperCache.get(fullPath);
+  }
+  let loadedMtime;
+  if (mode !== "production") {
+    const stats = fs.statSync(fullPath);
+    if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
+      loadedMtime = stats.mtimeMs;
+      delete require.cache[require.resolve(fullPath)];
+    }
+  }
+  let loadedModule = require(fullPath);
+  if (mode === "production") productionHelperCache.set(fullPath,loadedModule);
+  if (loadedMtime !== undefined) moduleLoadTimes[fullPath] = loadedMtime;
+  return loadedModule;
 }
 let load = function (filePath) {
-  let dirname=this.dirPath;
-  let fullPath = path.join(dirname,filePath+".js");
-  try {
-    stats = fs.statSync(fullPath);
-	  if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
-	    delete require.cache[require.resolve(fullPath)];
-      moduleLoadTimes[fullPath] = stats.mtimeMs;
-	  }
-    return require(fullPath);
-  } catch (err) {
-    this.response.writeHead(500, {'Content-Type': 'text/plain;'});
-    reason = "load: " + rtErrorMsg(err);
-	  console.log(reason);
-  	this.response.write(reason);
-  } 
-}
-/* Modify this to collect a list of files to preload (JSO) - do preloads when server starts
-exports.preload1 = function (loadList) {
-  if (loadList.length > 0) {
-    loadList = loadList.split(",");
-  } else {
-    console.log("No files in preload list.");
-    return;
+  if (typeof filePath !== "string" || filePath.length === 0) {
+    throw new TypeError("load() requires a nonempty module filename.");
   }
-  for (let lf of loadList) {
-    try {
-      require(lf);
-    } catch (err) {
-      console.log(lf + " failed to load.");
+  let moduleType=servletModuleType(filePath);
+  if (moduleType === "commonjs" || filePath.toLowerCase().endsWith(".js")) {
+    return loadCommonJSModule.call(this,filePath);
+  }
+  if (moduleType === "module") return loadESMModule.call(this,filePath);
+  if (path.extname(filePath) === "") return loadCommonJSModule.call(this,filePath+".js");
+  throw new TypeError("load() supports extensionless legacy names, .js, .jss, .jss.cjs, and .jss.mjs module filenames.");
+}
+let loadESMModule = function (filePath) {
+  let fullPath=path.join(this.dirPath,filePath);
+  if (mode === "production" && productionHelperCache.has(fullPath)) {
+    return productionHelperCache.get(fullPath);
+  }
+  let loading=importESMFile(fullPath).then(
+    function (importedModule) {
+      moduleLoadTimes[fullPath]=importedModule.mtimeMs;
+      return importedModule.loadedModule;
+    },
+    function (err) {
+      productionHelperCache.delete(fullPath);
+      throw err;
     }
-  }
+  );
+  if (mode === "production") productionHelperCache.set(fullPath,loading);
+  return loading;
 }
-// use checkPath() first to get complete file information, including the right baseDir or rootDir
-let preload = function (filePath) {
-  if (path.extname(filePath) != ".js") filePath = filePath+".js";
-  let fullPath = path.join(basePath,filePath);
-  try {
-    stats = fs.statSync(fullPath);
-  	if (moduleLoadTimes[fullPath] === undefined || moduleLoadTimes[fullPath] < stats.mtimeMs) {
-	    delete require.cache[require.resolve(fullPath)];
-	  }
-    moduleLoadTimes[fullPath] = new Date().getTime();
-    let temp = require(fullPath);
-    console.log("preloaded: " + fullPath);
-    return temp;
-  } catch (err) {
-    var stop1 = err.stack.indexOf(err.message);
-	  var stop = err.stack.substring(0,stop1).lastIndexOf('\n');
-	  var errDescription = err.stack.substring(basePath.length,stop).replace(/\\/g,"/");
-	  reason = "Failed to load module: " + err.message + " \nreason: " + errDescription;
-	  console.log(reason);
-  } 
-}
-*/
-/*
-let blank = {
-  init: function () {return "";}
-}
-*/
-function validCached (fileInfo,response) {
-  // Browser cache support - not yet implemented
-  // Modified for etag instead of last-modified ... UNTESTED!
-  // Version 26 has the old tested last-modified version of this function.
-  // Change was necessary because .lastModified no longer included in fileInfo.
-  
-  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
-  
-  /*
-    If-None-Match ... send 304 if value matches etag
-    If-Match .... send only if etag matches one of the values
-  */
-  /*
-  return values:
-     false: 304 has not been returned ... the server process is not completed
-     true: 304 has been returned ... the server process is complete
-  */
-  response.setHeader('etag', fileInfo.etag);
-  let inmsp = fileInfo.headers['if-none-match'];
-  if (inmsp === undefined) return false;
-  let inms = inmsp.split(",");
-
-  for (var i=0; i<inms.length; i++) {
-    if (inms == fileInfo.etag) {
-      response.statusCode = 304;
-      response.end();
-      return true;
-    }
-  }
-  return false;
-}
-Base64 = {
+const Base64 = {
   _Rixits:"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/",
   fromNumber : function(residual) {
     var rixit; // like 'digit', only in some non-decimal radix 
@@ -1030,68 +2989,258 @@ Base64 = {
     return result;
   }
 }
-let stream = function(req, res, fileInfo) {
-  var fileName = fileInfo.fullPath;
-  if(!fileName)
-    return res.status(404).send();
- 
-  fs.stat(fileName, function(err, stats) {
-    if (err) {
-      if (err.code === 'ENOENT') {
-        return res.status(404).send();
+const maximumByteRanges = 16;
+function parseByteRange(rangeHeader, fileSize) {
+  if (rangeHeader === undefined) {
+    return { classification: "full" };
+  }
+
+  var range = rangeHeader.trim();
+  var separator = range.indexOf("=");
+  if (separator === -1) {
+    return { classification: "malformed" };
+  }
+
+  var unit = range.substring(0, separator);
+  if (unit.toLowerCase() !== "bytes") {
+    return { classification: "unknown-unit" };
+  }
+
+  var rangeValues = range.substring(separator + 1).split(",");
+  if (rangeValues.length > maximumByteRanges) {
+    return { classification: "excessive" };
+  }
+
+  var selectedRange;
+  var rangeCount = 0;
+  for (var rangeIndex = 0; rangeIndex < rangeValues.length; rangeIndex++) {
+    var rangeValue = rangeValues[rangeIndex].trim();
+    if (!rangeValue) continue;
+    rangeCount++;
+
+    var match = /^(\d*)-(\d*)$/.exec(rangeValue);
+    if (!match || (!match[1] && !match[2])) {
+      return { classification: "malformed" };
+    }
+
+    if (!match[1]) {
+      var suffixLength = Number(match[2]);
+      if (!Number.isSafeInteger(suffixLength)) {
+        return { classification: "malformed" };
+      }
+      if (suffixLength === 0 || fileSize === 0) continue;
+
+      if (!selectedRange) {
+        var suffixStart = Math.max(fileSize - suffixLength, 0);
+        selectedRange = {
+          classification: "partial",
+          start: suffixStart,
+          end: fileSize - 1,
+          contentLength: fileSize - suffixStart
+        };
+      }
+      continue;
+    }
+
+    var start = Number(match[1]);
+    if (!Number.isSafeInteger(start)) {
+      return { classification: "malformed" };
+    }
+
+    var end = fileSize - 1;
+    if (match[2]) {
+      end = Number(match[2]);
+      if (!Number.isSafeInteger(end) || end < start) {
+        return { classification: "malformed" };
       }
     }
- 
-    var start;
-    var end;
-    var total = 0;
-    var contentRange = false;
-    var contentLength = 0;
- 
-    var range = req.headers.range;
-    if (range)
-    {
-      var positions = range.replace(/bytes=/, "").split("-");
-      start = parseInt(positions[0], 10);
-      total = stats.size;
-      end = positions[1] ? parseInt(positions[1], 10) : total - 1;
-      var chunksize = (end - start) + 1;
-      contentRange = true;
-      contentLength = chunksize;
-    }
-    else
-    {
-      start = 0;
-      end = stats.size;
-      contentLength = stats.size;
-    }
- 
-    if(start<=end)
-    {
-      var responseCode = 200;
-      var responseHeader =
-      {
-        "Accept-Ranges": "bytes",
-        "Content-Length": contentLength,
-        "Content-Type": fileInfo.contentType
+    if (start >= fileSize) continue;
+
+    if (!selectedRange) {
+      end = Math.min(end, fileSize - 1);
+      selectedRange = {
+        classification: "partial",
+        start: start,
+        end: end,
+        contentLength: (end - start) + 1
       };
-      if(contentRange)
-      {
-        responseCode = 206;
-        responseHeader["Content-Range"] = "bytes " + start + "-" + end + "/" + total;
-      }
-      res.writeHead(responseCode, responseHeader);
-      var stream = fs.createReadStream(fileName, { start: start, end: end })
-       .on("error", function(err) {
-          res.end(err);
-        }).on("end", function(err) {
-          res.end();
-        });
-      stream.pipe(res);
     }
-    else
-    {
-      return res.status(403).send();
+  }
+
+  if (rangeCount === 0) return { classification: "malformed" };
+  return selectedRange || { classification: "unsatisfiable" };
+}
+let stream = function(req, res, fileInfo, sendBody = true) {
+  var fileName = fileInfo.fullPath;
+  var displayedFileName = fileName ? safeSourceIdentity(fileName) : fileName;
+  if(!fileName) {
+    closeFileInfoDescriptor(fileInfo);
+    reportError(res, fileName, 404, "File not found: " + displayedFileName, sendBody);
+    return;
+  }
+
+  var stats=fileInfo.stats;
+    var mediaETag="";
+  var evaluateIfRange = (
+    req.method === "GET" &&
+    req.headers.range !== undefined &&
+    req.headers['if-range'] !== undefined
+  );
+  if (
+    bCaching ||
+    hasEntityTagPrecondition(req) ||
+    evaluateIfRange
+  ) {
+    mediaETag=representationETag(stats.mtimeMs,stats.size,"i");
+    res.setHeader("ETag",mediaETag);
+  }
+  var modified=staticModificationTime(res,stats);
+  if (evaluatePreconditions(req,res,true,mediaETag,modified)) {
+    closeFileInfoDescriptor(fileInfo);
+    return;
+  }
+
+  if (!sendBody) {
+    setLastModified(res,modified);
+    closeFileInfoDescriptor(fileInfo);
+    res.writeHead(200, {
+      "Accept-Ranges": "bytes",
+      "Content-Length": stats.size,
+      "Content-Type": fileInfo.contentType,
+      "Server": version
+    });
+    res.end();
+    return;
+  }
+
+  var rangeHeader = req.method === "GET" ? req.headers.range : undefined;
+  if (
+    evaluateIfRange &&
+    !entityTagFieldMatches(req.headers['if-range'],mediaETag,false)
+  ) {
+    rangeHeader=undefined;
+  }
+  var rangeInfo = parseByteRange(rangeHeader, stats.size);
+  if (
+    rangeInfo.classification === "malformed" ||
+    rangeInfo.classification === "excessive"
+  ) {
+    var message = rangeInfo.classification === "excessive"
+      ? "Too many byte ranges requested."
+      : "Malformed byte Range request.";
+    closeFileInfoDescriptor(fileInfo);
+    res.writeHead(400, {
+      "Content-Type": "text/plain;charset=utf-8",
+      "Content-Length": Buffer.byteLength(message, "utf8")
+    });
+    res.end(message);
+    return;
+  }
+  if (rangeInfo.classification === "unsatisfiable") {
+    var rangeErrorMessage = "Requested byte range is not satisfiable.";
+    closeFileInfoDescriptor(fileInfo);
+    res.writeHead(416, {
+      "Accept-Ranges": "bytes",
+      "Content-Range": "bytes */" + stats.size,
+      "Content-Type": "text/plain;charset=utf-8",
+      "Content-Length": Buffer.byteLength(rangeErrorMessage, "utf8")
+    });
+    res.end(rangeErrorMessage);
+    return;
+  }
+
+  var start;
+  var end;
+  var total = 0;
+  var contentRange = false;
+  var contentLength = 0;
+
+  if (rangeInfo.classification === "partial")
+  {
+    start = rangeInfo.start;
+    total = stats.size;
+    end = rangeInfo.end;
+    contentRange = true;
+    contentLength = rangeInfo.contentLength;
+  }
+  else
+  {
+    contentLength = stats.size;
+  }
+
+  var responseCode = 200;
+  var responseHeader =
+  {
+    "Accept-Ranges": "bytes",
+    "Content-Length": contentLength,
+    "Content-Type": fileInfo.contentType,
+    "Server": version
+  };
+  if(contentRange)
+  {
+    responseCode = 206;
+    responseHeader["Content-Range"] = "bytes " + start + "-" + end + "/" + total;
+  }
+  if (!contentRange && stats.size === 0) {
+    setLastModified(res,modified);
+    closeFileInfoDescriptor(fileInfo);
+    res.writeHead(responseCode, responseHeader);
+    res.end();
+    return;
+  }
+
+  var readStream;
+  try {
+    if (contentRange) {
+      readStream = fs.createReadStream(fileName, {
+        fd:fileInfo.fileDescriptor,
+        autoClose:true,
+        start:start,
+        end:end
+      });
+    } else {
+      readStream = fs.createReadStream(fileName, {
+        fd:fileInfo.fileDescriptor,
+        autoClose:true,
+        start:0
+      });
+    }
+    fileInfo.fileDescriptor=undefined;
+  } catch (err) {
+    closeFileInfoDescriptor(fileInfo);
+    var statusCode = err.code === "ENOENT" ? 404 : 500;
+    var reason = statusCode === 404
+      ? "File not found: " + displayedFileName
+      : "Error attempting to stream " + displayedFileName + ": " + rtErrorMsg(err);
+    reportError(res, fileName, statusCode, reason, sendBody);
+    return;
+  }
+
+  readStream.on("error", function(err) {
+    if (res.destroyed) {
+      return;
+    }
+    if (!res.headersSent) {
+      var statusCode = err.code === "ENOENT" ? 404 : 500;
+      var reason = statusCode === 404
+        ? "File not found: " + displayedFileName
+        : "Error attempting to stream " + displayedFileName + ": " + rtErrorMsg(err);
+      reportError(res, fileName, statusCode, reason, sendBody);
+    } else {
+      serverError("Error streaming " + displayedFileName + ": " + rtErrorMsg(err),err);
+      res.destroy();
+    }
+  });
+  if (res.destroyed) {
+    readStream.destroy();
+    return;
+  }
+  setLastModified(res,modified);
+  res.writeHead(responseCode, responseHeader);
+  readStream.pipe(res);
+  res.on("close", function() {
+    if (!res.writableEnded) {
+      readStream.destroy();
     }
   });
 };

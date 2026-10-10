@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve v3 Documentation</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+main { margin:2% 5% 5%; }
+.docLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.docLink:hover,.packageLink:hover { color:blue; }
+.docList { list-style:none; padding-left:0; }
+.docList li { margin:1.2em 0; }
+.docList p { margin:.25em 0 0; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+</style>
+</head>
+<body>
+
+<header>
+<img src="images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+
+<main>
+
+<h1>Achieve v3 Documentation</h1>
+
+<p>Achieve is a developer-friendly HTTP server for Node.js. It provides the server behavior so you can concentrate on building your application.</p>
+
+<h2>Getting Started</h2>
+
+<ul class="docList">
+<li>
+<a class="docLink" href="start/startup.htm">Starting the server</a>
+<p>Start achieve with HTTP, HTTPS, or HTTP/2, choose the application location, and run multiple listeners.</p>
+</li>
+<li>
+<a class="docLink" href="start/static.htm">Static content and audio/video</a>
+<p>Serve static resources and audio/video, work with MIME types, and use default index files.</p>
+</li>
+<li>
+<a class="docLink" href="start/servlets.htm">Your first servlet</a>
+<p>Servlets are the entry points to your backend processes, invoked by the server.</p>
+</li>
+<li>
+<a class="docLink" href="start/input.htm">Handling Input</a>
+<p>Read GET parameters, process POST forms and JSON, and work with streamed request data.</p>
+</li>
+</ul>
+
+<h2>Detailed References</h2>
+
+<ul class="docList">
+<li>
+<a class="docLink" href="reference/config.htm">Configuration</a>
+<p>Configure the application space, development and production modes, caching, compression, logging, MIME types, routing, HTTP methods, and CORS.</p>
+</li>
+
+<li>
+<a class="docLink" href="reference/routing.htm">Routing</a>
+<p>How Achieve maps request URLs to application resources, including application-space selection, exact route mappings, and subtree mappings.</p>
+</li>
+
+<li>
+<a class="docLink" href="reference/static.htm">Static Resources</a>
+<p>Serve files and media with MIME types, caching, conditional requests, byte ranges, compression, and HEAD responses.</p>
+</li>
+
+<li>
+<a class="docLink" href="reference/methods.htm">HTTP Methods</a>
+<p>Use GET, HEAD, POST, and OPTIONS, and register servlet handlers for additional HTTP methods.</p>
+</li>
+
+<li>
+<a class="docLink" href="reference/servlets.htm">Backend: JavaScript Servlets</a>
+<p>Write server-side JavaScript using Achieve's servlet model, with CommonJS and ESM support, request parameters, backend modules, asynchronous processing, and managed responses.</p>
+</li>
+
+<li>
+<a class="docLink" href="reference/session.htm">The Servlet Session Object</a>
+<p>Reference for the request, response, parameters, module loading, response ownership, and application and servlet paths available through the servlet session.</p>
+</li>
+</ul>
+
+<h2 id="examples">Examples</h2>
+
+<p>
+The Achieve 3 Advanced Examples provide a complete, ready-to-run development
+environment for newcomers, students, teachers, and experienced developers.
+The six demonstrations cover MySQL, WebSockets and Rooms, Node clustering,
+XML/SAX streaming, distributed computing, and SOAP services.
+</p>
+
+<p>
+The final distribution will install Achieve 3 and its supporting packages from
+npm. Choose a location and extract the ZIP, open a terminal in the resulting
+<code>achieve_examples</code> directory, and run:
+</p>
+
+<pre><code>npm install
+npm start</code></pre>
+
+<p>
+Then visit <a href="http://localhost:8989/">http://localhost:8989/</a>.
+The included <code>INSTALL.htm</code> provides additional instructions,
+specialized startup commands, and the optional MySQL setup.
+</p>
+
+<p>
+The final download will be activated here after Achieve 3.0.0 is published and
+the registry-based installation has been verified.
+</p>
+
+<!-- Activate after publication and final archive verification:
+<p><a class="docLink" href="https://highlevellogic.github.io/achieve/downloads/achieve-v3-advanced-examples.zip">Download the Achieve 3 Advanced Examples ZIP</a>.</p>
+-->
+
+<p>Until then, the existing development distribution remains available:</p>
+
+<p>
+<a class="docLink" href="https://highlevellogic.github.io/achieve/downloads/achieve-v3-advanced-examples-dev.zip">Download the Achieve 3 Advanced Examples development ZIP</a>.
+</p>
+
+<p>
+The development archive uses the earlier <code>achieve3-examples</code>
+directory and bundled development package. Follow the <code>README.md</code>
+included in that archive for its installation instructions.
+</p>
+
+</main>
+
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a>
+</footer>
+
+</body>
+</html>

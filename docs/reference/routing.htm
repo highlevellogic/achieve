@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve v3 - Routing</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+.navLink { display:inline-block; margin:.6em 5% .2em; color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.navLink:hover,.packageLink:hover { color:blue; }
+.backArrow { margin-right:.4em; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+main { margin:2% 5% 5%; }
+code { padding:.08em .35em; border-radius:.3em; background-color:rgb(220,235,245); color:blue; font-family:Consolas,"Courier New",monospace; }
+pre { margin:1em 0 1.4em; }
+pre code { display:block; padding:1em; overflow:auto; white-space:pre; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to documentation index</a>
+<main>
+
+<h1>Routing</h1>
+
+<p>achieve automatically routes requests to resources within your application. The directory tree containing those resources is the application space.</p>
+
+<h2>Security</h2>
+
+<p>The application space is also the boundary for resources accessible through HTTP requests. Achieve restricts HTTP request path resolution to resources within the application space.</p>
+
+<p>Servlets are not restricted to the application space. They can access resources elsewhere on the server using normal Node.js file-system operations.</p>
+
+<pre><code>let private = path.resolve(session.appPath, "../private");</code></pre>
+
+<h2>Application space</h2>
+
+<p>Default routing is established with mandatory <code>setAppPath()</code>. <code>setAppPath()</code> sets the location of the application space. It can be located anywhere accessible to the server.</p>
+
+<p>For example, using forward slashes as a portable convention (not an achieve requirement):</p>
+
+<pre><code>achieve.setAppPath("C:/projects/myApplication/");</code></pre>
+
+<p>After this call, <code>C:/projects/myApplication/</code> is the root of the application space and request paths are resolved within that directory.</p>
+
+<p>Request URL <code>/hello/hello.htm</code> maps to <code>C:/projects/myApplication/hello/hello.htm</code></p>
+
+<p>TIP: To create a refactoring-friendly private area, reached only from your servlets, use the <code>session.appPath</code> parameter in the servlet.</p>
+
+<pre><code>let private = path.resolve(session.appPath, "../private");</code></pre>
+
+<h2>Custom Routing</h2>
+
+<p>achieve provides three levels of control over routing: the location of the application space, individual asset mappings, and subtree mappings. Custom routing is configured in the server startup file using <code>setAppPath()</code>, <code>setRouteMap()</code>, and <code>setPathMap()</code>.</p>
+
+<h3>Exact asset route mapping</h3>
+
+<p>An exact route map can give an individual resource a different public URL. You can include multiple mappings in one object or make additional calls to <code>setRouteMap()</code>.</p>
+
+<pre><code>achieve.setRouteMap({
+  "/products": "/services/catalog/list.jss"
+});</code></pre>
+
+<p>Only the exact public path is mapped. Other request paths continue to use normal automatic routing unless another mapping applies.</p>
+
+<h3>Subtree mapping</h3>
+
+<p><code>setPathMap()</code> maps a public path prefix to another directory subtree in the application space.</p>
+
+<pre><code>achieve.setPathMap({
+  "/docs/": "/internal/documentation/"
+});</code></pre>
+
+<p>The part of the request path following the mapped prefix is preserved and appended to the mapped application-space path.</p>
+
+<pre><code>/docs/start.htm
+/docs/reference/http.htm</code></pre>
+
+<p>are translated to:</p>
+
+<pre><code>/internal/documentation/start.htm
+/internal/documentation/reference/http.htm</code></pre>
+
+<h3>Overlapping path mappings</h3>
+
+<p>If more than one path mapping matches a request, the most specific matching prefix is used.</p>
+
+<pre><code>achieve.setPathMap({
+  "/public/": "/content/",
+  "/public/docs/": "/documentation/"
+});</code></pre>
+
+<p>A request for:</p>
+
+<pre><code>/public/docs/start.htm</code></pre>
+
+<p>uses the <code>/public/docs/</code> mapping because it is the longer matching prefix.</p>
+
+<p>The order in which the mappings are defined does not determine which one wins.</p>
+
+<h3>Routing order</h3>
+
+<p>achieve checks routing in this order:</p>
+
+<ol>
+<li>exact route mapping</li>
+<li>path/subtree mapping</li>
+<li>automatic application routing</li>
+</ol>
+
+<p>An exact mapping therefore takes precedence over a path mapping. If neither applies, achieve uses normal automatic routing within the application space.</p>
+
+<h3>Routing changes location, not processing</h3>
+
+<p>A routing map translates a public request path to a resource in the application space. After the translation, achieve processes that resource in the normal way.</p>
+
+<p>The mapped resource may be a static file, JavaScript Servlet, or another resource type supported by achieve. Routing does not require a different application programming model.</p>
+
+<p>The original request URL remains the public URL requested by the client. Application code can therefore continue to use the request information supplied through <code>session.request</code>.</p>
+
+</main>
+<footer>
+<a href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a>
+</footer>
+</body>
+</html>

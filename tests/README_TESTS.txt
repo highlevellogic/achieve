@@ -1,0 +1,278 @@
+# ACHIEVE TESTS
+
+The tests directory contains engineering verification, protocol assertions,
+edge cases, intentionally broken servlets, and support fixtures used during
+Achieve development.
+
+Executable documentation for developers and students is in the sibling
+../achieve_examples/ repository. Achieve startup and configuration files remain
+in this repository and select that application with setAppPath(). See the
+sibling repository's README for its current startup commands.
+
+LOGGING
+
+Run the focused server/access logging regressions with:
+
+    node tests/logging/verify.js
+
+# RUNNING THE TESTS
+
+Achieve 3 requires Node.js 22 or later. From the repository root, install the
+locked development dependencies and run the complete regression suite with:
+
+    npm ci
+    npm test
+
+Run the JavaScript syntax check followed by the complete suite with:
+
+    npm run validate
+
+The aggregate runner discovers immediate tests/*/verify.js files, sorts them,
+and runs them sequentially using the current Node executable. Several suites
+use fixed loopback ports, so do not run another Achieve test batch or example
+server on those ports at the same time. The runner continues after an ordinary
+suite failure, prints every suite's output and result, and exits nonzero if any
+suite fails or terminates abnormally.
+
+To write an optional Markdown report in addition to the console output, use:
+
+    node tests/run-verifiers.js --report release-validation/achieve-3.0.0.md
+
+The report records the tested commit, working-tree state, platform, Node
+version, suite results, and declared environmental skips. The normal npm test
+command does not create a report.
+
+The physical-containment verifier uses directory junctions on Windows and
+symbolic links on other platforms. Windows file-symlink creation may be denied
+with a recognized permission or capability error; those cases are reported as
+explicit skips rather than passes. On Linux, those symbolic-link cases are
+expected to run when the filesystem permits them. Other link-creation errors
+remain test failures.
+
+Run an individual focused verifier directly when reviewing a particular
+behavior. Treat deliberately invalid fixtures as test inputs, not files to
+repair.
+
+# DEVELOPMENT TESTS
+
+## tests
+
+The /tests/ area contains focused development and regression tests.
+
+Individual tests are kept in separate subdirectories. This makes each test
+independently readable and makes it easier to determine which server feature
+has failed.
+
+For retained browser-oriented engineering fixtures, run:
+
+node tests/server.js
+
+and open the desired fixture beneath http://localhost:8988/. Focused automated
+verifiers start and stop their own configured servers instead.
+
+The principal areas are:
+
+* cache: ETag and cache validation;
+* conditional: exact conditional-request and representation validation;
+* redirect: directory redirects;
+* media: engineering-only and local large-media regression material;
+* helper: helper-module loading, reload, and error propagation;
+* jss: .jss, .jss.cjs, and .jss.mjs routing, defaults, precedence, live reload,
+  legacy compatibility, and source protection;
+* request_path: one-application routing, containment, and raw-backslash
+  rejection;
+* application_directory: default and configured application-directory
+  verification.
+
+Run the focused request-path verifier with:
+
+    node tests/request_path/verify.js
+
+Run the focused GET/POST parameter, JSON POST, and OPTIONS verifier with:
+
+    node tests/request_methods/verify.js
+
+The request-method verifier checks `session.params`, form and JSON POST data,
+malformed-JSON recovery, the intentional absence of parsed data on
+`session.request.get` and `session.request.post`, and the current OPTIONS
+status and response headers.
+
+Run the request-input verifier, including its test-local streaming SAX
+servlet, with:
+
+    node tests/request_input/verify.js
+
+The SAX fixture uses the development-only @nodable/sax dependency and does
+not depend on the Advanced XML teaching example.
+
+Run package self-reference verification with:
+
+    node tests/package_self_reference/verify.js
+
+Its local ESM startup fixture imports `achieve` by package name, starts the
+server, and serves a real request without depending on the Startup example.
+
+# APPLICATION-DIRECTORY FIXTURES
+
+Achieve has no default application directory. A valid application space must
+be selected with setAppPath() before a listener can start. URL directories
+never select another application or containment boundary.
+
+Run the focused automated verification with:
+
+node tests/application_directory/verify.js
+
+The verifier is self-contained and proves the required setAppPath()
+configuration, rejection of an implicit adjacent root directory, and the inert
+diagnostic behavior of obsolete setRootDir().
+
+# CONDITIONAL-REQUEST TESTS
+
+The conditional teaching example in ../achieve_examples/intermediate/conditional/
+provides a friendly introduction to ETags and preconditions. The verifier under
+tests/ is self-contained and provides exact request-header and status
+verification.
+
+The page displays status, ETag, Content-Encoding, Vary, and PASS/FAIL results
+for static If-None-Match and If-Match requests, their precedence, servlet
+wildcards, and failed-POST side-effect prevention.
+
+Run the complete native HTTP verification with:
+
+node tests/conditional/verify.js
+
+The verifier covers identity/gzip/deflate representation ETags, Vary,
+same- and cross-representation validation, lists, whitespace, wildcards, weak
+and strong comparisons, GET/HEAD/POST results, 304 metadata, servlet behavior
+without automatic response ETags, media ETags and If-Range, caching-disabled
+explicit preconditions, and temporary-copy source modification. It reuses the
+small tracked media fixture and removes all temporary application data.
+
+Achieve provides Last-Modified for selected static representations and applies
+If-Modified-Since and If-Unmodified-Since with the appropriate validator
+precedence and 304 or 412 responses. tests/static_dates/verify.js covers these
+date validators across identity, compressed, and media representations over
+HTTP, HTTPS, h2c, and secure HTTP/2. Date-form If-Range remains unsupported;
+it ignores Range and returns the full current representation.
+
+# HEAD REGRESSION EXPECTATIONS
+
+The public example under ../achieve_examples/intermediate/head/ introduces HEAD with a simple servlet
+request. Engineering HEAD verification should cover the broader server-managed
+resource paths:
+
+* ordinary static resources and servlet responses return the corresponding
+  GET status and relevant headers without a response body;
+* directory redirects and error responses preserve their status and headers
+  while suppressing server-generated explanatory bodies;
+* media HEAD describes the complete resource without opening a media stream;
+* a Range header on HEAD is ignored, so media metadata remains a full 200
+  response rather than a partial 206 response;
+* asynchronous servlets retain application ownership after enabling
+  autoEnd, with Node responsible for suppressing HEAD body bytes.
+
+# SERVLET FIXTURES
+
+The .jss marker identifies protected Achieve server-side source. Bare .jss is
+the simple CommonJS servlet form, .jss.cjs is explicit CommonJS, and .jss.mjs
+is ESM. Extensionless requests remain compatible with legacy .js servlets.
+Ordinary .js, .cjs, and .mjs files do not receive .jss source protection.
+
+The servlet_modules verifier covers both compound forms, unified Context
+load() dispatch, native ESM imports, MIME behavior, development reload,
+production caching, and compound default-file precedence.
+
+Several files under jss/source_protection and jss/lifecycle are deliberately
+invalid, throw errors, or omit the servlet export. They verify safe diagnostics,
+failed-load recovery, cache behavior, and the rule that .jss source never falls
+back to static delivery. Do not repair them merely because a standalone syntax
+check fails.
+
+Run the focused servlet runtime-error location verifier with:
+
+    node tests/servlet_errors/verify.js
+
+It checks application-frame-first reporting for CommonJS and ESM servlets and
+helpers, sanitized error output, fallback frames, and server recovery.
+
+Run managed Promise-returning servlet verification with:
+
+    node tests/promise_servlets/verify.js
+
+It checks CommonJS and ESM Promise results and rejections, synchronous
+compatibility, HEAD completion, custom thenables, registered handlers,
+autoEnd ownership, client aborts, and all four supported transports.
+
+# MEDIA AND COMPRESSION FIXTURES
+
+The tracked fixture is ../achieve_examples/basics/media/media/mov_bbb.mp4. It is the short Big
+Buck Bunny MP4 used by W3Schools HTML video examples. This copy was downloaded
+from W3Schools. Original film credit:
+Big Buck Bunny / Blender Foundation / Peach Open Movie. Achieve uses it only
+as a small media/Range regression fixture.
+
+The prior large media fixture is intentionally local-only and ignored at:
+
+tests/media/media/bbb_sunflower_1080p_30fps_normal.mp4
+
+Place a local media file there only when the large-file/open-ended Range
+regression is needed. Without it, that filename exercises missing-resource
+behavior. The confirmed regression used a 276,134,947-byte file with
+Range: bytes=276103168-.
+
+The .gz file under tests/helper is an intentional compression fixture.
+They expand exactly to their neighboring source files and are not globally
+ignored.
+
+Containment, malformed request-target, Host-field, and HTTP/2 checks require a
+native HTTP client or focused harness rather than a browser page. CONNECT
+authority validation, controlled rejection, socket closure, logging, and
+deprecation behavior are verified with:
+
+    node tests/connect/verify.js
+
+The test pages are based on a common simple HTML structure. Test-specific
+request and result handling is kept in the individual index.htm file whenever
+practical.
+
+## tests/template
+
+Purpose:
+
+Provides a starting point for creating new browser-based Achieve tests.
+
+To create a new test:
+
+1. Copy the template directory.
+
+2. Give the copied directory a name describing the feature being tested.
+
+3. Modify index.htm at the section marked:
+
+   // START TEST HERE
+
+4. Add any resources or servlets required by that test.
+
+5. Add the new test and its expected result to this README_TESTS.txt file.
+
+# ADDING TESTS
+
+Tests should normally be focused on one Achieve feature or closely related
+group of behaviors.
+
+Prefer a clearly named focused directory rather than placing unrelated checks
+into one large application.
+
+A test directory may contain several checks when they all exercise the same
+feature. For example, the HEAD test may check static files, servlets,
+redirects, errors, and media because they are all testing HEAD semantics.
+
+Keep verification simple enough that a developer can quickly understand:
+
+* what request is being made;
+* what result is expected;
+* how PASS or FAIL is determined.
+
+Avoid adding unnecessary test-framework complexity. Friendly teaching and
+browser exploration belong under ../achieve_examples/; exact verification and failure
+fixtures belong here.

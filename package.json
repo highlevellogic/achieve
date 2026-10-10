@@ -1,23 +1,49 @@
 {
   "name": "achieve",
-  "version": "2.2.0",
-  "description": "A modern high-performance, developer-friendly web server.",
-  "main": "achieve",
+  "version": "3.0.0",
+  "description": "Achieve - a developer-friendly web server and HTTP application server for Node.js.",
+  "main": "./achieve.js",
+  "exports": "./achieve.js",
+  "files": [
+    "achieve.js",
+    "CHANGELOG.md"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "check": "node --check achieve.js",
+    "test": "node tests/run-verifiers.js",
+    "validate": "npm run check && npm test"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/highlevellogic/achieve.git"
+    "url": "git+https://github.com/highlevellogic/achieve.git"
   },
   "keywords": [
-    "server",
+    "achieve",
     "http",
+    "http-server",
+    "server",
+    "web-server",
+    "application-server",
+    "node",
+    "nodejs",
+    "javascript",
+    "backend",
+    "routing",
+    "router",
     "https",
     "http2",
+    "servlet",
     "servlets",
-    "microservices",
-    "streaming video"
+    "static-file-server",
+    "compression",
+    "etag",
+    "cors",
+	"education",
+	"teaching",
+	"learning",
+	"tutorial",
+	"web-programming",
+	"server-side-javascript"
   ],
   "author": "Roger F. Gay (HLL Project http://hll.nu)",
   "license": "MIT",
@@ -27,7 +53,10 @@
   },
   "homepage": "https://github.com/highlevellogic/achieve#readme",
   "engines": {
-    "node": ">= 12.8.1"
+    "node": ">=22"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "@nodable/sax": "^1.2.1"
+  }
 }

@@ -1,0 +1,105 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve v3 - HTTP Methods</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+.navLink { display:inline-block; margin:.6em 5% .2em; color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.navLink:hover,.packageLink:hover { color:blue; }
+.backArrow { margin-right:.4em; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+main { margin:2% 5% 5%; }
+code { padding:.08em .35em; border-radius:.3em; background-color:rgb(220,235,245); color:blue; font-family:Consolas,"Courier New",monospace; }
+pre { margin:1em 0 1.4em; }
+pre code { display:block; padding:1em; overflow:auto; white-space:pre; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to documentation index</a>
+<main>
+
+<h1>HTTP Methods</h1>
+
+<h2>Standard HTTP methods</h2>
+
+<p>Achieve provides built-in handling for <code>GET</code>, <code>HEAD</code>, <code>POST</code>, and <code>OPTIONS</code>.</p>
+
+<h3>GET</h3>
+
+<p>A GET request follows normal <a href="routing.htm">resource routing</a>. Achieve serves a static resource or invokes a JavaScript Servlet. For a servlet, query-string parameters are available through <code>session.params</code>.</p>
+
+<h3>HEAD</h3>
+
+<p>A HEAD request follows the same routing and processing as GET. Servlets are invoked normally, and the resulting status and headers are preserved, but response body bytes are suppressed.</p>
+
+<h3>POST</h3>
+
+<p>A POST request follows normal resource routing. For a servlet, Achieve automatically parses JSON and URL-encoded form bodies into <code>session.params</code>. Other content types remain available through the raw <code>session.request</code> stream. See the <a href="session.htm">Servlet Session Object</a> for parameter and request-object details.</p>
+
+<h3>OPTIONS</h3>
+
+<p>Achieve handles OPTIONS automatically without invoking a servlet. It returns <code>204 No Content</code> with an <code>Allow</code> header listing the built-in methods and any registered additional methods.</p>
+
+<h2>OPTIONS and CORS</h2>
+
+<p>An ordinary OPTIONS request returns the methods supported by the server. When a request includes both <code>Origin</code> and <code>Access-Control-Request-Method</code>, Achieve treats it as a CORS preflight request and applies the configured CORS policy to the requested resource.</p>
+
+<p>An approved preflight returns <code>204 No Content</code> with <code>Allow</code>, <code>Access-Control-Allow-Origin</code>, <code>Access-Control-Allow-Methods</code>, and <code>Access-Control-Allow-Headers</code>. A cross-origin request without matching permission is refused with <code>403</code>. See <a href="config.htm#allowOrigins"><code>allowOrigins()</code></a> for CORS configuration.</p>
+
+<p><code>OPTIONS *</code> is a server-wide capability request. It returns <code>204 No Content</code> and the <code>Allow</code> header without performing resource lookup or CORS-policy matching.</p>
+
+<h2>Registering additional methods</h2>
+
+<p><code>setAppPath()</code> must select the application space before an additional method is registered. Register one servlet handler for the method:</p>
+
+<pre><code>achieve.registerMethod(
+    "DELETE",
+    "methods/delete.jss"
+);</code></pre>
+
+<p>The handler path is relative to the configured application space. Supported handler files use <code>.jss</code>, <code>.jss.cjs</code>, or <code>.jss.mjs</code>.</p>
+
+<p>The handler receives the normal servlet session object. It can inspect the method and the complete requested URL:</p>
+
+<pre><code>exports.servlet = function(session) {
+    return JSON.stringify({
+        method: session.request.method,
+        url: session.request.url
+    });
+};</code></pre>
+
+<p>The handler is selected by HTTP method, not by requested URL. Registering <code>DELETE</code> does not create separate URL-specific DELETE routes: every DELETE request is sent to the registered DELETE handler.</p>
+
+<h2>Registered-method behavior</h2>
+
+<p>Registered handlers bypass normal resource routing and the built-in GET and POST parameter parsing. <code>session.params</code> is initially empty; Achieve does not automatically parse the request query or body for these handlers. The handler can inspect <code>session.request.url</code> and consume the <code>session.request</code> stream directly.</p>
+
+<p>Normal servlet behavior still applies, including returned values and Promises, <code>session.autoEnd</code>, response-status selection, and caught-error handling. See <a href="servlets.htm">Backend: JavaScript Servlets</a> for response completion and the <a href="session.htm">Servlet Session Object</a> for the request and response objects.</p>
+
+<p>CORS authorization occurs before a registered handler is invoked. Registered methods are included in the <code>Allow</code> and <code>Access-Control-Allow-Methods</code> response headers.</p>
+
+<h2>Restrictions and unsupported methods</h2>
+
+<p>An unregistered method receives <code>501 Not Implemented</code>.</p>
+
+<p><code>GET</code>, <code>HEAD</code>, <code>POST</code>, <code>OPTIONS</code>, and <code>CONNECT</code> cannot be registered. A custom method name must be a valid HTTP token, and each method name can be registered only once. Method names are matched exactly; registration does not normalize their case.</p>
+
+<p>The handler path must remain within the configured application space and identify a supported servlet file. Registration rejects invalid handler paths. If a registered handler cannot be loaded or executed, Achieve handles the error and returns a <code>500</code> response when possible.</p>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a>
+</footer>
+</body>
+</html>

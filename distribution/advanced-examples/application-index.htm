@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Achieve v3 Advanced Examples</title>
+<style>
+body { margin:0; background:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+main { margin:2% 5% 5%; }
+li { margin:.8em 0; }
+footer { padding:1.5% 5%; border-top:solid blue thick; }
+</style>
+</head>
+<body>
+<header><img src="images/skyhigh1.jpg" alt=""></header>
+<main>
+<h1>Achieve v3 Advanced Examples</h1>
+<p id="server-check">Checking the example servlet…</p>
+<ul>
+<li><a href="advanced/mysql/">MySQL</a></li>
+<li><a href="advanced/websockets/">WebSockets and Rooms</a></li>
+<li><a href="advanced/cluster/">Cluster</a></li>
+<li><a href="advanced/xml/">XML/SAX streaming</a></li>
+<li><a href="advanced/distributed/">Distributed computing</a></li>
+<li><a href="advanced/soap/">SOAP</a></li>
+</ul>
+</main>
+<footer><a href="https://highlevellogic.github.io/achieve/">Achieve v3 documentation</a></footer>
+<script>
+fetch("confirm/servlets/hello.jss")
+  .then(response => response.text())
+  .then(message => document.getElementById("server-check").textContent = message)
+  .catch(error => document.getElementById("server-check").textContent = error.message);
+</script>
+</body>
+</html>

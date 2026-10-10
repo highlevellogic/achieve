@@ -1,0 +1,24 @@
+{
+  "name": "achieve-v3-advanced-examples",
+  "private": true,
+  "description": "Runnable advanced examples for Achieve v3",
+  "type": "module",
+  "scripts": {
+    "start": "node start.mjs",
+    "start:websockets": "node start-websockets.mjs",
+    "start:cluster": "node start-cluster.mjs",
+    "start:distributed": "node start-distributed.mjs",
+    "start:soap": "node start-soap.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@nodable/sax": "^1.2.1",
+    "achieve": "^3.0.0",
+    "achieve_rooms": "^2.0.0",
+    "mysql2": "^3.24.4",
+    "soap": "^1.11.0",
+    "ws": "^8.21.3"
+  }
+}

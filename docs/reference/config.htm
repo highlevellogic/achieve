@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Configuration - Achieve</title>
+<style>
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    background: lightblue;
+    font-family: Arial, Helvetica, sans-serif;
+    line-height: 1.5;
+}
+header img {
+    width: 100%;
+    display: block;
+}
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+.navLink { display:inline-block; margin:.6em 5% .2em; color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.navLink:hover { color:blue; }
+.backArrow { margin-right:.4em; }
+main {
+    margin: 2% 5% 5%;
+}
+h1, h2, h3 {
+    line-height: 1.2;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+th, td {
+    padding: .5em .7em;
+    border: 1px solid #999;
+    text-align: left;
+    vertical-align: top;
+}
+code {
+    font-family: Consolas, "Courier New", monospace;
+}
+pre {
+    padding: 1em;
+    overflow-x: auto;
+    background: #f5f5f5;
+    border: 1px solid #aaa;
+}
+pre code {
+    white-space: pre;
+}
+footer {
+    padding: 1em 5%;
+    border-top: 2px solid #2870a0;
+}
+</style>
+</head>
+<body>
+
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to documentation index</a>
+
+<main>
+
+<h1>Configuration</h1>
+
+<p>Before starting a listener, use <code>setAppPath()</code> to choose the application space containing the resources achieve will make available through HTTP. Achieve does not supply a default application space. Other configuration methods select optional behavior. Example startup with configurations:</p>
+
+<pre><code>const achieve = require("achieve");
+
+achieve.setAppPath("C:/projects/myApplication/public");
+achieve.setMode("production");
+achieve.setCaching(true);
+achieve.setCompress(true);
+achieve.setLogging("server", "access");
+
+achieve.listen(8989);</code></pre>
+
+<table>
+<caption>Table 1: List of configuration options and defaults</caption>
+<thead>
+<tr>
+<th>Method name</th>
+<th>Short description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr><td><a href="#addAVMimeType"><code>addAVMimeType()</code></a></td><td>Add an audiovisual MIME type.</td><td>built-in AV MIME table</td></tr>
+<tr><td><a href="#addMimeType"><code>addMimeType()</code></a></td><td>Add an ordinary MIME type.</td><td>built-in MIME table</td></tr>
+<tr><td><a href="#allowOrigins"><code>allowOrigins()</code></a></td><td>Permit cross-origin access.</td><td>none</td></tr>
+<tr><td><a href="#registerMethod"><code>registerMethod()</code></a></td><td>Register an additional HTTP method.</td><td>GET, HEAD, POST, OPTIONS</td></tr>
+<tr><td><a href="#setAppPath"><code>setAppPath()</code></a></td><td>Set the public application root.</td><td><code>none</code></td></tr>
+<tr><td><a href="#setBufferedInputLimit"><code>setBufferedInputLimit()</code></a></td><td>Set maximum buffered POST input.</td><td>1 MiB (1024 × 1024)</td></tr>
+<tr><td><a href="#setCaching"><code>setCaching()</code></a></td><td>Enable browser caching and HTTP validators.</td><td><code>false</code></td></tr>
+<tr><td><a href="#setCompress"><code>setCompress()</code></a></td><td>Compress eligible static resources.</td><td><code>false</code></td></tr>
+<tr><td><a href="#setLogging"><code>setLogging()</code></a></td><td>Select logging options.</td><td>no persistent logging</td></tr>
+<tr><td><a href="#setLogPath"><code>setLogPath()</code></a></td><td>Set the log directory.</td><td>[achieve install/startup directory]/logs/</td></tr>
+<tr><td><a href="#setMode"><code>setMode()</code></a></td><td>Set Achieve mode: "development" or "production".</td><td><code>"development"</code></td></tr>
+<tr><td><a href="#setNodeEnv"><code>setNodeEnv()</code></a></td><td>Set NODE_ENV.</td><td><code>"production"</code> if NODE_ENV is undefined</td></tr>
+<tr><td><a href="#setPathMap"><code>setPathMap()</code></a></td><td>Add subtree mappings.</td><td>none</td></tr>
+<tr><td><a href="#setRouteMap"><code>setRouteMap()</code></a></td><td>Add exact resource mappings.</td><td>none</td></tr>
+<tr><td><a href="#showMimeTypes"><code>showMimeTypes()</code></a></td><td>Show MIME types at startup.</td><td>off</td></tr>
+</tbody>
+</table>
+
+<section>
+<h2 id="addAVMimeType"><code>addAVMimeType()</code> - Add an audiovisual MIME type to the AV MIME list</h2>
+
+<p>(See also <code>showMimeTypes()</code>.)</p>
+
+<p>Add a media type that should use Achieve's audiovisual streaming and range-request handling with:</p>
+
+<pre><code>achieve.addAVMimeType("wav", "audio/wav");</code></pre>
+
+<p>The leading dot is optional.</p>
+</section>
+
+<section>
+<h2 id="addMimeType"><code>addMimeType()</code> - Add a MIME type to the MIME list</h2>
+
+<p>(See also <code>showMimeTypes()</code>.)</p>
+
+<p>Add an ordinary static MIME type with:</p>
+
+<pre><code>achieve.addMimeType("pub", "application/x-mspublisher");</code></pre>
+
+<p>The leading dot is optional:</p>
+
+<pre><code>achieve.addMimeType(".pub", "application/x-mspublisher");</code></pre>
+
+<p>The <code>.jss</code> suffix is reserved for protected server-side servlet source and cannot be registered as a public MIME type.</p>
+</section>
+
+<section>
+<h2 id="allowOrigins"><code>allowOrigins()</code> - set CORS permissions</h2>
+
+<p>default: no CORS permissions granted</p>
+
+<p>Browsers normally restrict requests from one origin to another. <code>allowOrigins()</code> configures the origins that may access selected application resources.</p>
+
+<p>Allow one origin to access all assets beneath <code>/api/</code>:</p>
+
+<pre><code>achieve.allowOrigins(
+    "https://example.com",
+    "/api/",
+    "*"
+);</code></pre>
+
+<p>Restrict permission to named assets:</p>
+
+<pre><code>achieve.allowOrigins(
+    "https://example.com",
+    "/downloads/",
+    ["catalog.json", "current.zip"]
+);</code></pre>
+
+<p>Origins, paths, and asset names may also be supplied as arrays:</p>
+
+<pre><code>achieve.allowOrigins(
+    [
+        "https://www.example.com",
+        "https://admin.example.com"
+    ],
+    ["/api/", "/reports/"],
+    "*"
+);</code></pre>
+
+<p>If paths and assets are omitted, they default to <code>"*"</code>, granting that origin access throughout the application space:</p>
+
+<pre><code>achieve.allowOrigins("https://example.com");</code></pre>
+
+<p>The <code>"*"</code> wildcard may also be used for origins. Grant all origins access throughout the application space:</p>
+
+<pre><code>achieve.allowOrigins("*");</code></pre>
+
+<p>Calls accumulate policies for different origins and paths. For an incoming origin, achieve first selects its exact-origin policy map when one exists. The <code>"*"</code> origin policy map is used only when no exact-origin map exists; permissions from the two maps are not combined. Within the selected map, the most-specific matching path policy takes precedence, allowing access to be narrowed to particular directories or assets.</p>
+
+<p>A later call for the same origin and path replaces the previous policy for that combination.</p>
+
+<p>For an approved cross-origin request, achieve returns the corresponding <code>Access-Control-Allow-Origin</code> response header. A cross-origin request without matching permission is refused with a <code>403</code> response.</p>
+</section>
+
+<section>
+<h2 id="registerMethod"><code>registerMethod()</code> - register a custom implementation of an HTTP method</h2>
+
+<p>GET, HEAD, POST, and OPTIONS are implemented by Achieve. Other valid HTTP methods, standard or non-standard, can be registered with your own implementation. CONNECT is reserved for server-level handling and cannot be registered as an application method.</p>
+
+<p>Registration uses method name and path to implementing servlet.</p>
+
+<p>Example:</p>
+
+<pre><code>achieve.registerMethod(
+    "PURGE",
+    "methods/purge.jss"
+);</code></pre>
+
+<p>Method names for standard methods must be valid HTTP method tokens and must not be one of achieve’s implemented or reserved methods. The servlet path is relative to the application space and must identify a supported servlet file:</p>
+
+<ul>
+<li><code>.jss</code></li>
+<li><code>.jss.cjs</code></li>
+<li><code>.jss.mjs</code></li>
+</ul>
+
+<p>A request using the registered method invokes that servlet. The servlet receives the normal session request and response objects and can inspect the requested target.</p>
+
+<p>A method name can be registered only once.</p>
+</section>
+
+<section>
+<h2 id="setAppPath"><code>setAppPath()</code> - set the public application space</h2>
+
+<p>The application path is the top of the directory tree of the public application space. Achieve restricts HTTP request path resolution to resources within the application space. Incoming URI request paths are resolved from the app path.</p>
+
+<p>You can set your application space to anywhere the computer can access.</p>
+
+<pre><code>achieve.setAppPath("C:/projects/myApplication/public");</code></pre>
+
+<p>Now a request to <code>http://localhost:8989/myapp/</code> will be routed to <code>C:/projects/myApplication/public/myapp/</code>.</p>
+
+<p>TIP: To create a refactoring-friendly private area, reached only from your servlets, use the <code>session.appPath</code> parameter in the servlet.</p>
+
+<pre><code>let private = path.resolve(session.appPath, "../private");</code></pre>
+
+<p><code>setAppPath()</code> changes the application space. It does not change the startup directory or the default location of log files.</p>
+
+<p>Routing, exact route mappings, and subtree mappings are covered in detail on the <a href="routing.htm">Routing page</a>.</p>
+</section>
+
+<section>
+<h2 id="setBufferedInputLimit"><code>setBufferedInputLimit()</code> - set the limit on request data size that achieve will parse before delivery to the servlet</h2>
+
+<p>Default: 1 MiB</p>
+
+<p>Parsed data is made available through the servlet session object as <code>session.params</code>. The following explains when achieve parses input data. TIP: For large uploads, avoid parsing and let the servlet handle the data stream via the <code>session.request</code> object.</p>
+
+<p>GET query-string data is always parsed.</p>
+
+<p>Achieve buffers and parses POST bodies with these content types:</p>
+
+<ul>
+<li><code>application/x-www-form-urlencoded</code></li>
+<li><code>application/json</code></li>
+</ul>
+
+<p>For compatibility, a POST without <code>Content-Type</code> is treated as <code>application/x-www-form-urlencoded</code>. Achieve emits a server warning: to the development console in development mode, and to the persistent server log in production when server logging is enabled.</p>
+
+<p>If buffered input exceeds the configured limit, achieve responds with <code>413 Payload Too Large</code> and does not invoke the servlet.</p>
+
+<p>Change the input limit with:</p>
+
+<pre><code>achieve.setBufferedInputLimit(2 * 1024 * 1024);</code></pre>
+
+<p>The value must be a positive safe integer and must remain within achieve's memory-safety limit for the current Node process.</p>
+</section>
+
+<section>
+<h2 id="setCaching"><code>setCaching()</code> - toggles support for static resource browser caching</h2>
+
+<p>Default: <code>false</code>. Achieve does not normally send <code>ETag</code> and <code>Last-Modified</code> validators. Enabling caching adds these validators to static and media responses, allowing browsers to revalidate cached resources.</p>
+
+<p>Enable it with:</p>
+
+<pre><code>achieve.setCaching(true);</code></pre>
+
+<p>When enabled, achieve supplies <code>ETag</code> and <code>Last-Modified</code> validators for static and media resources. Achieve supports conditional requests using <code>If-Match</code>, <code>If-Unmodified-Since</code>, <code>If-None-Match</code>, and <code>If-Modified-Since</code>. Successful cache validation for GET and HEAD can produce <code>304 Not Modified</code>; failed preconditions produce <code>412 Precondition Failed</code> where applicable.</p>
+
+<p>Disable it explicitly with:</p>
+
+<pre><code>achieve.setCaching(false);</code></pre>
+
+<p>Disabling caching stops the normal advertisement of validators, but it does not disable all conditional-request processing. Preconditions supplied by a client can still affect a response. See the <a href="static.htm#caching-and-conditional-requests">Static Resources Reference</a> for details.</p>
+</section>
+
+<section>
+<h2 id="setCompress"><code>setCompress()</code> - compress static assets support</h2>
+
+<p>Browsers and other clients may request that the server compress responses and provide a list of preferred compression algorithms.</p>
+
+<p>Default: <code>false</code>, compression not supported</p>
+
+<p>Enable it with:</p>
+
+<pre><code>achieve.setCompress(true);</code></pre>
+
+<p>When compression is enabled, achieve can serve gzip or deflate representations of text and application static resources when the client advertises support for them. Achieve generates and maintains its own artifacts beneath <code>.compression-cache</code> in the application space; it does not use conventional adjacent precompressed sidecar files.</p>
+
+<p>When a compressed representation is not already available, Achieve creates it asynchronously, so the first request may receive the uncompressed resource. Later requests can use the compressed representation.</p>
+
+<p>See the <a href="static.htm#compression">Static Resources Reference</a> for representation selection, cache protection, and fallback behavior.</p>
+</section>
+
+<section>
+<h2 id="setLogging"><code>setLogging()</code> - in startup file before call to listener</h2>
+
+<p>Default: no persistent logging</p>
+
+<p>Development mode provides developer-friendly diagnostic output to the console. This is controlled by mode, not by <code>setLogging()</code>. Production mode does not produce development diagnostic output.</p>
+
+<p>Options:</p>
+
+<ul>
+<li><code>"server"</code> — server events, warnings, and errors written to dated server log files.</li>
+<li><code>"access"</code> — completed request information written to dated access log files.</li>
+</ul>
+
+<p>Log file location defaults (see also <code>setLogPath()</code>):</p>
+
+<p>server and access: <code>[startup directory]/logs/</code></p>
+
+<p>Set either or both options by name:</p>
+
+<pre><code>achieve.setLogging("server", "access");</code></pre>
+
+<p>Use a boolean setting for both or none:</p>
+
+<pre><code>achieve.setLogging(true);  // server and access
+achieve.setLogging(false); // no persistent logging</code></pre>
+</section>
+
+<section>
+<h2 id="setLogPath"><code>setLogPath()</code> - select a path to log files</h2>
+
+<p>Default: <code>[startup directory]/logs/</code></p>
+
+<p>An absolute path selects that location directly:</p>
+
+<pre><code>achieve.setLogPath("c:/path/to/logs/");</code></pre>
+
+<p>A relative log path is resolved from the server startup directory, not from the application space:</p>
+
+<pre><code>achieve.setLogPath("./logs/"); // [startup directory]/logs/</code></pre>
+</section>
+
+<section>
+<h2 id="setMode"><code>setMode()</code> development (default) to production</h2>
+
+<p>Achieve’s automatic servlet error checking and reporting work in both development and production. Achieve typically does not crash on servlet error. Error codes and messages are also returned in the http response. (See exception in servlet document.)</p>
+
+<p>Development mode is the default, helping to provide achieve’s “friendly in development” nature.</p>
+
+<pre><code>achieve.setMode("development");</code></pre>
+
+<p>In development mode, changed servlets are automatically reloaded without restarting the server. Helper modules loaded with <code>session.load()</code> are also reloaded when changed. URL request information, diagnostics, and error reporting are sent to the console. (See also <code>session.load()</code> and <code>setLogging()</code>.)</p>
+
+<p>Production mode:</p>
+
+<pre><code>achieve.setMode("production");</code></pre>
+
+<p>Production mode reuses cached servlet and helper modules without reloading when changed. Application code changes become visible after the server restarts.</p>
+</section>
+
+<section>
+<h2 id="setNodeEnv"><code>setNodeEnv()</code> - set the Node environment</h2>
+
+<p><code>setNodeEnv()</code> sets Node’s conventional <code>NODE_ENV</code> process environment variable:</p>
+
+<p>default: <code>achieve.setNodeEnv("production");</code></p>
+
+<p>Achieve mode and <code>NODE_ENV</code> are separate settings:</p>
+
+<pre><code>achieve.setMode("production");
+achieve.setNodeEnv("production");</code></pre>
+
+<p><code>setMode()</code> controls achieve’s own development and production behavior. <code>setNodeEnv()</code> sets <code>process.env.NODE_ENV</code> for application code and packages that use that convention. Calling one does not automatically select the other. Achieve defaults <code>NODE_ENV</code> to production so that already tested third party modules that use the convention do not weigh down achieve application development with extra processing.</p>
+</section>
+
+<section>
+<h2 id="setPathMap"><code>setPathMap()</code></h2>
+
+<p><code>setPathMap()</code> maps one public directory subtree to another directory subtree inside the application space.</p>
+
+<p><code>setPathMap()</code> is part of the routing trio. See also <code>setAppPath()</code> and <code>setRouteMap()</code>.</p>
+
+<p>See the <a href="routing.htm">Routing reference</a> for more details.</p>
+
+<pre><code>achieve.setPathMap({
+    "/docs/": "/internal/documentation/"
+});</code></pre>
+
+<p>Both paths must end in <code>/</code>. Additional calls accumulate mappings, and repeating the same public prefix replaces only that prefix.</p>
+
+<p>Exact mappings take precedence over subtree mappings. When several subtree prefixes match, the longest matching prefix wins.</p>
+</section>
+
+<section>
+<h2 id="setRouteMap"><code>setRouteMap()</code></h2>
+
+<p><code>setRouteMap()</code> maps a complete public resource path to a resource path inside the application space.</p>
+
+<p><code>setRouteMap()</code> is part of the routing trio. See also <code>setAppPath()</code> and <code>setPathMap()</code>.</p>
+
+<p>See the <a href="routing.htm">Routing reference</a> for more details.</p>
+
+<pre><code>achieve.setRouteMap({
+    "/short": "/internal/page.htm"
+});</code></pre>
+
+<p>Additional calls accumulate mappings:</p>
+
+<pre><code>achieve.setRouteMap({
+    "/status": "/servlets/status.jss"
+});</code></pre>
+
+<p>Supplying the same public path again replaces only that mapping.</p>
+</section>
+
+<section>
+<h2 id="showMimeTypes"><code>showMimeTypes()</code> - Display the current list of supported MIME types</h2>
+
+<p>(See also <code>addMimeType()</code> and <code>addAVMimeType()</code>.)</p>
+
+<p>Strictly speaking, <code>showMimeTypes()</code> is not a configuration option. It displays the MIME types currently supported by Achieve. The MIME list is used to set the <code>Content-Type</code> header for assets being served.</p>
+
+<p>Browsers use <code>Content-Type</code> to determine how content should be handled. Achieve takes care of setting it automatically as long as the file extension is included in the MIME list. If a MIME type is not set to a particular extension, it defaults to <code>text/plain</code>. The MIME list also includes servlet: <code>text/plain</code>. This is the default for servlet responses. Alternative Content-Types for servlet returns are typically set in the servlets themselves.</p>
+
+<p>Additional MIME types can be registered using <code>addMimeType()</code> and <code>addAVMimeType()</code>, so you are not limited to the types initially supplied by Achieve.</p>
+</section>
+
+</main>
+
+<footer>
+<a href="https://www.npmjs.com/package/achieve">achieve on npm</a> |
+<a href="https://github.com/highlevellogic/achieve">achieve on GitHub</a>
+</footer>
+
+</body>
+</html>
