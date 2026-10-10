@@ -64,7 +64,7 @@ function request(port,requestPath) {
             assert.strictEqual(response.status,200);
             assert.strictEqual(response.body,"catchall server remains available\n");
             await new Promise(resolve => setTimeout(resolve,25));
-            assert(testCase.stdout().includes("HLL Achieve v3.0.0-dev.0 HTTP is running"));
+            assert(testCase.stdout().includes("HLL Achieve v3.0.0 HTTP is running"));
             assert(!testCase.stdout().includes("Catchall error in achieveApp."));
             assert.strictEqual(testCase.stderr(),"");
             if (logging === "enabled") {

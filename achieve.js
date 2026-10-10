@@ -1,3 +1,10 @@
+
+/*
+ * Achieve - Web server for Node.js
+ * Copyright (c) 2018-2026 Roger F. Gay
+ * SPDX-License-Identifier: MIT
+ */
+
 // Essential modules. Always load. 
 const fs = require('fs');
 const path = require('path');

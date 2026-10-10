@@ -76,7 +76,7 @@ async function liveStartupTest() {
 (async function () {
     try {
         const packageMetadata=JSON.parse(fs.readFileSync(path.join(repositoryPath,"package.json"),"utf8"));
-        assert.strictEqual(packageMetadata.main,"achieve");
+        assert.strictEqual(packageMetadata.main,"./achieve.js");
         assert.strictEqual(packageMetadata.exports,"./achieve.js");
         pass("package exposes one root entry while retaining main");
 

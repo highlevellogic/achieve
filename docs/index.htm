@@ -86,40 +86,49 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 </li>
 </ul>
 
-<h2>Examples</h2>
+<h2 id="examples">Examples</h2>
 
 <p>
-The Achieve v3 Advanced Examples are complete runnable applications
-demonstrating MySQL integration, WebSockets and Rooms, Node clustering,
+The Achieve 3 Advanced Examples provide a complete, ready-to-run development
+environment for newcomers, students, teachers, and experienced developers.
+The six demonstrations cover MySQL, WebSockets and Rooms, Node clustering,
 XML/SAX streaming, distributed computing, and SOAP services.
 </p>
+
 <p>
-This development ZIP bundles the current Achieve v3 code, so it does not
-require an adjacent development checkout or a published Achieve v3 package.
+The final distribution will install Achieve 3 and its supporting packages from
+npm. Choose a location and extract the ZIP, open a terminal in the resulting
+<code>achieve_examples</code> directory, and run:
+</p>
+
+<pre><code>npm install
+npm start</code></pre>
+
+<p>
+Then visit <a href="http://localhost:8989/">http://localhost:8989/</a>.
+The included <code>INSTALL.htm</code> provides additional instructions,
+specialized startup commands, and the optional MySQL setup.
 </p>
 
 <p>
-<a class="docLink" href="downloads/achieve-v3-advanced-examples-dev.zip">Download the Achieve v3 Advanced Examples development ZIP</a>.
+The final download will be activated here after Achieve 3.0.0 is published and
+the registry-based installation has been verified.
+</p>
+
+<!-- Activate after publication and final archive verification:
+<p><a class="docLink" href="https://highlevellogic.github.io/achieve/downloads/achieve-v3-advanced-examples.zip">Download the Achieve 3 Advanced Examples ZIP</a>.</p>
+-->
+
+<p>Until then, the existing development distribution remains available:</p>
+
+<p>
+<a class="docLink" href="https://highlevellogic.github.io/achieve/downloads/achieve-v3-advanced-examples-dev.zip">Download the Achieve 3 Advanced Examples development ZIP</a>.
 </p>
 
 <p>
-Extract the ZIP, open a command prompt in the
-<code>achieve3-examples</code> directory, and install the
-dependencies:
-</p>
-<pre><code>npm ci</code></pre>
-
-<p>
-Start the landing page, MySQL application, and XML/SAX application:
-</p>
-
-<pre><code>npm start</code></pre>
-
-<p>
-Then open <code>http://localhost:8989/</code>. The included
-<code>README.md</code> gives the specialized startup commands for WebSockets,
-Cluster, Distributed computing, and SOAP, plus the optional MySQL setup. Stop
-any other server using ports 8989 or 8990 before starting these examples.
+The development archive uses the earlier <code>achieve3-examples</code>
+directory and bundled development package. Follow the <code>README.md</code>
+included in that archive for its installation instructions.
 </p>
 
 </main>

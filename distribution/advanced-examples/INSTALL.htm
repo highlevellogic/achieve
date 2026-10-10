@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Install Achieve 3 Advanced Examples</title>
+  <style>
+    :root { font-family: Arial, Helvetica, sans-serif; line-height: 1.55; color: #172333; background: #eef3f7; }
+    body { margin: 0; }
+    main { max-width: 900px; min-height: 100vh; box-sizing: border-box; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; background: #fff; }
+    h1, h2 { color: #173b5d; }
+    h1 { margin-top: 0; }
+    code { font-family: Consolas, "Courier New", monospace; }
+    pre { overflow-x: auto; padding: 1rem; border: 1px solid #cad7e2; border-radius: 0.35rem; background: #f5f8fa; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.6rem; border: 1px solid #cad7e2; text-align: left; vertical-align: top; }
+    th { background: #edf3f7; }
+    .note { padding: 0.8rem 1rem; border-left: 0.3rem solid #3f789f; background: #edf5fa; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Achieve 3 Advanced Examples</h1>
+  <p>This archive contains six complete demonstrations of Achieve 3: MySQL,
+  WebSockets and Rooms, Node clustering, XML/SAX streaming, distributed
+  computing, and SOAP services.</p>
+  <p class="note">You do not need an existing Achieve installation or an
+  adjacent development checkout. <code>npm install</code> installs Achieve and
+  the supporting packages used by the examples.</p>
+
+  <h2>Requirements</h2>
+  <ul>
+    <li>Node.js 22 or a later compatible Node.js release.</li>
+    <li>npm, included with Node.js.</li>
+    <li>A terminal such as PowerShell, Command Prompt, or a Unix shell.</li>
+  </ul>
+
+  <h2>Extract and install</h2>
+  <ol>
+    <li>Choose an ordinary location and extract the ZIP file there.</li>
+    <li>Extraction creates one directory named <code>achieve_examples</code>.</li>
+    <li>Open a terminal in that directory.</li>
+    <li>Install the dependencies and start the default server:</li>
+  </ol>
+  <pre><code>npm install
+npm start</code></pre>
+  <p>Open <a href="http://localhost:8989/">http://localhost:8989/</a> in a browser.
+  The landing page links to the examples available through the default server,
+  including XML/SAX streaming and the confirmation servlet.</p>
+  <p>The nested <code>application/</code> directory is the Achieve application
+  space. Startup files, package metadata, installed packages, and this guide
+  remain outside the HTTP-visible application space.</p>
+
+  <h2>Specialized demonstrations</h2>
+  <p>Stop the current server before starting another demonstration that uses the
+  same port. Press <kbd>Ctrl</kbd>+<kbd>C</kbd> in the terminal to stop a server.</p>
+  <table>
+    <thead><tr><th>Demonstration</th><th>Command</th><th>Ports</th><th>Extra requirement</th></tr></thead>
+    <tbody>
+      <tr><td>WebSockets and Rooms</td><td><code>npm run start:websockets</code></td><td>8989</td><td>None</td></tr>
+      <tr><td>Node clustering</td><td><code>npm run start:cluster</code></td><td>8989 and 8990</td><td>None</td></tr>
+      <tr><td>Distributed computing</td><td><code>npm run start:distributed</code></td><td>8989 and 8990</td><td>None</td></tr>
+      <tr><td>SOAP services</td><td><code>npm run start:soap</code></td><td>8989 and 8990</td><td>None</td></tr>
+    </tbody>
+  </table>
+  <p>XML/SAX streaming and the confirmation servlet run with the default
+  <code>npm start</code> command.</p>
+
+  <h2>Optional MySQL setup</h2>
+  <p>The MySQL demonstration requires a reachable MySQL server. The rest of the
+  distribution does not require MySQL.</p>
+  <p>Run <code>application/advanced/mysql/setup.sql</code> on a MySQL-compatible
+  server. Then replace the placeholder user name and password in both servlets
+  under <code>application/advanced/mysql/servlets/</code>. Run
+  <code>npm start</code> and open the MySQL demonstration from the landing page.</p>
+  <p>The credentials and login logic are deliberately simple demonstration
+  code; they are not production authentication guidance. Do not commit or share
+  real credentials.</p>
+
+  <h2>Troubleshooting</h2>
+  <ul>
+    <li>If <code>npm install</code> reports that <code>achieve@3</code> cannot be found, verify that Achieve 3.0.0 or a later compatible version is available from the npm registry.</li>
+    <li>If port 8989 or 8990 is already in use, stop the other server or process
+    before starting a demonstration. For local testing, the launchers accept
+    <code>ACHIEVE_EXAMPLES_PORT</code> and
+    <code>ACHIEVE_EXAMPLES_SECONDARY_PORT</code> overrides, although some pages
+    and service descriptions use the default ports.</li>
+    <li>Run commands from <code>achieve_examples</code>, where <code>package.json</code> is located.</li>
+    <li>For MySQL connection failures, confirm that the server is running,
+    <code>setup.sql</code> has been applied, and both servlet credential blocks
+    are correct.</li>
+    <li>Use the specialized launcher listed above if a feature is unavailable
+    from the default server.</li>
+  </ul>
+  <p>Cluster and distributed launchers create child processes. Allow shutdown
+  to finish before starting the next example.</p>
+
+  <h2>Achieve documentation</h2>
+  <p>For tutorials and the complete API Reference, see the
+  <a href="https://highlevellogic.github.io/achieve/index.htm">Achieve 3 documentation</a>.</p>
+</main>
+</body>
+</html>

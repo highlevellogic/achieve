@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Achieve 3.0.0</title>
+<style>
+body {
+    box-sizing: border-box;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+    color: #20252b;
+    background: #fff;
+    font: 17px/1.6 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+h1, h2, h3 { line-height: 1.2; color: #163a59; }
+h1 { margin-bottom: .25rem; font-size: 2.6rem; }
+h2 { margin-top: 2.6rem; border-bottom: 1px solid #d9e2e8; padding-bottom: .3rem; }
+h3 { margin-top: 1.7rem; }
+a { color: #075da7; }
+code, pre { font-family: "Cascadia Code", Consolas, monospace; }
+code { background: #f1f4f6; padding: .08rem .25rem; border-radius: 3px; }
+pre {
+    overflow-x: auto;
+    padding: 1rem;
+    background: #f4f7f9;
+    border-left: 4px solid #4d8fbd;
+    border-radius: 4px;
+    line-height: 1.45;
+}
+pre code { padding: 0; background: transparent; }
+.tagline { margin-top: 0; color: #367225; font-size: 1.25rem; font-weight: 700; }
+.lead { font-size: 1.18rem; }
+.status {
+    margin: 1.5rem 0;
+    padding: .9rem 1rem;
+    background: #fff7df;
+    border-left: 4px solid #d89400;
+}
+.toc ul { columns: 2; column-gap: 2.5rem; }
+.toc li { break-inside: avoid; margin: .2rem 0; }
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: .8rem 1.5rem; }
+.feature-grid section { margin: 0; }
+.feature-grid h3 { margin-bottom: .15rem; }
+.feature-grid p { margin-top: .15rem; }
+.note { padding: .8rem 1rem; background: #eef6fb; border-left: 4px solid #4d8fbd; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: .55rem; border: 1px solid #cfd9df; text-align: left; vertical-align: top; }
+th { background: #eef3f6; }
+footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #d9e2e8; color: #56616a; }
+@media (max-width: 650px) {
+    body { padding: 1rem; }
+    .toc ul { columns: 1; }
+}
+
+header > img { width:100%; height:auto; display:block; margin:0 0 1.5rem; }
+#developer-note{padding:0 0 1rem;}
+#developer-note .signature{font-style:italic;font-weight:600;}
+</style>
+</head>
+<body>
+<header><img src="https://highlevellogic.github.io/achieve/images/skyhigh1.jpg" alt="Achieve — High Level Logic Project"/><h1>Achieve</h1><p class="lead">Achieve is a standards-compliant, production-ready web server implemented on Node.js that is designed to be friendly in development and fast in production.</p><p><strong>2018: V1</strong> was created as a light-weight, developer-friendly, introductory web server for education.</p><p><strong>2020: V2</strong> introduced additional features such as ETags, compression, streaming video, and more.</p><p><strong>2026: V3</strong> emerges as a modern, standards-compliant web server for business, industry, and education without losing its original developer friendliness.</p><p>This document provides an overview of Achieve's features and a brief introduction to JavaScript Servlets, Achieve's distinctive approach to connecting HTTP requests directly to backend application code.</p><p>Tutorials, detailed references, and advanced examples are available in the <a href="https://highlevellogic.github.io/achieve/index.htm">project documentation</a>.</p></header><section id="developer-note"><h2>A word from the developer</h2><p>After decades in software engineering, I found myself in semi-retirement working part-time as a high school teacher with courses in introductory programming and web development. I thought it would be great to have a very easy to use server with backend programming in JavaScript. So, I built one. That was achieve v1, 2018.</p><p>There is a lot to learning end-to-end web programming for the first time. Students should focus on the process and writing application code with as few unnecessary details and distractions as possible. This led to having the server deal with more than servers normally do. Content-Type, routing, reloading edited code, finishing the HTTP response, and handling errors in application code among them. And it needed to be forgiving and reliable.</p><p>As I used the server myself for teaching, demonstrations, and additional software products for education, I found it was good for me too. The development process became exceptionally efficient without introducing limitations. Efficient, reliable functionality in the server was always available for reuse. This made v3 worth building; a standards-compliant, production-ready web server. In other words, a commercial-grade web server for professionals.</p><p>This document presents features and gives a very brief introduction to backend JavaScript servlets. I hope it will capture your interest or at least curiosity. If so, I recommend the <a href="https://highlevellogic.github.io/achieve/index.htm">Getting Started section of the documentation</a> on the project web site. It is an efficient tutorial. Other resources there include a complete reference section and advanced examples.</p><p>I hope you will try achieve and enjoy using it as much as I have.</p><p class="signature">m.v.h.<br/>Roger</p></section>
+<nav aria-labelledby="contents" class="toc">
+<h2 id="contents">Contents</h2>
+<ul><li><a href="#first-application">A web application in a few lines</a></li><li><a href="#servlets">JavaScript Servlets: backend logic without HTTP boilerplate</a></li><li><a href="#protocols-and-http-behavior">HTTP, HTTPS, and HTTP/2</a></li><li><a href="#static-resources">Built-in static file serving</a></li><li><a href="#caching-and-conditional-requests">ETags and conditional requests</a></li><li><a href="#compression">Automatic HTTP compression</a></li><li><a href="#media-and-ranges">Media streaming and byte ranges</a></li><li><a href="#routing">URL routing and path mapping</a></li><li><a href="#request-input">Query parameters, forms, and JSON</a></li><li><a href="#cors">Cross-origin resource sharing (CORS)</a></li><li><a href="#methods-and-extensibility">Built-in and custom HTTP methods</a></li><li><a href="#logging">Server logging and diagnostics</a></li><li><a href="#development-and-production">Live development reloading and production mode</a></li><li><a href="#testing-and-review">Testing and technical review</a></li><li><a href="#documentation">Tutorials and reference documentation</a></li><li><a href="#advanced-examples">Advanced application examples</a></li><li><a href="#license">License</a></li></ul>
+</nav>
+<main>
+<section id="first-application">
+<h2>A web application in a few lines</h2>
+<p>An Achieve application needs a startup file and an explicitly selected application space: the directory containing the web resources and servlets that Achieve makes available. The small example below shows both static content and backend code served without assembling a middleware stack.</p>
+<pre><code>my-app/
+├── start.js
+└── application/
+    ├── index.html
+    └── servlets/
+        └── hello.jss</code></pre>
+<p><code>start.js</code> selects that application space explicitly and starts HTTP on port 8989:</p>
+<pre><code>const achieve = require("achieve");
+
+achieve.setAppPath("./application");
+achieve.listen(8989);</code></pre>
+<p>A static <code>application/index.html</code> is available at <code>http://localhost:8989/</code>. A backend servlet in <code>application/servlets/hello.jss</code> can be just as direct:</p>
+<pre><code>exports.servlet = function (session) {
+    let name = session.params.name;
+    return "Hello, " + name;
+}</code></pre>
+<p>Request <code>http://localhost:8989/servlets/hello.jss?name=World</code>. Achieve locates and invokes the servlet, parses the query parameter into <code>session.params</code>, and turns the returned value into the HTTP response.</p>
+<p>See <a href="https://highlevellogic.github.io/achieve/start/startup.htm">Starting the server</a> and <a href="https://highlevellogic.github.io/achieve/start/servlets.htm">Your first servlet</a> for the guided version.</p>
+</section>
+<section id="servlets">
+<h2>JavaScript Servlets: backend logic without HTTP boilerplate</h2>
+<p>JavaScript Servlets are backend modules exporting a servlet(session) function. Achieve invokes them in response to HTTP requests, provides parsed input and the underlying Node.js request/response objects, and can turn returned values into responses. The benefit is simple application logic without repeatedly writing routine HTTP handling code.</p>
+<h3>Friendly development cycle</h3>
+<p>In the default development mode, edit a servlet and make another request. Achieve automatically reloads the changed source without restarting the server. That keeps the edit/test cycle short.</p>
+<p>For example, this servlet deliberately throws an error during execution:</p>
+<pre><code>exports.servlet = function () {
+    throw new Error("Deliberate servlet error");
+}</code></pre>
+<p>Achieve catches errors that reach its managed invocation, produces a concise developer diagnostic in development mode, and keeps the server available for subsequent requests. Correct the servlet, make another request, and the changed source is loaded.</p>
+<h3>Managed backend modules</h3>
+<p><code>session.load(filename)</code> loads application-side helpers relative to the current servlet. Explicit filenames select CommonJS or ESM behavior. CommonJS loads synchronously; ESM loads return a Promise and can be awaited. Development mode reloads a directly loaded helper after it changes, while production mode uses stable process-local module references.</p>
+<pre><code>export async function servlet(session) {
+    const formatter = await session.load("helpers/formatter.jss.mjs");
+    return formatter.format(session.params.name);
+}</code></pre>
+<h3>CommonJS, ESM, synchronous, and Promise results</h3>
+<table>
+<thead><tr><th>Filename</th><th>Module form</th></tr></thead>
+<tbody>
+<tr><td><code>example.jss</code></td><td>CommonJS servlet</td></tr>
+<tr><td><code>example.jss.cjs</code></td><td>Explicit CommonJS servlet</td></tr>
+<tr><td><code>example.jss.mjs</code></td><td>ES module servlet</td></tr>
+</tbody>
+</table>
+<p>Servlets may return an immediate value, a Promise, or use <code>async</code>/<code>await</code>. With normal automatic completion, Achieve waits for a returned Promise and applies the same response rules to its resolved value. See the <a href="https://highlevellogic.github.io/achieve/reference/servlets.htm">JavaScript Servlets Reference</a> for details.</p>
+<h3>Full Node.js access and application-owned responses</h3>
+<p>The session exposes the real Node.js request and response objects as session.request and session.response. Achieve can finish ordinary responses for you, but it does not take away control: set session.autoEnd = false when the application will complete the response itself:</p>
+<pre><code>exports.servlet = function (session) {
+    session.autoEnd = false;
+    session.response.write("Hello ");
+    session.response.end("World!");
+}</code></pre>
+<p>The default is <code>true</code>. Achieve still handles errors that reach its managed invocation when it can safely respond; errors in detached timers, callbacks, or other work that continues after the servlet returns remain the application's responsibility.</p>
+<p>See the <a href="https://highlevellogic.github.io/achieve/reference/servlets.htm">Servlet Reference</a> and <a href="https://highlevellogic.github.io/achieve/reference/session.htm">Session Object Reference</a>.</p>
+</section>
+<section id="protocols-and-http-behavior">
+<h2>HTTP, HTTPS, and HTTP/2</h2>
+<p>Achieve supports HTTP/1.1, HTTPS, cleartext HTTP/2 (h2c), and secure HTTP/2. Select the listener appropriate to your deployment without building protocol handling into the application. Multiple listeners can share one configured application space when bound to distinct ports.</p>
+<p>Achieve implements and regression-tests HTTP semantics including method dispatch, conditional requests, byte ranges, response status and body rules, CORS decisions, and protocol-specific listener behavior.</p>
+<p>Listener forms and TLS options are documented in <a href="https://highlevellogic.github.io/achieve/start/startup.htm">Starting the server</a>.</p>
+</section>
+<section id="static-resources">
+<h2>Built-in static file serving</h2>
+<p>Place files in the configured application space and Achieve serves them directly, including directory defaults and appropriate MIME types. Servlet source is protected, and resolved paths remain within the application boundary. There is no static-file middleware to choose, configure, or maintain.</p>
+<p>Static handling is built in; an application does not need to register a static middleware layer. See the <a href="https://highlevellogic.github.io/achieve/reference/static.htm">Static Resources Reference</a>.</p>
+</section>
+<section id="caching-and-conditional-requests">
+<h2>ETags and conditional requests</h2>
+<p>Achieve can supply ETag and Last-Modified validators and evaluate conditional requests, allowing browsers and clients to reuse unchanged content and avoid unnecessary transfers. It handles the HTTP precondition rules for supported requests instead of leaving application code to implement them. Validators distinguish compressed and uncompressed representations.</p>
+</section>
+<section id="compression">
+<h2>Automatic HTTP compression</h2>
+<p>Enable compression and Achieve negotiates gzip or deflate for eligible resources, selects an acceptable representation, and manages its cached compressed artifacts. Applications do not need to perform content-encoding negotiation or compression themselves.</p>
+</section>
+<section id="media-and-ranges">
+<h2>Media streaming and byte ranges</h2>
+<p>Achieve provides a configurable audio/video streaming path with single byte-range support, so clients can request a portion of a media file rather than always transferring the whole resource. It handles HEAD, partial-response status, range headers, and content lengths. Multipart byte-range responses are not supported. When a request specifies multiple ranges, Achieve serves the first satisfiable range as a single-part response.</p>
+</section>
+<section id="routing">
+<h2>URL routing and path mapping</h2>
+<p>Ordinary URLs map directly into the configured application space. Exact and subtree route mappings let you give resources public-facing URLs without moving files or writing dispatch code. Exact mappings take precedence; subtree mappings use the longest matching prefix.</p>
+<p>Routing changes public names without weakening application-space containment. See the <a href="https://highlevellogic.github.io/achieve/reference/routing.htm">Routing Reference</a>.</p>
+</section>
+<section id="request-input">
+<h2>Query parameters, forms, and JSON</h2>
+<p>Achieve makes GET query parameters available through session.params and parses supported POST form and JSON input into the same property, subject to a configurable size limit. Servlets can work with common inputs immediately, while other bodies remain accessible through the underlying Node.js request stream.</p>
+<p>See the <a href="https://highlevellogic.github.io/achieve/start/input.htm">Handling Input</a> tutorial.</p>
+</section>
+<section id="cors">
+<h2>Cross-origin resource sharing (CORS)</h2>
+<p>Configure permitted origins and application-relative paths with allowOrigins(). Achieve handles matching cross-origin requests and preflight decisions in the server, instead of requiring each servlet to repeat CORS logic. Requests carrying an Origin header without a matching permission are refused.</p>
+<p>Exact-origin policy maps are selected ahead of the wildcard-origin map, and path specificity is evaluated within the selected map. See <a href="https://highlevellogic.github.io/achieve/reference/config.htm#allowOrigins">CORS configuration</a> for the precise forms and precedence rules.</p>
+</section>
+<section id="methods-and-extensibility">
+<h2>Built-in and custom HTTP methods</h2>
+<p>Achieve handles GET, HEAD, POST, and OPTIONS directly. For additional standard or application-defined methods, register a servlet that implements the required behavior—such as a DELETE operation with application-specific authorization—without writing a new method dispatcher.</p>
+<pre><code>achieve.registerMethod("DELETE", "methods/delete.jss");</code></pre>
+<p>The registered servlet receives the session and handles the request using the same return values, Promises, status codes, and error handling as other JavaScript Servlets. Achieve also includes registered methods in the appropriate HTTP <code>Allow</code> headers.</p>
+<p>See the <a href="https://highlevellogic.github.io/achieve/reference/methods.htm">HTTP Methods Reference</a>.</p>
+</section>
+<section id="logging">
+<h2>Server logging and diagnostics</h2>
+<p>Achieve displays startup and configuration information on the console. In development mode, it also provides diagnostic information when managed requests encounter errors. Production mode suppresses these developer-oriented request diagnostics.</p>
+<p>Persistent server and access logging can be configured independently using <code>setLogging()</code> and <code>setLogPath()</code>. Persistent logging is disabled by default. See the <a href="https://highlevellogic.github.io/achieve/reference/config.htm">Configuration Reference</a>.</p>
+</section>
+<section id="development-and-production">
+<h2>Live development reloading and production mode</h2>
+<div class="feature-grid">
+<section>
+<h3>Development</h3>
+<p>In the default development mode, Achieve automatically detects changes to directly loaded application modules and reloads them on subsequent requests, without restarting the server. Managed request errors also produce developer-oriented console diagnostics.</p>
+</section>
+<section>
+<h3>Production</h3>
+<p>Production mode uses stable module caching until restart, eliminating development-only checks for source changes. Routine developer-oriented console diagnostics are also disabled. Persistent server and access logging remain independently configurable.</p>
+</section>
+</div>
+<p>Both modes use the same application design. Mode, caching, compression, input limits, logging, MIME types, routing, methods, and CORS are configuration choices; see the <a href="https://highlevellogic.github.io/achieve/reference/config.htm">Configuration Reference</a>.</p>
+</section>
+<section id="testing-and-review">
+<h2>Testing and technical review</h2>
+<p>Achieve 3.0.0 has undergone technical review and automated testing of functional behavior, reliability and error handling, security boundaries, and HTTP standards-related behavior. Regression coverage includes routing, JavaScript Servlets, static resources, conditional requests, compression, byte ranges, and response completion.</p>
+<p>The automated validation comprises 37 verifier suites. All 37 suites passed on both Windows and Ubuntu using Node.js 22.x in GitHub Actions on October 8, 2026 (commit <code>edf25865</code>). The tests, validation workflow, and CI execution results are publicly available:</p>
+<ul>
+<li><a href="https://github.com/highlevellogic/achieve/tree/main/tests">Automated test source</a></li>
+<li><a href="https://github.com/highlevellogic/achieve/actions/workflows/test.yml">Cross-platform validation workflow and run history</a></li>
+<li><a href="https://github.com/highlevellogic/achieve/actions/runs/37823012538">Successful Windows and Ubuntu validation run</a></li>
+</ul>
+<p>To repeat the automated checks in a development checkout, run <code>npm run validate</code>.</p>
+</section>
+<section id="documentation">
+<h2>Tutorials and reference documentation</h2>
+<p>The <a href="https://highlevellogic.github.io/achieve/index.htm">Achieve v3 documentation</a> is divided into short Getting Started tutorials and focused Reference pages.</p>
+<div class="feature-grid">
+<section>
+<h3>Getting Started</h3>
+<ul>
+<li><a href="https://highlevellogic.github.io/achieve/start/startup.htm">Starting the server</a></li>
+<li><a href="https://highlevellogic.github.io/achieve/start/static.htm">Static content and audio/video</a></li>
+<li><a href="https://highlevellogic.github.io/achieve/start/servlets.htm">Your first servlet</a></li>
+<li><a href="https://highlevellogic.github.io/achieve/start/input.htm">Handling Input</a></li>
+</ul>
+</section>
+<section>
+<h3>Reference</h3>
+<ul>
+<li><a href="https://highlevellogic.github.io/achieve/reference/config.htm">Configuration</a></li>
+<li><a href="https://highlevellogic.github.io/achieve/reference/routing.htm">Routing</a></li>
+<li><a href="https://highlevellogic.github.io/achieve/reference/static.htm">Static Resources</a></li>
+<li><a href="https://highlevellogic.github.io/achieve/reference/methods.htm">HTTP Methods</a></li>
+<li><a href="https://highlevellogic.github.io/achieve/reference/servlets.htm">JavaScript Servlets</a></li>
+<li><a href="https://highlevellogic.github.io/achieve/reference/session.htm">Servlet Session Object</a></li>
+</ul>
+</section>
+</div>
+</section>
+<section id="advanced-examples">
+<h2>Advanced application examples</h2>
+<p>The <a href="https://highlevellogic.github.io/achieve/index.htm#examples">Advanced Examples section of the Achieve documentation</a> is the permanent location for examples downloads and installation instructions. The final examples ZIP will provide a complete, ready-to-run Achieve development project for newcomers, students, teachers, and experienced developers. It is not yet available while the registry-based installation is being finalized.</p>
+<p>After extracting the final ZIP, open a terminal in <code>achieve_examples</code> and run:</p>
+<pre><code>npm install
+npm start</code></pre>
+<p>The project obtains Achieve and its supporting dependencies from npm. Open <a href="http://localhost:8989/">http://localhost:8989/</a> to start exploring, then examine and modify the included applications or use the project as a starting point for your own work. Developers who prefer to create a project from scratch can continue to use the minimal installation and startup examples above.</p>
+<p>The demonstrations cover integrations and multi-process applications:</p>
+<ul>
+<li>MySQL</li>
+<li>WebSockets and Rooms</li>
+<li>Cluster</li>
+<li>XML/SAX streaming</li>
+<li>Distributed computing</li>
+<li>SOAP</li>
+</ul>
+<p>These are demonstrations of Achieve working with other Node.js packages and external services, not additional core Achieve APIs. The included <code>INSTALL.htm</code> opens directly in a browser and provides the specialized startup commands and optional MySQL setup. The maintained source material is in the <a href="https://github.com/highlevellogic/achieve_examples">Achieve examples repository</a>.</p>
+</section>
+<section id="license"><h2>License</h2><p>Achieve is released under the MIT License. See the <a href="LICENSE">LICENSE file</a> for the complete terms.</p><p>Copyright © 2018–2026 Roger F. Gay.</p></section>
+</main>
+<footer>
+<p>Achieve 3.0.0 · <a href="https://github.com/highlevellogic/achieve">Source repository</a> · <a href="https://highlevellogic.github.io/achieve/index.htm">Documentation index</a></p>
+</footer>
+</body>
+</html>

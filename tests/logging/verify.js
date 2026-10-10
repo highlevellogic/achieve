@@ -225,7 +225,7 @@ async function runningCase(scenario, options, inspect) {
                 check(
                     label+" startup identifies protocol, port, and Node version",
                     output.includes(
-                        "HLL Achieve v3.0.0-dev.0 "+label+
+                        "HLL Achieve v3.0.0 "+label+
                         " is running on port "+startupCase.message.port+
                         ". (Node.js version "+process.version+")"
                     )
@@ -275,7 +275,7 @@ async function runningCase(scenario, options, inspect) {
         const defaultRoot = path.join(temporaryPath, "default");
         await runningCase("default", {logPath: defaultRoot}, async function (testCase) {
             check("default mode is development", testCase.stdout().includes("Mode: development"));
-            check("development startup display is visible", testCase.stdout().includes("HLL Achieve v3.0.0-dev.0 HTTP is running") && testCase.stdout().includes("Server logging: off") && testCase.stdout().includes("Access logging: off"));
+            check("development startup display is visible", testCase.stdout().includes("HLL Achieve v3.0.0 HTTP is running") && testCase.stdout().includes("Server logging: off") && testCase.stdout().includes("Access logging: off"));
             check("development request trace is visible", testCase.stdout().includes("GET") && testCase.stdout().includes("req.url:"));
             check("default server logging creates no files", serverLogFiles(defaultRoot).length === 0);
             check("configuration locks after startup", Object.values(testCase.message.checks).every(Boolean));
@@ -455,7 +455,7 @@ async function runningCase(scenario, options, inspect) {
                 check(scenario + " creates no server directory", !fs.existsSync(path.join(root, "server")));
                 check(scenario + " creates no access directory", !fs.existsSync(path.join(root, "access")));
                 if (scenario === "none") {
-                    check("setLogging(false) leaves startup display enabled", testCase.stdout().includes("HLL Achieve v3.0.0-dev.0 HTTP is running") && testCase.stdout().includes("Server logging: off") && testCase.stdout().includes("Access logging: off"));
+                    check("setLogging(false) leaves startup display enabled", testCase.stdout().includes("HLL Achieve v3.0.0 HTTP is running") && testCase.stdout().includes("Server logging: off") && testCase.stdout().includes("Access logging: off"));
                     check("setLogging(false) does not disable development diagnostics",testCase.stdout().includes("req.url:"));
                 }
             });

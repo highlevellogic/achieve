@@ -148,10 +148,12 @@ without automatic response ETags, media ETags and If-Range, caching-disabled
 explicit preconditions, and temporary-copy source modification. It reuses the
 small tracked media fixture and removes all temporary application data.
 
-Achieve does not currently implement Last-Modified, If-Modified-Since,
-If-Unmodified-Since, or successful date-form If-Range validation. Date-form
-If-Range is tested only for the implemented behavior of ignoring Range and
-returning the full current representation.
+Achieve provides Last-Modified for selected static representations and applies
+If-Modified-Since and If-Unmodified-Since with the appropriate validator
+precedence and 304 or 412 responses. tests/static_dates/verify.js covers these
+date validators across identity, compressed, and media representations over
+HTTP, HTTPS, h2c, and secure HTTP/2. Date-form If-Range remains unsupported;
+it ignores Range and returns the full current representation.
 
 # HEAD REGRESSION EXPECTATIONS
 

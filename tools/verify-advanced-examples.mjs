@@ -9,6 +9,26 @@ if (!fs.existsSync(path.join(distribution,"package.json"))) {
   throw new Error("Pass the extracted distribution directory as the first argument.");
 }
 
+const manifest = JSON.parse(await fs.promises.readFile(
+  path.join(distribution,"package.json"),"utf8"
+));
+const installedAchieve = JSON.parse(await fs.promises.readFile(
+  path.join(distribution,"node_modules/achieve/package.json"),"utf8"
+));
+assert.equal(manifest.dependencies.achieve,"^3.0.0");
+assert.match(installedAchieve.version,/^3\./);
+assert.equal(fs.existsSync(path.join(distribution,"INSTALL.htm")),true);
+assert.equal(fs.existsSync(path.join(distribution,"README.md")),false);
+const installGuide = await fs.promises.readFile(
+  path.join(distribution,"INSTALL.htm"),"utf8"
+);
+assert.match(installGuide,/npm install/);
+assert.match(installGuide,/npm start/);
+assert.match(installGuide,/http:\/\/localhost:8989\//);
+assert.equal(fs.existsSync(path.join(distribution,"vendor/achieve")),false);
+assert.equal(fs.existsSync(path.join(distribution,"application/package.json")),false);
+assert.equal(fs.existsSync(path.join(distribution,"application/start.mjs")),false);
+
 const { WebSocket } = await import(pathToFileURL(
   path.join(distribution,"node_modules/ws/wrapper.mjs")
 ));

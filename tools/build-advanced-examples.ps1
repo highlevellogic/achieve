@@ -7,19 +7,41 @@ $ErrorActionPreference = "Stop"
 $achieveRepository = Split-Path -Parent $PSScriptRoot
 $templateDirectory = Join-Path $achieveRepository "distribution\advanced-examples"
 $outputDirectory = Join-Path $achieveRepository "docs\downloads"
-$archivePath = Join-Path $outputDirectory "achieve-v3-advanced-examples-dev.zip"
+$archivePath = Join-Path $outputDirectory "achieve-v3-advanced-examples.zip"
 $buildRoot = Join-Path $env:TEMP ("achieve-v3-advanced-examples-build-" + [Guid]::NewGuid())
-$distributionRoot = Join-Path $buildRoot "achieve3-examples"
+$distributionRoot = Join-Path $buildRoot "achieve_examples"
+$lockfilePath = Join-Path $templateDirectory "package-lock.json"
+$installPath = Join-Path $templateDirectory "INSTALL.htm"
 
 if (-not (Test-Path -LiteralPath $ExamplesRepository -PathType Container)) {
     throw "Examples repository not found: $ExamplesRepository"
+}
+
+if (-not (Test-Path -LiteralPath $installPath -PathType Leaf)) {
+    throw "Missing installation guide: $installPath"
+}
+
+if (Test-Path -LiteralPath (Join-Path $templateDirectory "README.md") -PathType Leaf) {
+    throw "The Advanced Examples distribution must use INSTALL.htm instead of README.md."
+}
+
+if (-not (Test-Path -LiteralPath $lockfilePath -PathType Leaf)) {
+    throw "The final examples lockfile is not available. After achieve@3.0.0 is published, run npm install in distribution\advanced-examples and retry."
+}
+
+$lockfile = Get-Content -Raw -LiteralPath $lockfilePath | ConvertFrom-Json
+$rootPackage = $lockfile.packages.PSObject.Properties[''].Value
+$lockedAchieve = $lockfile.packages.PSObject.Properties['node_modules/achieve'].Value
+if ($rootPackage.dependencies.achieve -ne "^3.0.0" -or
+    -not $lockedAchieve -or
+    $lockedAchieve.version -notmatch '^3\.') {
+    throw "The final examples lockfile must resolve the declared achieve@^3.0.0 registry dependency."
 }
 
 New-Item -ItemType Directory -Path $distributionRoot | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $distributionRoot "application\images") | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $distributionRoot "application\confirm\servlets") | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $distributionRoot "application\advanced") | Out-Null
-New-Item -ItemType Directory -Path (Join-Path $distributionRoot "vendor\achieve") | Out-Null
 New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
 
 Get-ChildItem -LiteralPath $templateDirectory -File |
@@ -57,16 +79,18 @@ foreach ($relativePath in @(
     }
 }
 
-foreach ($name in @("achieve.js","package.json","CHANGELOG.md","LICENSE")) {
-    Copy-Item -LiteralPath (Join-Path $achieveRepository $name) `
-        -Destination (Join-Path $distributionRoot "vendor\achieve\$name")
-}
-
 $forbidden = Select-String -Path (Get-ChildItem -LiteralPath $distributionRoot -File -Recurse).FullName `
-    -Pattern "C:\\projects\\achieve","C:/projects/achieve","..\\achieve_examples" -SimpleMatch
+    -Pattern "C:\\projects\\achieve","C:/projects/achieve","..\\achieve_examples","file:vendor/achieve" -SimpleMatch
 if ($forbidden) {
     $forbidden | Format-Table Path,LineNumber,Line -AutoSize
     throw "The assembled distribution contains a development-repository path."
+}
+
+if ((Test-Path -LiteralPath (Join-Path $distributionRoot "vendor")) -or
+    (Test-Path -LiteralPath (Join-Path $distributionRoot "node_modules")) -or
+    (Test-Path -LiteralPath (Join-Path $distributionRoot "application\package.json")) -or
+    (Test-Path -LiteralPath (Join-Path $distributionRoot "application\start.mjs"))) {
+    throw "The assembled distribution contains forbidden runtime or project files."
 }
 
 if (Test-Path -LiteralPath $archivePath) {

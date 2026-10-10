@@ -1,6 +1,5 @@
 {
   "name": "achieve-v3-advanced-examples",
-  "version": "3.0.0-dev.0",
   "private": true,
   "description": "Runnable advanced examples for Achieve v3",
   "type": "module",
@@ -15,11 +14,11 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@nodable/sax": "1.2.1",
-    "achieve": "file:vendor/achieve",
-    "achieve_rooms": "2.0.0",
-    "mysql2": "3.24.4",
-    "soap": "1.12.0",
-    "ws": "8.21.3"
+    "@nodable/sax": "^1.2.1",
+    "achieve": "^3.0.0",
+    "achieve_rooms": "^2.0.0",
+    "mysql2": "^3.24.4",
+    "soap": "^1.11.0",
+    "ws": "^8.21.3"
   }
 }
