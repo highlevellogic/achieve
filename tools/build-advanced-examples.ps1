@@ -29,12 +29,12 @@ if (-not (Test-Path -LiteralPath $lockfilePath -PathType Leaf)) {
     throw "The final examples lockfile is not available. After achieve@3.0.0 is published, run npm install in distribution\advanced-examples and retry."
 }
 
-$lockfile = Get-Content -Raw -LiteralPath $lockfilePath | ConvertFrom-Json
-$rootPackage = $lockfile.packages.PSObject.Properties[''].Value
-$lockedAchieve = $lockfile.packages.PSObject.Properties['node_modules/achieve'].Value
-if ($rootPackage.dependencies.achieve -ne "^3.0.0" -or
+$lockfile = Get-Content -Raw -LiteralPath $lockfilePath | ConvertFrom-Json -AsHashTable
+$rootPackage = $lockfile["packages"][""]
+$lockedAchieve = $lockfile["packages"]["node_modules/achieve"]
+if ($rootPackage["dependencies"]["achieve"] -ne "^3.0.0" -or
     -not $lockedAchieve -or
-    $lockedAchieve.version -notmatch '^3\.') {
+    $lockedAchieve["version"] -notmatch '^3\.') {
     throw "The final examples lockfile must resolve the declared achieve@^3.0.0 registry dependency."
 }
 
