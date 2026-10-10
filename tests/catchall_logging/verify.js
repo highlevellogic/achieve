@@ -50,6 +50,43 @@ function request(port,requestPath) {
     });
 }
 
+async function waitForCatchallLog(serverDir) {
+    const expected=[
+        "ERROR Catchall error in achieveApp.",
+        "injected catchall failure"
+    ];
+    const maximumWait=2000;
+    const pollInterval=20;
+    const started=process.hrtime.bigint();
+    let filenames=[];
+    let lastLog="";
+
+    while (true) {
+        try {
+            filenames=fs.readdirSync(serverDir);
+            for (const filename of filenames) {
+                const log=fs.readFileSync(path.join(serverDir,filename),"utf8");
+                lastLog=log;
+                if (expected.every(text => log.includes(text))) return log;
+            }
+        } catch (err) {
+            if (err.code !== "ENOENT") throw err;
+        }
+
+        const elapsed=Number(process.hrtime.bigint()-started)/1e6;
+        if (elapsed >= maximumWait) {
+            throw new Error(
+                "Timed out waiting for catchall server log after "+elapsed.toFixed(1)+" ms.\n"+
+                "Expected substrings: "+JSON.stringify(expected)+"\n"+
+                "Directory: "+serverDir+"\n"+
+                "Observed filenames: "+JSON.stringify(filenames)+"\n"+
+                "Last log contents: "+JSON.stringify(lastLog.slice(-4000))
+            );
+        }
+        await new Promise(resolve => setTimeout(resolve,Math.min(pollInterval,maximumWait-elapsed)));
+    }
+}
+
 (async function () {
     const temporaryPath=fs.mkdtempSync(path.join(os.tmpdir(),"achieve-catchall-logging-"));
     try {
@@ -63,13 +100,12 @@ function request(port,requestPath) {
             response=await request(testCase.port,"/");
             assert.strictEqual(response.status,200);
             assert.strictEqual(response.body,"catchall server remains available\n");
-            await new Promise(resolve => setTimeout(resolve,25));
             assert(testCase.stdout().includes("HLL Achieve v3.0.0 HTTP is running"));
             assert(!testCase.stdout().includes("Catchall error in achieveApp."));
             assert.strictEqual(testCase.stderr(),"");
             if (logging === "enabled") {
                 const serverDir=path.join(logPath,"server");
-                const log=fs.readFileSync(path.join(serverDir,fs.readdirSync(serverDir)[0]),"utf8");
+                const log=await waitForCatchallLog(serverDir);
                 assert(log.includes("ERROR Catchall error in achieveApp."));
                 assert(log.includes("injected catchall failure"));
             }
