@@ -53,6 +53,12 @@ Roger
 
 An Achieve application needs a startup file and an explicitly selected application space: the directory containing the web resources and servlets that Achieve makes available. The small example below shows both static content and backend code served without assembling a middleware stack.
 
+Install Achieve in your project with npm:
+
+```bash
+npm install achieve
+```
+
 ```text
 my-app/
 ├── start.js
@@ -219,7 +225,7 @@ Achieve 3.0.0 has undergone technical review and automated testing of functional
 
 The automated validation comprises 37 verifier suites. All 37 suites passed on both Windows and Ubuntu using Node.js 22.x in GitHub Actions on October 8, 2026 (commit `edf25865`). The tests, validation workflow, and CI execution results are publicly available:
 
-- [Automated test source](https://github.com/highlevellogic/achieve/tree/main/tests)
+- [Automated test source](https://github.com/highlevellogic/achieve/tree/master/tests)
 - [Cross-platform validation workflow and run history](https://github.com/highlevellogic/achieve/actions/workflows/test.yml)
 - [Successful Windows and Ubuntu validation run](https://github.com/highlevellogic/achieve/actions/runs/37823012538)
 
