@@ -253,9 +253,9 @@ The [Achieve v3 documentation](https://highlevellogic.github.io/achieve/index.ht
 
 ## Advanced application examples
 
-The [Advanced Examples section of the Achieve documentation](https://highlevellogic.github.io/achieve/index.htm#examples) is the permanent location for examples downloads and installation instructions. The final examples ZIP will provide a complete, ready-to-run Achieve development project for newcomers, students, teachers, and experienced developers. It is not yet available while the registry-based installation is being finalized.
+The [Achieve 3 Advanced Examples](https://highlevellogic.github.io/achieve/index.htm#examples) provide a complete, ready-to-run development project for newcomers, students, teachers, and experienced developers. The downloadable ZIP includes installation instructions and examples demonstrating Achieve working with other Node.js packages and services.
 
-After extracting the final ZIP, open a terminal in `achieve_examples` and run:
+After extracting the ZIP, open a terminal in `achieve_examples` and run:
 
 ```bash
 npm install
@@ -274,6 +274,10 @@ The demonstrations cover integrations and multi-process applications:
 - SOAP
 
 These are demonstrations of Achieve working with other Node.js packages and external services, not additional core Achieve APIs. The included `INSTALL.htm` opens directly in a browser and provides the specialized startup commands and optional MySQL setup. The maintained source material is in the [Achieve examples repository](https://github.com/highlevellogic/achieve_examples).
+
+## Community and support
+
+Use [GitHub Discussions](https://github.com/highlevellogic/achieve/discussions) for questions, ideas, and general discussion. Report bugs through [GitHub Issues](https://github.com/highlevellogic/achieve/issues).
 
 ## License
 
