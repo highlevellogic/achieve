@@ -1,6 +1,6 @@
 {
   "name": "achieve",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Achieve - a developer-friendly web server and HTTP application server for Node.js.",
   "main": "./achieve.js",
   "exports": "./achieve.js",
