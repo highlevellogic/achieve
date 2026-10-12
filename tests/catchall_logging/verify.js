@@ -4,6 +4,7 @@ const fs=require("node:fs");
 const http=require("node:http");
 const os=require("node:os");
 const path=require("node:path");
+const achieveVersion=require("../../package.json").version;
 
 let nextPort=19330;
 
@@ -100,7 +101,7 @@ async function waitForCatchallLog(serverDir) {
             response=await request(testCase.port,"/");
             assert.strictEqual(response.status,200);
             assert.strictEqual(response.body,"catchall server remains available\n");
-            assert(testCase.stdout().includes("HLL Achieve v3.0.0 HTTP is running"));
+            assert(testCase.stdout().includes("HLL Achieve v"+achieveVersion+" HTTP is running"));
             assert(!testCase.stdout().includes("Catchall error in achieveApp."));
             assert.strictEqual(testCase.stderr(),"");
             if (logging === "enabled") {

@@ -72,6 +72,28 @@ async function verify(protocol,index) {
     child.stderr.on('data',b => stderr+=b);
     child.on('message',m => {if(m.event === 'stream')streams.push(m);});
     const exited=new Promise(resolve => child.once('exit',resolve));
+    function waitForStream(name,start,end) {
+        if(streams.some(s => s.name===name && s.start===start && s.end===end)) return Promise.resolve();
+        if(child.exitCode !== null) return Promise.reject(new Error('Server exited before stream information for '+name));
+        return new Promise((resolve,reject) => {
+            let settled=false;
+            const timer=setTimeout(() => finish(new Error('Stream information timeout for '+name)),5000);
+            function message(stream) {
+                if(stream.event === 'stream' && stream.name===name && stream.start===start && stream.end===end) finish();
+            }
+            function exit() { finish(new Error('Server exited before stream information for '+name)); }
+            function finish(error) {
+                if(settled) return;
+                settled=true;
+                clearTimeout(timer);
+                child.off('message',message);
+                child.off('exit',exit);
+                if(error) reject(error); else resolve();
+            }
+            child.on('message',message);
+            child.once('exit',exit);
+        });
+    }
     try {
         await new Promise((resolve,reject) => {
             const timer=setTimeout(() => reject(new Error('Startup timeout')),5000);
@@ -125,6 +147,7 @@ async function verify(protocol,index) {
         }
         for (const name of ['replace.txt','grow.txt']) {
             const result=await get('/'+name);
+            await waitForStream(name,0,original.length-1);
             check(protocol+' '+name+' captured representation',() => {
                 assert.equal(result.status,200);assert.equal(result.headers['content-length'],String(original.length));
                 assert.deepEqual(result.body,original);
