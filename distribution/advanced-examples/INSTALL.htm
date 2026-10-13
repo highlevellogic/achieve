@@ -16,6 +16,7 @@
     th, td { padding: 0.6rem; border: 1px solid #cad7e2; text-align: left; vertical-align: top; }
     th { background: #edf3f7; }
     .note { padding: 0.8rem 1rem; border-left: 0.3rem solid #3f789f; background: #edf5fa; }
+    footer { margin-top: 2rem; padding-top: 1rem; border-top: 0.2rem solid #173b5d; }
   </style>
 </head>
 <body>
@@ -69,10 +70,13 @@ npm start</code></pre>
   <h2>Optional MySQL setup</h2>
   <p>The MySQL demonstration requires a reachable MySQL server. The rest of the
   distribution does not require MySQL.</p>
-  <p>Run <code>application/advanced/mysql/setup.sql</code> on a MySQL-compatible
-  server. Then replace the placeholder user name and password in both servlets
-  under <code>application/advanced/mysql/servlets/</code>. Run
-  <code>npm start</code> and open the MySQL demonstration from the landing page.</p>
+  <p>In phpMyAdmin, use the Import tab to import
+  <code>application/advanced/mysql/setup.sql</code>. The SQL file is imported,
+  not executed as a program. It creates the <code>achieve_demo</code> database
+  and its <code>users</code> table. Then replace the placeholder user name and
+  password in both servlets under
+  <code>application/advanced/mysql/servlets/</code>. Run <code>npm start</code>
+  and open or refresh the MySQL demonstration from the landing page.</p>
   <p>The credentials and login logic are deliberately simple demonstration
   code; they are not production authentication guidance. Do not commit or share
   real credentials.</p>
@@ -98,6 +102,12 @@ npm start</code></pre>
   <h2>Achieve documentation</h2>
   <p>For tutorials and the complete API Reference, see the
   <a href="https://highlevellogic.github.io/achieve/index.htm">Achieve 3 documentation</a>.</p>
+  <footer>
+    <a href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+    <a href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br>
+    <a href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br>
+    <a href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a>
+  </footer>
 </main>
 </body>
 </html>
