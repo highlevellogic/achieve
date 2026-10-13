@@ -9,13 +9,66 @@ body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-s
 header img { width:100%; display:block; }
 #friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
 main { margin:2% 5% 5%; }
-.docLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
-.docLink:hover,.packageLink:hover { color:blue; }
+
+.docLink {
+    color:rgb(30,80,150);
+    font-weight:bold;
+    text-decoration:none;
+}
+
+.docLink:hover,.packageLink:hover {
+    color:blue;
+}
+
 .docList { list-style:none; padding-left:0; }
 .docList li { margin:1.2em 0; }
 .docList p { margin:.25em 0 0; }
-footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
-.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+
+code {
+    font-family:Consolas,"Courier New",monospace;
+    font-size:1em;
+    color:blue;
+    background-color:rgb(220,235,245);
+    padding:.08em .35em;
+    border-radius:3px;
+}
+
+pre {
+    font-size:1em;
+    line-height:1.5;
+}
+
+pre code {
+    display:inline-block;
+    padding:.5em .8em;
+}
+
+.downloadLink {
+    display:inline-block;
+    padding:.6em 1em;
+    background-color:rgb(220,235,245);
+    border:2px solid blue;
+    border-radius:.4em;
+    color:blue;
+    font-weight:bold;
+    text-decoration:none;
+}
+
+.downloadLink:hover {
+    background-color:white;
+}
+
+footer {
+    padding:1.5% 5%;
+    box-sizing:border-box;
+    border-top:solid blue thick;
+}
+
+.packageLink {
+    color:rgb(30,80,150);
+    font-weight:bold;
+    text-decoration:none;
+}
 </style>
 </head>
 <body>
@@ -110,7 +163,9 @@ The included <code>INSTALL.htm</code> provides additional instructions,
 specialized startup commands, and the optional MySQL setup.
 </p>
 
-<p><a class="docLink" href="https://highlevellogic.github.io/achieve/downloads/achieve-v3-advanced-examples.zip">Download the Achieve 3 Advanced Examples ZIP</a>.</p>
+<p>
+<a class="downloadLink" href="https://highlevellogic.github.io/achieve/downloads/achieve-v3-advanced-examples.zip">Download the Achieve 3 Advanced Examples ZIP</a>
+</p>
 
 </main>
 
