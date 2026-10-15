@@ -1,0 +1,31 @@
+# Achieve
+
+> Achieve is a developer-friendly HTTP server and HTTP application server for Node.js. It supports JavaScript Servlets, static resources, and application routing.
+
+Achieve invokes an application's exported `servlet(session)` entry points and provides the HTTP server, request processing, and routing environment around them.
+
+## Getting Started
+
+- [Documentation index](https://highlevellogic.github.io/achieve/index.htm)
+- [Starting the server](https://highlevellogic.github.io/achieve/start/startup.htm)
+- [Introduction to JavaScript Servlets](https://highlevellogic.github.io/achieve/start/servlets.htm)
+- [Handling request input](https://highlevellogic.github.io/achieve/start/input.htm)
+
+## Technical Reference
+
+- [Configuration](https://highlevellogic.github.io/achieve/reference/config.htm)
+- [Routing and application-space security](https://highlevellogic.github.io/achieve/reference/routing.htm)
+- [JavaScript Servlets](https://highlevellogic.github.io/achieve/reference/servlets.htm)
+- [Servlet Session API](https://highlevellogic.github.io/achieve/reference/session.htm)
+- [HTTP methods](https://highlevellogic.github.io/achieve/reference/methods.htm)
+- [Static resources, caching, ranges, and compression](https://highlevellogic.github.io/achieve/reference/static.htm)
+
+## Examples
+
+- [Achieve examples](https://github.com/highlevellogic/achieve_examples) — Working beginner and advanced applications using Achieve JavaScript Servlets with ordinary Node.js modules, npm packages, and external services.
+
+## Additional Resources
+
+- [Achieve on npm](https://www.npmjs.com/package/achieve)
+- [Achieve source repository](https://github.com/highlevellogic/achieve)
+- [Agent documentation guide](https://github.com/highlevellogic/achieve/blob/master/docs/AGENTS.md)
