@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve — Un server web Node.js prietenos cu dezvoltatorii</title>
+<meta name="description" content="Achieve este un server web și de aplicații HTTP pentru Node.js. Creează aplicații cu JavaScript Servlets, module JavaScript obișnuite pentru gestionarea cererilor.">
+<link rel="canonical" href="https://highlevellogic.github.io/achieve/ro/index.htm">
+<link rel="alternate" hreflang="en" href="https://highlevellogic.github.io/achieve/en/index.htm">
+<link rel="alternate" hreflang="de" href="https://highlevellogic.github.io/achieve/de/index.htm">
+<link rel="alternate" hreflang="fr" href="https://highlevellogic.github.io/achieve/fr/index.htm">
+<link rel="alternate" hreflang="es" href="https://highlevellogic.github.io/achieve/es/index.htm">
+<link rel="alternate" hreflang="pt" href="https://highlevellogic.github.io/achieve/pt/index.htm">
+<link rel="alternate" hreflang="pl" href="https://highlevellogic.github.io/achieve/pl/index.htm">
+<link rel="alternate" hreflang="uk" href="https://highlevellogic.github.io/achieve/uk/index.htm">
+<link rel="alternate" hreflang="ro" href="https://highlevellogic.github.io/achieve/ro/index.htm">
+<link rel="alternate" hreflang="cs" href="https://highlevellogic.github.io/achieve/cs/index.htm">
+<link rel="alternate" hreflang="sv" href="https://highlevellogic.github.io/achieve/sv/index.htm">
+<link rel="alternate" hreflang="hi" href="https://highlevellogic.github.io/achieve/hi/index.htm">
+<link rel="alternate" hreflang="bn" href="https://highlevellogic.github.io/achieve/bn/index.htm">
+<link rel="alternate" hreflang="ta" href="https://highlevellogic.github.io/achieve/ta/index.htm">
+<link rel="alternate" hreflang="te" href="https://highlevellogic.github.io/achieve/te/index.htm">
+<link rel="alternate" hreflang="mr" href="https://highlevellogic.github.io/achieve/mr/index.htm">
+<link rel="alternate" hreflang="ja" href="https://highlevellogic.github.io/achieve/ja/index.htm">
+<link rel="alternate" hreflang="ko" href="https://highlevellogic.github.io/achieve/ko/index.htm">
+<link rel="alternate" hreflang="id" href="https://highlevellogic.github.io/achieve/id/index.htm">
+<link rel="alternate" hreflang="tr" href="https://highlevellogic.github.io/achieve/tr/index.htm">
+<link rel="alternate" hreflang="x-default" href="https://highlevellogic.github.io/achieve/en/index.htm">
+<link rel="stylesheet" href="../introduction.css">
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production.</h3>
+</header>
+<main>
+<h1>Achieve — Un server web Node.js prietenos cu dezvoltatorii</h1>
+<h2>Un mod mai simplu de a crea aplicații web</h2>
+<p>Achieve este un server web și un server de aplicații HTTP pentru Node.js. Livrează site-uri web, gestionează cereri HTTP și execută programe JavaScript pe server.</p>
+<p>Dezvoltatorii pot crea de la site-uri simple până la aplicații web sofisticate, folosind JavaScript obișnuit și module Node.js.</p>
+<p>Achieve este conceput pentru a simplifica dezvoltarea aplicațiilor web, fără a impune un framework complex sau a necesita un număr mare de dependențe.</p>
+<h2>Cauți o alternativă la Express?</h2>
+<p>Express este un framework popular pentru crearea aplicațiilor pe Node.js, dar nu reprezintă singura abordare.</p>
+<p>Achieve oferă un alt mod de organizare a aplicațiilor web. În loc să construiască aplicații în jurul rutelor și al componentelor middleware din Express, dezvoltatorii pot folosi JavaScript Servlets: module JavaScript obișnuite care gestionează cereri HTTP.</p>
+<p>Achieve este el însuși un server web, astfel că nu este necesară instalarea Express sau a altui framework web pentru gestionarea cererilor.</p>
+<p>Dezvoltatorii păstrează accesul direct la Node.js și pot folosi funcțiile, modulele și API-urile JavaScript familiare.</p>
+<p>Dacă dorești un server web Node.js ușor, un mediu de dezvoltare backend mai simplu sau o alternativă la Express, merită să descoperi Achieve.</p>
+<h2>JavaScript Servlets</h2>
+<p>JavaScript Servlets reprezintă una dintre funcționalitățile centrale ale Achieve.</p>
+<p>Un servlet este un modul JavaScript obișnuit care exportă o funcție pentru procesarea unei cereri HTTP. Achieve asociază URL-ul primit cu servletul potrivit, furnizează informații despre cerere și gestionează răspunsul returnat.</p>
+<p>De exemplu, un servlet simplu poate arăta astfel:</p>
+<pre><code>exports.servlet = function (session) {
+    return &quot;Hello World!&quot;;
+};</code></pre>
+<p>Când un browser solicită servletul, Achieve execută funcția și trimite rezultatul browserului.</p>
+<p>Pentru rezultate simple, nu trebuie scris codul obișnuit de gestionare a răspunsului HTTP.</p>
+<p>În aplicații mai avansate, servletul poate accesa obiectele de cerere și răspuns Node.js subiacente și poate gestiona direct răspunsul.</p>
+<p>Servleturile pot folosi și funcții JavaScript obișnuite, module integrate în Node.js și pachete npm suplimentare.</p>
+<p>JavaScript Servlets simplifică gestionarea cererilor fără a limita ceea ce pot construi dezvoltatorii.</p>
+<h2>Dezvoltare fără întreruperi inutile</h2>
+<p>Achieve permite reîncărcarea automată a fișierelor sursă ale servleturilor modificate în modul de dezvoltare.</p>
+<p>Editează un servlet, salvează fișierul și solicită-l din nou. Achieve încarcă noul cod fără a necesita repornirea serverului.</p>
+<p>Astfel, poți experimenta, testa modificările și dezvolta aplicațiile treptat, într-un mod comod.</p>
+<p>Achieve furnizează și mesaje de eroare utile, pentru a ajuta dezvoltatorii să identifice problemele din codul aplicației.</p>
+<h2>Mai mult decât executarea servleturilor</h2>
+<p>Achieve combină executarea JavaScript Servlets cu posibilitățile unui server web și ale unui server de aplicații HTTP.</p>
+<p>Acceptă resurse statice, rutare URL configurabilă, HTTP și HTTPS, HTTP/2, cereri condiționale, compresie și alte funcționalități HTTP.</p>
+<p>Aplicațiile pot livra HTML, CSS, JavaScript, imagini și alte resurse, folosind totodată JavaScript Servlets pentru procesarea backend, precum gestionarea formularelor, procesarea datelor sau răspunsurile la cereri JSON.</p>
+<p>Fiind construit pe Node.js, Achieve permite aplicațiilor să interacționeze și cu baze de date, servicii externe și alte programe prin ecosistemul extins Node.js.</p>
+<h2>Primii pași cu Achieve</h2>
+<p>Achieve este disponibil prin npm, managerul de pachete Node.js.</p>
+<p>Documentația include tutoriale pentru începători, informații de configurare, exemple de servleturi și materiale de referință tehnică.</p>
+<p>Poți explora Achieve prin aceste resurse:</p>
+<ul>
+<li>Documentație și tutoriale<br><a href="https://highlevellogic.github.io/achieve/" hreflang="en">https://highlevellogic.github.io/achieve/</a></li>
+<li>Instalarea Achieve din npm<br><a href="https://www.npmjs.com/package/achieve">https://www.npmjs.com/package/achieve</a></li>
+<li>Codul sursă pe GitHub<br><a href="https://github.com/highlevellogic/achieve">https://github.com/highlevellogic/achieve</a></li>
+</ul>
+<p>Achieve este dezvoltat ca parte a High Level Logic Project.</p>
+<p>Indiferent dacă înveți programare backend, construiești o aplicație web sau explorezi alternative la frameworkurile Node.js consacrate, Achieve oferă o altă abordare: un server web complet, cu un model de programare JavaScript simplu și flexibil.</p>
+</main>
+<footer>
+<a class="packageLink" href="../index.htm" hreflang="en">Documentație (engleză)</a><br>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve pe npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve pe GitHub</a>
+</footer>
+</body>
+</html>

@@ -1,0 +1,140 @@
+{
+  "branch": "codex-work",
+  "approved_ids": [
+    "M1",
+    "M2",
+    "I1",
+    "I2",
+    "T1"
+  ],
+  "verified_against_exact_report_replacements": true,
+  "changed_files": [
+    "tools/introduction-pages/mr.html",
+    "tools/introduction-pages/id.html",
+    "tools/introduction-pages/tr.html",
+    "docs/mr/index.htm",
+    "docs/id/index.htm",
+    "docs/tr/index.htm",
+    "tools/introduction-pages/languages.json"
+  ],
+  "before_files_checked": 46,
+  "other_files_unchanged": 39,
+  "english_and_german_complete_html_and_sources_unchanged": true,
+  "toc_and_sitemap_byte_identical": true,
+  "all_generated_pages": [
+    {
+      "language": "en",
+      "path": "docs/en/index.htm",
+      "git_status": "??",
+      "sha256": "c944a7b6490168d3f1e6bf405ad5b167a58fc86deb522f0543ffb8e7c7e442ee"
+    },
+    {
+      "language": "de",
+      "path": "docs/de/index.htm",
+      "git_status": "??",
+      "sha256": "0b2f4109a827010e7d0f87d61e894665dd4226a7007b3f0f5aded1f3347907fa"
+    },
+    {
+      "language": "fr",
+      "path": "docs/fr/index.htm",
+      "git_status": "??",
+      "sha256": "df68e1d438ca874c8cba7a3893578b83edc228956756ea569712701512d9178d"
+    },
+    {
+      "language": "es",
+      "path": "docs/es/index.htm",
+      "git_status": "??",
+      "sha256": "0758161426316f8c2901e4c99b76e3e7313a88db1240e33a2336bd45b7d86382"
+    },
+    {
+      "language": "pt",
+      "path": "docs/pt/index.htm",
+      "git_status": "??",
+      "sha256": "24b97ceb53f045bcf0c11bc9b58596073db62027da123c97ca175ab2763acdb1"
+    },
+    {
+      "language": "pl",
+      "path": "docs/pl/index.htm",
+      "git_status": "??",
+      "sha256": "2c1c86000c7d39618456407422393bd6ffd40c92cb5c0f3259dc59e0bece9422"
+    },
+    {
+      "language": "uk",
+      "path": "docs/uk/index.htm",
+      "git_status": "??",
+      "sha256": "5c357f2ac5c305302fef667793553cfeb25871f6aed9f30b98cf048ca0b74d19"
+    },
+    {
+      "language": "ro",
+      "path": "docs/ro/index.htm",
+      "git_status": "??",
+      "sha256": "fd45dfc59ddd7a33cff497163799d2add0ca49a3de63076dcaf0e84f537ac9c9"
+    },
+    {
+      "language": "cs",
+      "path": "docs/cs/index.htm",
+      "git_status": "??",
+      "sha256": "28dc7a71d4520d0180490f60898e2de5653ce4d85aaffad808c23fef5d95b852"
+    },
+    {
+      "language": "sv",
+      "path": "docs/sv/index.htm",
+      "git_status": "??",
+      "sha256": "f1e5e3f81baf5558bd19aa0b94de972c5c5f77d370b9464c6d0cfb84e38138c0"
+    },
+    {
+      "language": "hi",
+      "path": "docs/hi/index.htm",
+      "git_status": "??",
+      "sha256": "5aa1fa66586524ff531257a613b0bc14996921bdb90cd1816f40ddb86f2c8f4c"
+    },
+    {
+      "language": "bn",
+      "path": "docs/bn/index.htm",
+      "git_status": "??",
+      "sha256": "153b42bf6d58d49eca54109968cd31fb3447ea89586a124d8a0b52f712af4b73"
+    },
+    {
+      "language": "ta",
+      "path": "docs/ta/index.htm",
+      "git_status": "??",
+      "sha256": "25f8465e6738efa61072c3c0eb9a01afd7255414bd165e643cbc525af4e52c62"
+    },
+    {
+      "language": "te",
+      "path": "docs/te/index.htm",
+      "git_status": "??",
+      "sha256": "586012ecdae0984e6d5303e4de1d822dffb7727d25e69c7a1e6daceb18fcc70f"
+    },
+    {
+      "language": "mr",
+      "path": "docs/mr/index.htm",
+      "git_status": "??",
+      "sha256": "8ab40d3850d86df2d1014999f2a067c568b4c7efae3c21cad0456fa70a9538f5"
+    },
+    {
+      "language": "ja",
+      "path": "docs/ja/index.htm",
+      "git_status": "??",
+      "sha256": "cfeeec8f7d98af69a8c0c7762d8e7ce1c8b430e23955688bfbf04a6ae72ce669"
+    },
+    {
+      "language": "ko",
+      "path": "docs/ko/index.htm",
+      "git_status": "??",
+      "sha256": "e4e756fa3c186aedee4a934f1da72710d9cc1c4192ea3f7a891be0e408d474e3"
+    },
+    {
+      "language": "id",
+      "path": "docs/id/index.htm",
+      "git_status": "??",
+      "sha256": "302041b73ccdf24ba63cb561bbc77ace45899ac6d4d1f7d1dd315dc14f9d2135"
+    },
+    {
+      "language": "tr",
+      "path": "docs/tr/index.htm",
+      "git_status": "??",
+      "sha256": "120169ceeda4c3382aa22f515ae9062b19c37ddb7359fe035eb3d73a62eb5e95"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve — Geliştirici dostu bir Node.js web sunucusu</title>
+<meta name="description" content="Achieve, Node.js için bir web sunucusu ve HTTP uygulama sunucusudur. Sıradan JavaScript istek işleyicileri olan JavaScript Servlets ile uygulama geliştirin.">
+<link rel="canonical" href="https://highlevellogic.github.io/achieve/tr/index.htm">
+<link rel="alternate" hreflang="en" href="https://highlevellogic.github.io/achieve/en/index.htm">
+<link rel="alternate" hreflang="de" href="https://highlevellogic.github.io/achieve/de/index.htm">
+<link rel="alternate" hreflang="fr" href="https://highlevellogic.github.io/achieve/fr/index.htm">
+<link rel="alternate" hreflang="es" href="https://highlevellogic.github.io/achieve/es/index.htm">
+<link rel="alternate" hreflang="pt" href="https://highlevellogic.github.io/achieve/pt/index.htm">
+<link rel="alternate" hreflang="pl" href="https://highlevellogic.github.io/achieve/pl/index.htm">
+<link rel="alternate" hreflang="uk" href="https://highlevellogic.github.io/achieve/uk/index.htm">
+<link rel="alternate" hreflang="ro" href="https://highlevellogic.github.io/achieve/ro/index.htm">
+<link rel="alternate" hreflang="cs" href="https://highlevellogic.github.io/achieve/cs/index.htm">
+<link rel="alternate" hreflang="sv" href="https://highlevellogic.github.io/achieve/sv/index.htm">
+<link rel="alternate" hreflang="hi" href="https://highlevellogic.github.io/achieve/hi/index.htm">
+<link rel="alternate" hreflang="bn" href="https://highlevellogic.github.io/achieve/bn/index.htm">
+<link rel="alternate" hreflang="ta" href="https://highlevellogic.github.io/achieve/ta/index.htm">
+<link rel="alternate" hreflang="te" href="https://highlevellogic.github.io/achieve/te/index.htm">
+<link rel="alternate" hreflang="mr" href="https://highlevellogic.github.io/achieve/mr/index.htm">
+<link rel="alternate" hreflang="ja" href="https://highlevellogic.github.io/achieve/ja/index.htm">
+<link rel="alternate" hreflang="ko" href="https://highlevellogic.github.io/achieve/ko/index.htm">
+<link rel="alternate" hreflang="id" href="https://highlevellogic.github.io/achieve/id/index.htm">
+<link rel="alternate" hreflang="tr" href="https://highlevellogic.github.io/achieve/tr/index.htm">
+<link rel="alternate" hreflang="x-default" href="https://highlevellogic.github.io/achieve/en/index.htm">
+<link rel="stylesheet" href="../introduction.css">
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production.</h3>
+</header>
+<main>
+<h1>Achieve — Geliştirici dostu bir Node.js web sunucusu</h1>
+<h2>Web uygulamaları geliştirmenin daha kolay bir yolu</h2>
+<p>Achieve, Node.js için bir web sunucusu ve HTTP uygulama sunucusudur. Web sitelerini sunar, HTTP isteklerini işler ve sunucuda JavaScript programları çalıştırır.</p>
+<p>Geliştiriciler, sıradan JavaScript ve Node.js modülleriyle basit web sitelerinden gelişmiş web uygulamalarına kadar pek çok şey oluşturabilir.</p>
+<p>Achieve, karmaşık bir çatıyı dayatmadan veya çok sayıda bağımlılık gerektirmeden web uygulaması geliştirmeyi kolaylaştırmak için tasarlanmıştır.</p>
+<h2>Express'e alternatif mi arıyorsunuz?</h2>
+<p>Express, Node.js üzerinde uygulama geliştirmek için kullanılan popüler bir çatıdır, ancak tek yaklaşım değildir.</p>
+<p>Achieve, web uygulamalarını düzenlemek için farklı bir yol sunar. Geliştiriciler uygulamalarını Express yönlendirmeleri ve ara katmanları etrafında kurmak yerine, HTTP isteklerini işleyen sıradan JavaScript modülleri olan JavaScript Servlets kullanabilir.</p>
+<p>Achieve zaten bir web sunucusudur; bu nedenle istekleri işlemek için Express veya başka bir web çatısı kurmak gerekmez.</p>
+<p>Geliştiriciler Node.js'e doğrudan erişimi korur ve alıştıkları JavaScript işlevlerini, modüllerini ve API'lerini kullanabilir.</p>
+<p>Hafif bir Node.js web sunucusu, daha basit bir arka uç geliştirme ortamı veya Express'e alternatif arıyorsanız Achieve incelenmeye değer.</p>
+<h2>JavaScript Servlets</h2>
+<p>JavaScript Servlets, Achieve'in temel özelliklerinden biridir.</p>
+<p>Servlet, bir HTTP isteğini işlemek üzere bir işlev dışa aktaran sıradan bir JavaScript modülüdür. Achieve, gelen URL'yi uygun servlet ile eşleştirir, istek hakkında bilgi sağlar ve döndürülen yanıtı yönetir.</p>
+<p>Örneğin basit bir servlet şöyle görünebilir:</p>
+<pre><code>exports.servlet = function (session) {
+    return &quot;Hello World!&quot;;
+};</code></pre>
+<p>Tarayıcı servlet'i istediğinde Achieve işlevi çalıştırır ve sonucu tarayıcıya döndürür.</p>
+<p>Basit sonuçlar için alışılmış HTTP yanıt işleme kodunu yazmak gerekmez.</p>
+<p>Daha gelişmiş uygulamalarda servlet, alttaki Node.js istek ve yanıt nesnelerine erişerek yanıtı doğrudan yönetebilir.</p>
+<p>Servlet'ler sıradan JavaScript işlevlerini, Node.js'in yerleşik modüllerini ve ek npm paketlerini de kullanabilir.</p>
+<p>JavaScript Servlets, geliştiricilerin oluşturabileceklerini sınırlamadan istek işlemeyi kolaylaştırır.</p>
+<h2>Gereksiz kesintiler olmadan geliştirme</h2>
+<p>Achieve, geliştirme modunda değiştirilen servlet kaynak dosyalarının otomatik olarak yeniden yüklenmesini destekler.</p>
+<p>Bir servlet'i düzenleyin, dosyayı kaydedin ve yeniden isteyin. Achieve, sunucuyu yeniden başlatmaya gerek kalmadan değiştirilen kodu yükler.</p>
+<p>Bu sayede denemeler yapmak, değişiklikleri test etmek ve uygulamaları adım adım geliştirmek kolaylaşır.</p>
+<p>Achieve, geliştiricilerin uygulama kodundaki sorunları belirlemesine yardımcı olan yararlı hata bildirimleri de sağlar.</p>
+<h2>Servlet çalıştırmaktan daha fazlası</h2>
+<p>Achieve, JavaScript Servlets çalıştırmayı bir web sunucusunun ve HTTP uygulama sunucusunun yetenekleriyle birleştirir.</p>
+<p>Statik kaynakları, yapılandırılabilir URL yönlendirmesini, HTTP ve HTTPS'yi, HTTP/2'yi, koşullu istekleri, sıkıştırmayı ve diğer HTTP özelliklerini destekler.</p>
+<p>Uygulamalar HTML, CSS, JavaScript, resimler ve diğer kaynakları sunarken form işleme, veri işleme veya JSON isteklerini yanıtlama gibi arka uç işlemleri için JavaScript Servlets kullanabilir.</p>
+<p>Achieve, Node.js üzerine kurulu olduğu için uygulamalar geniş Node.js ekosistemi aracılığıyla veritabanları, harici hizmetler ve diğer yazılımlarla da etkileşim kurabilir.</p>
+<h2>Achieve ile ilk adımlar</h2>
+<p>Achieve, Node.js paket yöneticisi npm üzerinden edinilebilir.</p>
+<p>Belgeler başlangıç eğitimlerini, yapılandırma bilgilerini, servlet örneklerini ve teknik başvuru kaynaklarını içerir.</p>
+<p>Achieve'i şu kaynaklardan inceleyebilirsiniz:</p>
+<ul>
+<li>Belgeler ve eğitimler<br><a href="https://highlevellogic.github.io/achieve/" hreflang="en">https://highlevellogic.github.io/achieve/</a></li>
+<li>Achieve'i npm üzerinden kurun<br><a href="https://www.npmjs.com/package/achieve">https://www.npmjs.com/package/achieve</a></li>
+<li>GitHub üzerinde kaynak kodu<br><a href="https://github.com/highlevellogic/achieve">https://github.com/highlevellogic/achieve</a></li>
+</ul>
+<p>Achieve, High Level Logic Project kapsamında geliştirilmektedir.</p>
+<p>İster arka uç programlamayı öğreniyor, ister web uygulaması geliştiriyor, ister yerleşik Node.js çatılarına alternatifleri araştırıyor olun, Achieve başka bir yaklaşım sunar: basit ve esnek bir JavaScript programlama modeline sahip eksiksiz bir web sunucusu.</p>
+</main>
+<footer>
+<a class="packageLink" href="../index.htm" hreflang="en">Belgeler (İngilizce)</a><br>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">npm üzerinde Achieve</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">GitHub üzerinde Achieve</a>
+</footer>
+</body>
+</html>

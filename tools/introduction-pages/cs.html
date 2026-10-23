@@ -1,0 +1,42 @@
+<h1>Achieve — Webový server pro Node.js vstřícný k vývojářům</h1>
+<h2>Jednodušší cesta k tvorbě webových aplikací</h2>
+<p>Achieve je webový server a server HTTP aplikací pro Node.js. Poskytuje webové stránky, zpracovává HTTP požadavky a spouští programy v JavaScriptu na serveru.</p>
+<p>Vývojáři mohou vytvářet jednoduché weby i propracované webové aplikace pomocí běžného JavaScriptu a modulů Node.js.</p>
+<p>Achieve je navržen tak, aby usnadňoval vývoj webových aplikací, aniž by vnucoval složitý framework nebo vyžadoval velké množství závislostí.</p>
+<h2>Hledáte alternativu k Express?</h2>
+<p>Express je oblíbený framework pro tvorbu aplikací na Node.js, ale není to jediný přístup.</p>
+<p>Achieve nabízí jiný způsob uspořádání webových aplikací. Místo stavby aplikace kolem tras a middlewaru Express mohou vývojáři používat JavaScript Servlets: běžné moduly JavaScriptu, které zpracovávají HTTP požadavky.</p>
+<p>Achieve je sám webovým serverem, takže pro zpracování požadavků není nutné instalovat Express ani jiný webový framework.</p>
+<p>Vývojáři si zachovávají přímý přístup k Node.js a mohou používat známé funkce, moduly a API JavaScriptu.</p>
+<p>Pokud hledáte nenáročný webový server pro Node.js, jednodušší prostředí pro vývoj backendu nebo alternativu k Express, stojí za to Achieve vyzkoumat.</p>
+<h2>JavaScript Servlets</h2>
+<p>JavaScript Servlets patří mezi hlavní funkce Achieve.</p>
+<p>Servlet je běžný modul JavaScriptu, který exportuje funkci pro zpracování HTTP požadavku. Achieve přiřadí příchozí URL příslušnému servletu, poskytne informace o požadavku a zpracuje vrácenou odpověď.</p>
+<p>Jednoduchý servlet může vypadat například takto:</p>
+<pre><code>{{SERVLET_EXAMPLE}}</code></pre>
+<p>Když prohlížeč odešle požadavek na servlet, Achieve spustí funkci a vrátí výsledek prohlížeči.</p>
+<p>Pro jednoduché výsledky není nutné psát obvyklý kód pro obsluhu HTTP odpovědi.</p>
+<p>V pokročilejších aplikacích může servlet přistupovat k podkladovým objektům požadavku a odpovědi Node.js a řídit odpověď přímo.</p>
+<p>Servlety mohou používat i běžné funkce JavaScriptu, vestavěné moduly Node.js a další balíčky npm.</p>
+<p>JavaScript Servlets zjednodušují zpracování požadavků, aniž by omezovaly možnosti vývojářů.</p>
+<h2>Vývoj bez zbytečného přerušování</h2>
+<p>Ve vývojovém režimu Achieve podporuje automatické opětovné načítání upravených zdrojových souborů servletů.</p>
+<p>Upravte servlet, uložte soubor a znovu jej vyžádejte. Achieve načte změněný kód bez nutnosti restartovat server.</p>
+<p>To usnadňuje experimentování, testování změn a postupný vývoj aplikací.</p>
+<p>Achieve poskytuje také užitečná chybová hlášení, která vývojářům pomáhají odhalit problémy v kódu aplikace.</p>
+<h2>Více než jen spouštění servletů</h2>
+<p>Achieve kombinuje spouštění JavaScript Servlets s možnostmi webového serveru a serveru HTTP aplikací.</p>
+<p>Podporuje statické zdroje, konfigurovatelné směrování URL, HTTP a HTTPS, HTTP/2, podmíněné požadavky, kompresi a další funkce HTTP.</p>
+<p>Aplikace mohou poskytovat HTML, CSS, JavaScript, obrázky a další zdroje a současně využívat JavaScript Servlets pro backendové zpracování, například obsluhu formulářů, zpracování dat nebo odpovědi na JSON požadavky.</p>
+<p>Protože je Achieve postaven na Node.js, mohou aplikace prostřednictvím rozsáhlého ekosystému Node.js komunikovat i s databázemi, externími službami a dalším softwarem.</p>
+<h2>Začínáme s Achieve</h2>
+<p>Achieve je dostupný prostřednictvím npm, správce balíčků pro Node.js.</p>
+<p>Dokumentace obsahuje návody pro začátečníky, informace o konfiguraci, příklady servletů a technické referenční materiály.</p>
+<p>Achieve můžete poznat prostřednictvím těchto zdrojů:</p>
+<ul>
+<li>Dokumentace a návody<br><a href="https://highlevellogic.github.io/achieve/" hreflang="en">https://highlevellogic.github.io/achieve/</a></li>
+<li>Instalace Achieve z npm<br><a href="https://www.npmjs.com/package/achieve">https://www.npmjs.com/package/achieve</a></li>
+<li>Zdrojový kód na GitHub<br><a href="https://github.com/highlevellogic/achieve">https://github.com/highlevellogic/achieve</a></li>
+</ul>
+<p>Achieve vzniká jako součást High Level Logic Project.</p>
+<p>Ať už se učíte programovat backend, vytváříte webovou aplikaci, nebo hledáte alternativy k zavedeným frameworkům Node.js, Achieve nabízí další přístup: úplný webový server s jednoduchým a flexibilním modelem programování v JavaScriptu.</p>

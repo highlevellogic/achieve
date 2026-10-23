@@ -1,0 +1,3 @@
+PASS rejected copied English body: de: generated article differs from its source
+PASS rejected English paragraph in source and output: ja: English paragraph substituted
+PASS rejected missing alternate:

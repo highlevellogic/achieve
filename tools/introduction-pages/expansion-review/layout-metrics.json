@@ -1,0 +1,110 @@
+[
+  {
+    "lang": "de",
+    "width": 1280,
+    "client": 1265,
+    "scroll": 1265,
+    "overflow": false,
+    "overflowing": [],
+    "headingFont": "Arial, sans-serif"
+  },
+  {
+    "lang": "de",
+    "width": 480,
+    "client": 465,
+    "scroll": 465,
+    "overflow": false,
+    "overflowing": [],
+    "headingFont": "Arial, sans-serif"
+  },
+  {
+    "lang": "hi",
+    "width": 1280,
+    "client": 1265,
+    "scroll": 1265,
+    "overflow": false,
+    "overflowing": [],
+    "headingFont": "Arial, sans-serif"
+  },
+  {
+    "lang": "hi",
+    "width": 480,
+    "client": 465,
+    "scroll": 465,
+    "overflow": false,
+    "overflowing": [],
+    "headingFont": "Arial, sans-serif"
+  },
+  {
+    "lang": "ta",
+    "width": 1280,
+    "client": 1265,
+    "scroll": 1265,
+    "overflow": false,
+    "overflowing": [],
+    "headingFont": "Arial, sans-serif"
+  },
+  {
+    "lang": "ta",
+    "width": 480,
+    "client": 465,
+    "scroll": 465,
+    "overflow": false,
+    "overflowing": [],
+    "headingFont": "Arial, sans-serif"
+  },
+  {
+    "lang": "uk",
+    "width": 1280,
+    "client": 1265,
+    "scroll": 1265,
+    "overflow": false,
+    "overflowing": [],
+    "headingFont": "Arial, sans-serif"
+  },
+  {
+    "lang": "uk",
+    "width": 480,
+    "client": 465,
+    "scroll": 465,
+    "overflow": false,
+    "overflowing": [],
+    "headingFont": "Arial, sans-serif"
+  },
+  {
+    "lang": "ja",
+    "width": 1280,
+    "client": 1265,
+    "scroll": 1265,
+    "overflow": false,
+    "overflowing": [],
+    "headingFont": "Arial, sans-serif"
+  },
+  {
+    "lang": "ja",
+    "width": 480,
+    "client": 465,
+    "scroll": 465,
+    "overflow": false,
+    "overflowing": [],
+    "headingFont": "Arial, sans-serif"
+  },
+  {
+    "lang": "ko",
+    "width": 1280,
+    "client": 1265,
+    "scroll": 1265,
+    "overflow": false,
+    "overflowing": [],
+    "headingFont": "Arial, sans-serif"
+  },
+  {
+    "lang": "ko",
+    "width": 480,
+    "client": 465,
+    "scroll": 465,
+    "overflow": false,
+    "overflowing": [],
+    "headingFont": "Arial, sans-serif"
+  }
+]

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve — 開発者にやさしい Node.js ウェブサーバー</title>
+<meta name="description" content="Achieve は Node.js 向けのウェブサーバー兼 HTTP アプリケーションサーバーです。通常の JavaScript リクエストハンドラーである JavaScript Servlets でアプリケーションを開発できます。">
+<link rel="canonical" href="https://highlevellogic.github.io/achieve/ja/index.htm">
+<link rel="alternate" hreflang="en" href="https://highlevellogic.github.io/achieve/en/index.htm">
+<link rel="alternate" hreflang="de" href="https://highlevellogic.github.io/achieve/de/index.htm">
+<link rel="alternate" hreflang="fr" href="https://highlevellogic.github.io/achieve/fr/index.htm">
+<link rel="alternate" hreflang="es" href="https://highlevellogic.github.io/achieve/es/index.htm">
+<link rel="alternate" hreflang="pt" href="https://highlevellogic.github.io/achieve/pt/index.htm">
+<link rel="alternate" hreflang="pl" href="https://highlevellogic.github.io/achieve/pl/index.htm">
+<link rel="alternate" hreflang="uk" href="https://highlevellogic.github.io/achieve/uk/index.htm">
+<link rel="alternate" hreflang="ro" href="https://highlevellogic.github.io/achieve/ro/index.htm">
+<link rel="alternate" hreflang="cs" href="https://highlevellogic.github.io/achieve/cs/index.htm">
+<link rel="alternate" hreflang="sv" href="https://highlevellogic.github.io/achieve/sv/index.htm">
+<link rel="alternate" hreflang="hi" href="https://highlevellogic.github.io/achieve/hi/index.htm">
+<link rel="alternate" hreflang="bn" href="https://highlevellogic.github.io/achieve/bn/index.htm">
+<link rel="alternate" hreflang="ta" href="https://highlevellogic.github.io/achieve/ta/index.htm">
+<link rel="alternate" hreflang="te" href="https://highlevellogic.github.io/achieve/te/index.htm">
+<link rel="alternate" hreflang="mr" href="https://highlevellogic.github.io/achieve/mr/index.htm">
+<link rel="alternate" hreflang="ja" href="https://highlevellogic.github.io/achieve/ja/index.htm">
+<link rel="alternate" hreflang="ko" href="https://highlevellogic.github.io/achieve/ko/index.htm">
+<link rel="alternate" hreflang="id" href="https://highlevellogic.github.io/achieve/id/index.htm">
+<link rel="alternate" hreflang="tr" href="https://highlevellogic.github.io/achieve/tr/index.htm">
+<link rel="alternate" hreflang="x-default" href="https://highlevellogic.github.io/achieve/en/index.htm">
+<link rel="stylesheet" href="../introduction.css">
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production.</h3>
+</header>
+<main>
+<h1>Achieve — 開発者にやさしい Node.js ウェブサーバー</h1>
+<h2>ウェブアプリケーションをもっとシンプルに開発</h2>
+<p>Achieve は Node.js 向けのウェブサーバー兼 HTTP アプリケーションサーバーです。ウェブサイトの配信、HTTP リクエストの処理、サーバー上での JavaScript プログラムの実行を行います。</p>
+<p>通常の JavaScript と Node.js モジュールを使って、シンプルなウェブサイトから高度なウェブアプリケーションまで開発できます。</p>
+<p>Achieve は、複雑なフレームワークや大量の依存パッケージを要求せず、ウェブアプリケーションの開発をわかりやすくすることを目指しています。</p>
+<h2>Express の代替をお探しですか？</h2>
+<p>Express は Node.js でアプリケーションを開発するための人気のあるフレームワークですが、唯一の方法ではありません。</p>
+<p>Achieve はウェブアプリケーションを構成する別の方法を提供します。Express のルートやミドルウェアを中心に構築する代わりに、HTTP リクエストを処理する通常の JavaScript モジュールである JavaScript Servlets を使えます。</p>
+<p>Achieve 自体がウェブサーバーなので、リクエストを処理するために Express や別のウェブフレームワークをインストールする必要はありません。</p>
+<p>開発者は引き続き Node.js に直接アクセスでき、使い慣れた JavaScript の関数、モジュール、API を利用できます。</p>
+<p>軽量な Node.js ウェブサーバー、よりシンプルなバックエンド開発環境、あるいは Express の代替をお探しなら、Achieve をご検討ください。</p>
+<h2>JavaScript Servlets</h2>
+<p>JavaScript Servlets は Achieve の中心的な機能の一つです。</p>
+<p>サーブレットは、HTTP リクエストを処理する関数をエクスポートする通常の JavaScript モジュールです。Achieve は受信した URL を適切なサーブレットに対応付け、リクエスト情報を渡し、返されたレスポンスを処理します。</p>
+<p>例えば、シンプルなサーブレットは次のように記述できます。</p>
+<pre><code>exports.servlet = function (session) {
+    return &quot;Hello World!&quot;;
+};</code></pre>
+<p>ブラウザーがサーブレットにリクエストすると、Achieve は関数を実行し、その結果をブラウザーに返します。</p>
+<p>シンプルな結果であれば、通常必要となる HTTP レスポンス処理のコードを書く必要はありません。</p>
+<p>より高度なアプリケーションでは、サーブレットから基盤となる Node.js のリクエスト・レスポンスオブジェクトにアクセスし、レスポンスを直接制御できます。</p>
+<p>サーブレットでは、通常の JavaScript 関数、Node.js の組み込みモジュール、追加の npm パッケージも使えます。</p>
+<p>JavaScript Servlets は、開発できるものを制限せずにリクエスト処理をシンプルにします。</p>
+<h2>不要な中断のない開発</h2>
+<p>Achieve は開発モードで、変更されたサーブレットのソースファイルを自動的に再読み込みできます。</p>
+<p>サーブレットを編集して保存し、再度リクエストしてください。Achieve はサーバーを再起動せずに変更後のコードを読み込みます。</p>
+<p>これにより、試行錯誤や変更のテスト、段階的なアプリケーション開発がしやすくなります。</p>
+<p>Achieve は、アプリケーションコードの問題を特定するために役立つエラー情報も提供します。</p>
+<h2>サーブレットの実行だけではありません</h2>
+<p>Achieve は JavaScript Servlets の実行機能と、ウェブサーバーおよび HTTP アプリケーションサーバーの機能を組み合わせています。</p>
+<p>静的リソース、設定可能な URL ルーティング、HTTP と HTTPS、HTTP/2、条件付きリクエスト、圧縮などの HTTP 機能をサポートします。</p>
+<p>アプリケーションは HTML、CSS、JavaScript、画像などのリソースを配信しながら、フォーム処理、データ処理、JSON リクエストへの応答などのバックエンド処理に JavaScript Servlets を使えます。</p>
+<p>Achieve は Node.js 上に構築されているため、その豊富なエコシステムを利用して、データベース、外部サービス、その他のソフトウェアとも連携できます。</p>
+<h2>Achieve を使い始める</h2>
+<p>Achieve は Node.js のパッケージマネージャーである npm から入手できます。</p>
+<p>ドキュメントには、初心者向けチュートリアル、設定情報、サーブレットの例、技術リファレンスが含まれています。</p>
+<p>次のリソースから Achieve について詳しく調べられます。</p>
+<ul>
+<li>ドキュメントとチュートリアル<br><a href="https://highlevellogic.github.io/achieve/" hreflang="en">https://highlevellogic.github.io/achieve/</a></li>
+<li>npm から Achieve をインストール<br><a href="https://www.npmjs.com/package/achieve">https://www.npmjs.com/package/achieve</a></li>
+<li>GitHub のソースコード<br><a href="https://github.com/highlevellogic/achieve">https://github.com/highlevellogic/achieve</a></li>
+</ul>
+<p>Achieve は High Level Logic Project の一環として開発されています。</p>
+<p>バックエンドプログラミングを学ぶ方にも、ウェブアプリケーションを構築する方にも、既存の Node.js フレームワークの代替を検討する方にも、Achieve は別のアプローチを提供します。シンプルで柔軟な JavaScript プログラミングモデルを備えた、完全なウェブサーバーです。</p>
+</main>
+<footer>
+<a class="packageLink" href="../index.htm" hreflang="en">ドキュメント（英語）</a><br>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">npm の Achieve</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">GitHub の Achieve</a>
+</footer>
+</body>
+</html>

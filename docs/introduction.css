@@ -1,0 +1,11 @@
+/* Same visual conventions as the existing documentation; introduction pages only. */
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(23,101,43); border-bottom:solid blue thick; padding:0; margin:0; }
+.packageLink:hover { color:blue; }
+main { margin:2% 5% 5%; }
+code { padding:.08em .35em; border-radius:.3em; background-color:rgb(220,235,245); color:blue; font-family:Consolas,"Courier New",monospace; }
+pre { margin:1em 0 1.4em; }
+pre code { display:block; padding:1em; overflow:auto; white-space:pre; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }

@@ -1,0 +1,42 @@
+<h1>Achieve — 개발자 친화적인 Node.js 웹 서버</h1>
+<h2>더 간편하게 웹 애플리케이션을 만드는 방법</h2>
+<p>Achieve는 Node.js용 웹 서버이자 HTTP 애플리케이션 서버입니다. 웹사이트를 제공하고 HTTP 요청을 처리하며 서버에서 JavaScript 프로그램을 실행합니다.</p>
+<p>개발자는 일반적인 JavaScript와 Node.js 모듈로 간단한 웹사이트부터 정교한 웹 애플리케이션까지 만들 수 있습니다.</p>
+<p>Achieve는 복잡한 프레임워크를 강요하거나 많은 의존성을 요구하지 않으면서 웹 애플리케이션 개발을 간편하게 하도록 설계되었습니다.</p>
+<h2>Express의 대안을 찾고 계신가요?</h2>
+<p>Express는 Node.js에서 애플리케이션을 만드는 데 널리 쓰이는 프레임워크이지만, 유일한 방법은 아닙니다.</p>
+<p>Achieve는 웹 애플리케이션을 구성하는 다른 방법을 제공합니다. Express의 라우트와 미들웨어를 중심으로 구성하는 대신 JavaScript Servlets를 사용할 수 있습니다. 이는 HTTP 요청을 처리하는 일반적인 JavaScript 모듈입니다.</p>
+<p>Achieve 자체가 웹 서버이므로 요청 처리를 위해 Express나 다른 웹 프레임워크를 설치할 필요가 없습니다.</p>
+<p>개발자는 계속 Node.js에 직접 접근할 수 있으며 익숙한 JavaScript 함수, 모듈, API를 사용할 수 있습니다.</p>
+<p>가벼운 Node.js 웹 서버, 더 간편한 백엔드 개발 환경 또는 Express의 대안을 찾는다면 Achieve를 살펴보세요.</p>
+<h2>JavaScript Servlets</h2>
+<p>JavaScript Servlets는 Achieve의 핵심 기능 중 하나입니다.</p>
+<p>서블릿은 HTTP 요청을 처리할 함수를 내보내는 일반적인 JavaScript 모듈입니다. Achieve는 들어오는 URL을 적절한 서블릿에 연결하고 요청 정보를 제공하며 반환된 응답을 처리합니다.</p>
+<p>예를 들어 간단한 서블릿은 다음과 같이 작성할 수 있습니다.</p>
+<pre><code>{{SERVLET_EXAMPLE}}</code></pre>
+<p>브라우저가 서블릿을 요청하면 Achieve가 함수를 실행하고 결과를 브라우저에 반환합니다.</p>
+<p>간단한 결과라면 일반적인 HTTP 응답 처리 코드를 작성할 필요가 없습니다.</p>
+<p>더 고급 기능이 필요한 애플리케이션에서는 서블릿이 기반이 되는 Node.js 요청 및 응답 객체에 접근하여 응답을 직접 관리할 수 있습니다.</p>
+<p>서블릿은 일반적인 JavaScript 함수, Node.js 내장 모듈, 추가 npm 패키지도 사용할 수 있습니다.</p>
+<p>JavaScript Servlets는 개발할 수 있는 대상을 제한하지 않으면서 요청 처리를 간편하게 합니다.</p>
+<h2>불필요한 중단 없는 개발</h2>
+<p>Achieve는 개발 모드에서 수정된 서블릿 소스 파일의 자동 다시 불러오기를 지원합니다.</p>
+<p>서블릿을 편집하고 파일을 저장한 뒤 다시 요청하세요. Achieve가 서버를 다시 시작하지 않고 수정된 코드를 불러옵니다.</p>
+<p>덕분에 실험하고 변경 사항을 테스트하며 애플리케이션을 점진적으로 개발하기 편리합니다.</p>
+<p>Achieve는 개발자가 애플리케이션 코드의 문제를 파악하도록 유용한 오류 정보도 제공합니다.</p>
+<h2>서블릿 실행 그 이상</h2>
+<p>Achieve는 JavaScript Servlets 실행 기능과 웹 서버 및 HTTP 애플리케이션 서버의 기능을 결합합니다.</p>
+<p>정적 리소스, 설정 가능한 URL 라우팅, HTTP와 HTTPS, HTTP/2, 조건부 요청, 압축 등 다양한 HTTP 기능을 지원합니다.</p>
+<p>애플리케이션은 HTML, CSS, JavaScript, 이미지 등의 리소스를 제공하면서 JavaScript Servlets로 폼 처리, 데이터 처리, JSON 요청에 대한 응답 같은 백엔드 작업을 수행할 수 있습니다.</p>
+<p>Achieve는 Node.js를 기반으로 하므로 애플리케이션은 폭넓은 Node.js 생태계를 활용해 데이터베이스, 외부 서비스, 다른 소프트웨어와도 연동할 수 있습니다.</p>
+<h2>Achieve 시작하기</h2>
+<p>Achieve는 Node.js 패키지 관리자인 npm에서 사용할 수 있습니다.</p>
+<p>문서에는 초보자를 위한 튜토리얼, 설정 정보, 서블릿 예제, 기술 참고 자료가 포함되어 있습니다.</p>
+<p>다음 자료에서 Achieve를 알아볼 수 있습니다.</p>
+<ul>
+<li>문서와 튜토리얼<br><a href="https://highlevellogic.github.io/achieve/" hreflang="en">https://highlevellogic.github.io/achieve/</a></li>
+<li>npm에서 Achieve 설치<br><a href="https://www.npmjs.com/package/achieve">https://www.npmjs.com/package/achieve</a></li>
+<li>GitHub의 소스 코드<br><a href="https://github.com/highlevellogic/achieve">https://github.com/highlevellogic/achieve</a></li>
+</ul>
+<p>Achieve는 High Level Logic Project의 일부로 개발됩니다.</p>
+<p>백엔드 프로그래밍을 배우거나 웹 애플리케이션을 만들거나 기존 Node.js 프레임워크의 대안을 살펴보고 있다면 Achieve가 또 다른 접근 방식을 제공합니다. 간단하고 유연한 JavaScript 프로그래밍 모델을 갖춘 완전한 웹 서버입니다.</p>

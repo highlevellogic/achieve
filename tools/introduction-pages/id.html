@@ -1,0 +1,42 @@
+<h1>Achieve — Server web Node.js yang ramah pengembang</h1>
+<h2>Cara lebih sederhana untuk membangun aplikasi web</h2>
+<p>Achieve adalah server web dan server aplikasi HTTP untuk Node.js. Achieve menyajikan situs web, menangani permintaan HTTP, dan menjalankan program JavaScript di server.</p>
+<p>Pengembang dapat membuat situs sederhana hingga aplikasi web canggih menggunakan JavaScript biasa dan modul Node.js.</p>
+<p>Achieve dirancang agar pengembangan aplikasi web lebih mudah, tanpa memaksakan framework yang rumit atau memerlukan banyak dependensi.</p>
+<h2>Mencari alternatif untuk Express?</h2>
+<p>Express adalah framework populer untuk membangun aplikasi di Node.js, tetapi bukan satu-satunya pendekatan.</p>
+<p>Achieve menawarkan cara berbeda untuk menata aplikasi web. Alih-alih membangun aplikasi di seputar rute dan middleware Express, pengembang dapat menggunakan JavaScript Servlets: modul JavaScript biasa yang menangani permintaan HTTP.</p>
+<p>Achieve sendiri adalah server web, sehingga tidak perlu menginstal Express atau framework web lain untuk menangani permintaan.</p>
+<p>Pengembang tetap memiliki akses langsung ke Node.js dan dapat menggunakan fungsi, modul, serta API JavaScript yang sudah dikenal.</p>
+<p>Jika Anda mencari server web Node.js yang ringan, lingkungan pengembangan backend yang lebih sederhana, atau alternatif untuk Express, Achieve layak dicoba.</p>
+<h2>JavaScript Servlets</h2>
+<p>JavaScript Servlets adalah salah satu fitur utama Achieve.</p>
+<p>Servlet adalah modul JavaScript biasa yang mengekspor fungsi untuk memproses permintaan HTTP. Achieve memetakan URL yang masuk ke servlet yang tepat, memberikan informasi permintaan, dan menangani respons yang dikembalikan.</p>
+<p>Sebagai contoh, servlet sederhana dapat terlihat seperti ini:</p>
+<pre><code>{{SERVLET_EXAMPLE}}</code></pre>
+<p>Ketika browser meminta servlet, Achieve menjalankan fungsinya dan mengembalikan hasilnya ke browser.</p>
+<p>Untuk hasil sederhana, tidak perlu menulis kode penanganan respons HTTP seperti biasanya.</p>
+<p>Untuk aplikasi yang lebih kompleks, servlet dapat mengakses objek permintaan dan respons Node.js yang mendasarinya serta mengelola respons secara langsung.</p>
+<p>Servlet juga dapat menggunakan fungsi JavaScript biasa, modul bawaan Node.js, dan paket npm tambahan.</p>
+<p>JavaScript Servlets menyederhanakan penanganan permintaan tanpa membatasi apa yang dapat dibuat pengembang.</p>
+<h2>Pengembangan tanpa gangguan yang tidak perlu</h2>
+<p>Achieve mendukung pemuatan ulang otomatis berkas sumber servlet yang diubah dalam mode pengembangan.</p>
+<p>Edit servlet, simpan berkasnya, lalu minta kembali. Achieve memuat kode yang diubah tanpa perlu memulai ulang server.</p>
+<p>Hal ini memudahkan eksperimen, pengujian perubahan, dan pengembangan aplikasi secara bertahap.</p>
+<p>Achieve juga menyediakan laporan kesalahan yang berguna untuk membantu pengembang menemukan masalah dalam kode aplikasi.</p>
+<h2>Lebih dari sekadar menjalankan servlet</h2>
+<p>Achieve menggabungkan eksekusi JavaScript Servlets dengan kemampuan server web dan server aplikasi HTTP.</p>
+<p>Achieve mendukung sumber daya statis, perutean URL yang dapat dikonfigurasi, HTTP dan HTTPS, HTTP/2, permintaan bersyarat, kompresi, dan fitur HTTP lainnya.</p>
+<p>Aplikasi dapat menyajikan HTML, CSS, JavaScript, gambar, dan sumber daya lain sambil menggunakan JavaScript Servlets untuk pemrosesan backend, seperti menangani formulir, memproses data, atau merespons permintaan JSON.</p>
+<p>Karena dibangun di atas Node.js, Achieve memungkinkan aplikasi berinteraksi dengan basis data, layanan eksternal, dan perangkat lunak lain melalui ekosistem Node.js yang luas.</p>
+<h2>Mulai menggunakan Achieve</h2>
+<p>Achieve tersedia melalui npm, pengelola paket Node.js.</p>
+<p>Dokumentasinya mencakup tutorial pemula, informasi konfigurasi, contoh servlet, dan referensi teknis.</p>
+<p>Anda dapat mengenal Achieve melalui sumber daya berikut:</p>
+<ul>
+<li>Dokumentasi dan tutorial<br><a href="https://highlevellogic.github.io/achieve/" hreflang="en">https://highlevellogic.github.io/achieve/</a></li>
+<li>Instal Achieve dari npm<br><a href="https://www.npmjs.com/package/achieve">https://www.npmjs.com/package/achieve</a></li>
+<li>Kode sumber di GitHub<br><a href="https://github.com/highlevellogic/achieve">https://github.com/highlevellogic/achieve</a></li>
+</ul>
+<p>Achieve dikembangkan sebagai bagian dari High Level Logic Project.</p>
+<p>Baik Anda sedang mempelajari pemrograman backend, membangun aplikasi web, maupun mencari alternatif untuk framework Node.js yang sudah mapan, Achieve menawarkan pendekatan lain: server web lengkap dengan model pemrograman JavaScript yang sederhana dan fleksibel.</p>

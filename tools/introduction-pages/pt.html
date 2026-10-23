@@ -1,0 +1,42 @@
+<h1>Achieve — Um servidor web Node.js pensado para desenvolvedores</h1>
+<h2>Uma maneira mais simples de criar aplicações web</h2>
+<p>Achieve é um servidor web e um servidor de aplicações HTTP para Node.js. Ele disponibiliza sites, processa requisições HTTP e executa programas JavaScript no servidor.</p>
+<p>Os desenvolvedores podem criar desde sites simples até aplicações web sofisticadas usando JavaScript comum e módulos do Node.js.</p>
+<p>Achieve foi projetado para tornar o desenvolvimento de aplicações web direto, sem impor um framework complexo nem exigir uma grande quantidade de dependências.</p>
+<h2>Procurando uma alternativa ao Express?</h2>
+<p>Express é um framework popular para criar aplicações com Node.js, mas não é a única abordagem.</p>
+<p>Achieve oferece outra maneira de organizar aplicações web. Em vez de estruturá-las em torno das rotas e dos middlewares do Express, os desenvolvedores podem usar JavaScript Servlets: módulos JavaScript comuns que processam requisições HTTP.</p>
+<p>Achieve é, por si só, um servidor web. Portanto, não é necessário instalar Express ou outro framework web para processar requisições.</p>
+<p>Os desenvolvedores mantêm acesso direto ao Node.js e podem usar funções, módulos e APIs JavaScript que já conhecem.</p>
+<p>Para quem procura um servidor web Node.js leve, um ambiente de desenvolvimento backend mais simples ou uma alternativa ao Express, vale a pena conhecer o Achieve.</p>
+<h2>JavaScript Servlets</h2>
+<p>JavaScript Servlets são um dos recursos centrais do Achieve.</p>
+<p>Um servlet é um módulo JavaScript comum que exporta uma função para processar uma requisição HTTP. Achieve associa a URL recebida ao servlet adequado, fornece informações sobre a requisição e cuida da resposta retornada.</p>
+<p>Por exemplo, um servlet simples pode ser assim:</p>
+<pre><code>{{SERVLET_EXAMPLE}}</code></pre>
+<p>Quando um navegador solicita o servlet, Achieve executa a função e devolve o resultado ao navegador.</p>
+<p>Para resultados simples, não é necessário escrever o código habitual de tratamento de respostas HTTP.</p>
+<p>Em aplicações mais avançadas, o servlet pode acessar os objetos subjacentes de requisição e resposta do Node.js e controlar a resposta diretamente.</p>
+<p>Os servlets também podem usar funções JavaScript comuns, módulos integrados do Node.js e pacotes npm adicionais.</p>
+<p>JavaScript Servlets simplificam o processamento de requisições sem limitar o que os desenvolvedores podem criar.</p>
+<h2>Desenvolvimento sem interrupções desnecessárias</h2>
+<p>Achieve permite recarregar automaticamente os arquivos-fonte de servlets modificados no modo de desenvolvimento.</p>
+<p>Edite um servlet, salve o arquivo e faça uma nova requisição a ele. Achieve carrega o código alterado sem precisar reiniciar o servidor.</p>
+<p>Isso facilita experimentar, testar alterações e desenvolver aplicações de forma incremental.</p>
+<p>Achieve também fornece mensagens de erro úteis para ajudar os desenvolvedores a identificar problemas no código da aplicação.</p>
+<h2>Mais do que executar servlets</h2>
+<p>Achieve combina a execução de JavaScript Servlets com os recursos de um servidor web e de um servidor de aplicações HTTP.</p>
+<p>Ele oferece suporte a recursos estáticos, roteamento de URL configurável, HTTP e HTTPS, HTTP/2, requisições condicionais, compressão e outros recursos HTTP.</p>
+<p>As aplicações podem disponibilizar HTML, CSS, JavaScript, imagens e outros recursos enquanto usam JavaScript Servlets no processamento backend, como tratar formulários, processar dados ou responder a requisições JSON.</p>
+<p>Como Achieve é baseado em Node.js, as aplicações também podem interagir com bancos de dados, serviços externos e outros softwares por meio do amplo ecossistema Node.js.</p>
+<h2>Primeiros passos com Achieve</h2>
+<p>Achieve está disponível no npm, o gerenciador de pacotes do Node.js.</p>
+<p>A documentação inclui tutoriais para iniciantes, informações de configuração, exemplos de servlets e material de referência técnica.</p>
+<p>Você pode conhecer o Achieve por meio destes recursos:</p>
+<ul>
+<li>Documentação e tutoriais<br><a href="https://highlevellogic.github.io/achieve/" hreflang="en">https://highlevellogic.github.io/achieve/</a></li>
+<li>Instalar Achieve pelo npm<br><a href="https://www.npmjs.com/package/achieve">https://www.npmjs.com/package/achieve</a></li>
+<li>Código-fonte no GitHub<br><a href="https://github.com/highlevellogic/achieve">https://github.com/highlevellogic/achieve</a></li>
+</ul>
+<p>Achieve é desenvolvido como parte do High Level Logic Project.</p>
+<p>Seja para aprender programação backend, criar uma aplicação web ou explorar alternativas aos frameworks Node.js estabelecidos, Achieve oferece outra abordagem: um servidor web completo com um modelo de programação JavaScript simples e flexível.</p>

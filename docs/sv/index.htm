@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve — En utvecklarvänlig webbserver för Node.js</title>
+<meta name="description" content="Achieve är en webbserver och HTTP-applikationsserver för Node.js. Bygg applikationer med JavaScript Servlets: vanliga JavaScript-moduler som hanterar förfrågningar.">
+<link rel="canonical" href="https://highlevellogic.github.io/achieve/sv/index.htm">
+<link rel="alternate" hreflang="en" href="https://highlevellogic.github.io/achieve/en/index.htm">
+<link rel="alternate" hreflang="de" href="https://highlevellogic.github.io/achieve/de/index.htm">
+<link rel="alternate" hreflang="fr" href="https://highlevellogic.github.io/achieve/fr/index.htm">
+<link rel="alternate" hreflang="es" href="https://highlevellogic.github.io/achieve/es/index.htm">
+<link rel="alternate" hreflang="pt" href="https://highlevellogic.github.io/achieve/pt/index.htm">
+<link rel="alternate" hreflang="pl" href="https://highlevellogic.github.io/achieve/pl/index.htm">
+<link rel="alternate" hreflang="uk" href="https://highlevellogic.github.io/achieve/uk/index.htm">
+<link rel="alternate" hreflang="ro" href="https://highlevellogic.github.io/achieve/ro/index.htm">
+<link rel="alternate" hreflang="cs" href="https://highlevellogic.github.io/achieve/cs/index.htm">
+<link rel="alternate" hreflang="sv" href="https://highlevellogic.github.io/achieve/sv/index.htm">
+<link rel="alternate" hreflang="hi" href="https://highlevellogic.github.io/achieve/hi/index.htm">
+<link rel="alternate" hreflang="bn" href="https://highlevellogic.github.io/achieve/bn/index.htm">
+<link rel="alternate" hreflang="ta" href="https://highlevellogic.github.io/achieve/ta/index.htm">
+<link rel="alternate" hreflang="te" href="https://highlevellogic.github.io/achieve/te/index.htm">
+<link rel="alternate" hreflang="mr" href="https://highlevellogic.github.io/achieve/mr/index.htm">
+<link rel="alternate" hreflang="ja" href="https://highlevellogic.github.io/achieve/ja/index.htm">
+<link rel="alternate" hreflang="ko" href="https://highlevellogic.github.io/achieve/ko/index.htm">
+<link rel="alternate" hreflang="id" href="https://highlevellogic.github.io/achieve/id/index.htm">
+<link rel="alternate" hreflang="tr" href="https://highlevellogic.github.io/achieve/tr/index.htm">
+<link rel="alternate" hreflang="x-default" href="https://highlevellogic.github.io/achieve/en/index.htm">
+<link rel="stylesheet" href="../introduction.css">
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production.</h3>
+</header>
+<main>
+<h1>Achieve — En utvecklarvänlig webbserver för Node.js</h1>
+<h2>Ett enklare sätt att bygga webbapplikationer</h2>
+<p>Achieve är en webbserver och HTTP-applikationsserver för Node.js. Den levererar webbplatser, hanterar HTTP-förfrågningar och kör JavaScript-program på servern.</p>
+<p>Utvecklare kan skapa allt från enkla webbplatser till avancerade webbapplikationer med vanlig JavaScript och Node.js-moduler.</p>
+<p>Achieve är utformad för att göra utvecklingen av webbapplikationer enkel, utan att påtvinga ett omfattande ramverk eller kräva ett stort antal beroenden.</p>
+<h2>Letar du efter ett alternativ till Express?</h2>
+<p>Express är ett populärt ramverk för att bygga applikationer på Node.js, men det är inte det enda tillvägagångssättet.</p>
+<p>Achieve erbjuder ett annat sätt att organisera webbapplikationer. I stället för att bygga applikationer kring rutter och middleware i Express kan utvecklare använda JavaScript Servlets: vanliga JavaScript-moduler som hanterar HTTP-förfrågningar.</p>
+<p>Achieve är i sig en webbserver, så det finns inget krav på att installera Express eller något annat webbramverk för att hantera förfrågningar.</p>
+<p>Utvecklare behåller direkt tillgång till Node.js och kan använda välbekanta JavaScript-funktioner, moduler och API:er.</p>
+<p>Om du söker en lättviktig webbserver för Node.js, en enklare miljö för backendutveckling eller ett alternativ till Express är Achieve värt att utforska.</p>
+<h2>JavaScript Servlets</h2>
+<p>JavaScript Servlets är en av de centrala funktionerna i Achieve.</p>
+<p>En servlet är en vanlig JavaScript-modul som exporterar en funktion för att behandla en HTTP-förfrågan. Achieve kopplar den inkommande URL:en till rätt servlet, tillhandahåller information om förfrågan och hanterar svaret som returneras.</p>
+<p>En enkel servlet kan till exempel se ut så här:</p>
+<pre><code>exports.servlet = function (session) {
+    return &quot;Hello World!&quot;;
+};</code></pre>
+<p>När en webbläsare anropar servleten kör Achieve funktionen och returnerar resultatet till webbläsaren.</p>
+<p>För enkla resultat behöver du inte skriva den vanliga koden för att hantera HTTP-svaret.</p>
+<p>I mer avancerade applikationer kan servleten komma åt de underliggande objekten för förfrågningar och svar i Node.js och hantera svaret direkt.</p>
+<p>Servletar kan också använda vanliga JavaScript-funktioner, inbyggda Node.js-moduler och ytterligare npm-paket.</p>
+<p>JavaScript Servlets förenklar hanteringen av förfrågningar utan att begränsa vad utvecklare kan bygga.</p>
+<h2>Utveckling utan onödiga avbrott</h2>
+<p>Achieve stöder automatisk omladdning av ändrade källkodsfiler för servletar i utvecklingsläge.</p>
+<p>Redigera en servlet, spara filen och anropa den igen. Achieve läser in den ändrade koden utan att servern behöver startas om.</p>
+<p>Det gör det smidigt att experimentera, testa ändringar och utveckla applikationer stegvis.</p>
+<p>Achieve ger också användbara felmeddelanden som hjälper utvecklare att hitta problem i applikationskoden.</p>
+<h2>Mer än att bara köra servletar</h2>
+<p>Achieve kombinerar körning av JavaScript Servlets med funktionerna hos en webbserver och HTTP-applikationsserver.</p>
+<p>Den stöder statiska resurser, konfigurerbar URL-routning, HTTP och HTTPS, HTTP/2, villkorliga förfrågningar, komprimering och andra HTTP-funktioner.</p>
+<p>Applikationer kan leverera HTML, CSS, JavaScript, bilder och andra resurser samtidigt som de använder JavaScript Servlets för backendbearbetning, till exempel formulärhantering, databearbetning eller svar på JSON-förfrågningar.</p>
+<p>Eftersom Achieve bygger på Node.js kan applikationer också samverka med databaser, externa tjänster och annan programvara genom det omfattande Node.js-ekosystemet.</p>
+<h2>Kom igång med Achieve</h2>
+<p>Achieve finns tillgängligt via npm, pakethanteraren för Node.js.</p>
+<p>Dokumentationen innehåller handledningar för nybörjare, konfigurationsinformation, servletexempel och tekniskt referensmaterial.</p>
+<p>Du kan utforska Achieve genom de här resurserna:</p>
+<ul>
+<li>Dokumentation och handledningar<br><a href="https://highlevellogic.github.io/achieve/" hreflang="en">https://highlevellogic.github.io/achieve/</a></li>
+<li>Installera Achieve från npm<br><a href="https://www.npmjs.com/package/achieve">https://www.npmjs.com/package/achieve</a></li>
+<li>Källkod på GitHub<br><a href="https://github.com/highlevellogic/achieve">https://github.com/highlevellogic/achieve</a></li>
+</ul>
+<p>Achieve utvecklas som en del av High Level Logic Project.</p>
+<p>Oavsett om du lär dig backendprogrammering, bygger en webbapplikation eller undersöker alternativ till etablerade Node.js-ramverk erbjuder Achieve ett annat angreppssätt: en komplett webbserver med en enkel och flexibel programmeringsmodell i JavaScript.</p>
+</main>
+<footer>
+<a class="packageLink" href="../index.htm" hreflang="en">Dokumentation (engelska)</a><br>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve på npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve på GitHub</a>
+</footer>
+</body>
+</html>

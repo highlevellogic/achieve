@@ -1,0 +1,21 @@
+PASS en: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS de: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS fr: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS es: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS pt: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS pl: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS uk: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS ro: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS cs: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS sv: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS hi: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS bn: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS ta: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS te: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS mr: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS ja: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS ko: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS id: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS tr: generated content, localized metadata, UTF-8/structure, links, 20 alternates, standard header, identical code
+PASS approved English/German source, CSS and shared example unchanged
+PASS TOC: 19 manifest links; sitemap: 11 original + 19 introduction URLs; no project robots.txt

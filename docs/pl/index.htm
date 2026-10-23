@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achieve — Przyjazny programistom serwer WWW dla Node.js</title>
+<meta name="description" content="Achieve to serwer WWW i aplikacji HTTP dla Node.js. Twórz aplikacje z JavaScript Servlets: zwykłymi modułami JavaScript obsługującymi żądania.">
+<link rel="canonical" href="https://highlevellogic.github.io/achieve/pl/index.htm">
+<link rel="alternate" hreflang="en" href="https://highlevellogic.github.io/achieve/en/index.htm">
+<link rel="alternate" hreflang="de" href="https://highlevellogic.github.io/achieve/de/index.htm">
+<link rel="alternate" hreflang="fr" href="https://highlevellogic.github.io/achieve/fr/index.htm">
+<link rel="alternate" hreflang="es" href="https://highlevellogic.github.io/achieve/es/index.htm">
+<link rel="alternate" hreflang="pt" href="https://highlevellogic.github.io/achieve/pt/index.htm">
+<link rel="alternate" hreflang="pl" href="https://highlevellogic.github.io/achieve/pl/index.htm">
+<link rel="alternate" hreflang="uk" href="https://highlevellogic.github.io/achieve/uk/index.htm">
+<link rel="alternate" hreflang="ro" href="https://highlevellogic.github.io/achieve/ro/index.htm">
+<link rel="alternate" hreflang="cs" href="https://highlevellogic.github.io/achieve/cs/index.htm">
+<link rel="alternate" hreflang="sv" href="https://highlevellogic.github.io/achieve/sv/index.htm">
+<link rel="alternate" hreflang="hi" href="https://highlevellogic.github.io/achieve/hi/index.htm">
+<link rel="alternate" hreflang="bn" href="https://highlevellogic.github.io/achieve/bn/index.htm">
+<link rel="alternate" hreflang="ta" href="https://highlevellogic.github.io/achieve/ta/index.htm">
+<link rel="alternate" hreflang="te" href="https://highlevellogic.github.io/achieve/te/index.htm">
+<link rel="alternate" hreflang="mr" href="https://highlevellogic.github.io/achieve/mr/index.htm">
+<link rel="alternate" hreflang="ja" href="https://highlevellogic.github.io/achieve/ja/index.htm">
+<link rel="alternate" hreflang="ko" href="https://highlevellogic.github.io/achieve/ko/index.htm">
+<link rel="alternate" hreflang="id" href="https://highlevellogic.github.io/achieve/id/index.htm">
+<link rel="alternate" hreflang="tr" href="https://highlevellogic.github.io/achieve/tr/index.htm">
+<link rel="alternate" hreflang="x-default" href="https://highlevellogic.github.io/achieve/en/index.htm">
+<link rel="stylesheet" href="../introduction.css">
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="">
+<h3 id="friend">Friendly in development. Fast in production.</h3>
+</header>
+<main>
+<h1>Achieve — Przyjazny programistom serwer WWW dla Node.js</h1>
+<h2>Prostszy sposób tworzenia aplikacji internetowych</h2>
+<p>Achieve to serwer WWW i serwer aplikacji HTTP dla Node.js. Udostępnia witryny, obsługuje żądania HTTP i uruchamia programy JavaScript po stronie serwera.</p>
+<p>Programiści mogą tworzyć zarówno proste witryny, jak i zaawansowane aplikacje internetowe, korzystając ze zwykłego JavaScriptu i modułów Node.js.</p>
+<p>Achieve zaprojektowano tak, aby upraszczał tworzenie aplikacji internetowych bez narzucania rozbudowanego frameworka i wymagania wielu zależności.</p>
+<h2>Szukasz alternatywy dla Express?</h2>
+<p>Express to popularny framework do tworzenia aplikacji w Node.js, ale nie jest jedynym rozwiązaniem.</p>
+<p>Achieve oferuje inny sposób organizowania aplikacji internetowych. Zamiast opierać je na trasach i middleware Express, programiści mogą używać JavaScript Servlets: zwykłych modułów JavaScript obsługujących żądania HTTP.</p>
+<p>Achieve sam jest serwerem WWW, więc do obsługi żądań nie trzeba instalować Express ani innego frameworka internetowego.</p>
+<p>Programiści zachowują bezpośredni dostęp do Node.js i mogą korzystać ze znanych funkcji, modułów oraz interfejsów API JavaScript.</p>
+<p>Jeśli szukasz lekkiego serwera WWW dla Node.js, prostszego środowiska programowania backendu lub alternatywy dla Express, warto poznać Achieve.</p>
+<h2>JavaScript Servlets</h2>
+<p>JavaScript Servlets to jedna z głównych funkcji Achieve.</p>
+<p>Servlet jest zwykłym modułem JavaScript eksportującym funkcję do przetwarzania żądania HTTP. Achieve przyporządkowuje otrzymany URL do właściwego servletu, dostarcza informacje o żądaniu i obsługuje zwróconą odpowiedź.</p>
+<p>Prosty servlet może na przykład wyglądać tak:</p>
+<pre><code>exports.servlet = function (session) {
+    return &quot;Hello World!&quot;;
+};</code></pre>
+<p>Gdy przeglądarka wysyła żądanie do servletu, Achieve wykonuje funkcję i zwraca wynik przeglądarce.</p>
+<p>Przy prostych wynikach nie trzeba pisać typowego kodu obsługującego odpowiedź HTTP.</p>
+<p>W bardziej zaawansowanych aplikacjach servlet może korzystać bezpośrednio z obiektów żądania i odpowiedzi Node.js oraz samodzielnie zarządzać odpowiedzią.</p>
+<p>Servlety mogą też używać zwykłych funkcji JavaScript, wbudowanych modułów Node.js i dodatkowych pakietów npm.</p>
+<p>JavaScript Servlets upraszczają obsługę żądań bez ograniczania możliwości tworzonych aplikacji.</p>
+<h2>Programowanie bez zbędnych przerw</h2>
+<p>W trybie deweloperskim Achieve automatycznie przeładowuje zmodyfikowane pliki źródłowe servletów.</p>
+<p>Edytuj servlet, zapisz plik i ponownie wyślij do niego żądanie. Achieve wczyta zmieniony kod bez konieczności ponownego uruchamiania serwera.</p>
+<p>Ułatwia to eksperymentowanie, testowanie zmian i stopniowe rozwijanie aplikacji.</p>
+<p>Achieve dostarcza również przydatne komunikaty o błędach, które pomagają programistom znajdować problemy w kodzie aplikacji.</p>
+<h2>Więcej niż uruchamianie servletów</h2>
+<p>Achieve łączy wykonywanie JavaScript Servlets z możliwościami serwera WWW i serwera aplikacji HTTP.</p>
+<p>Obsługuje zasoby statyczne, konfigurowalne trasowanie URL, HTTP i HTTPS, HTTP/2, żądania warunkowe, kompresję i inne funkcje HTTP.</p>
+<p>Aplikacje mogą udostępniać HTML, CSS, JavaScript, obrazy i inne zasoby, a jednocześnie używać JavaScript Servlets do pracy backendu: obsługi formularzy, przetwarzania danych czy odpowiadania na żądania JSON.</p>
+<p>Ponieważ Achieve działa na Node.js, aplikacje mogą również współpracować z bazami danych, usługami zewnętrznymi i innym oprogramowaniem, korzystając z rozbudowanego ekosystemu Node.js.</p>
+<h2>Pierwsze kroki z Achieve</h2>
+<p>Achieve jest dostępny w npm, menedżerze pakietów Node.js.</p>
+<p>Dokumentacja zawiera samouczki dla początkujących, informacje o konfiguracji, przykłady servletów i dokumentację techniczną.</p>
+<p>Achieve możesz poznać dzięki tym materiałom:</p>
+<ul>
+<li>Dokumentacja i samouczki<br><a href="https://highlevellogic.github.io/achieve/" hreflang="en">https://highlevellogic.github.io/achieve/</a></li>
+<li>Instalacja Achieve z npm<br><a href="https://www.npmjs.com/package/achieve">https://www.npmjs.com/package/achieve</a></li>
+<li>Kod źródłowy na GitHub<br><a href="https://github.com/highlevellogic/achieve">https://github.com/highlevellogic/achieve</a></li>
+</ul>
+<p>Achieve jest rozwijany w ramach High Level Logic Project.</p>
+<p>Niezależnie od tego, czy uczysz się programowania backendu, tworzysz aplikację internetową, czy poznajesz alternatywy dla uznanych frameworków Node.js, Achieve oferuje inne podejście: kompletny serwer WWW z prostym i elastycznym modelem programowania w JavaScript.</p>
+</main>
+<footer>
+<a class="packageLink" href="../index.htm" hreflang="en">Dokumentacja (angielski)</a><br>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve w npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve na GitHub</a>
+</footer>
+</body>
+</html>

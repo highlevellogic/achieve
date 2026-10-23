@@ -1,0 +1,249 @@
+[
+  {
+    "code": "en",
+    "name": "English",
+    "source": "en.html",
+    "url": "https://highlevellogic.github.io/achieve/en/index.htm",
+    "title": "Achieve — A Developer-Friendly Node.js Web Server",
+    "description": "Achieve is a Node.js web server and HTTP application server. Build web applications with ordinary JavaScript request handlers called JavaScript Servlets.",
+    "footer": {
+      "docs": "Documentation (English)",
+      "npm": "Achieve on npm",
+      "github": "Achieve on GitHub"
+    }
+  },
+  {
+    "code": "de",
+    "name": "Deutsch",
+    "source": "de.html",
+    "url": "https://highlevellogic.github.io/achieve/de/index.htm",
+    "title": "Achieve — Ein entwicklerfreundlicher Webserver für Node.js",
+    "description": "Achieve ist ein Webserver und HTTP-Anwendungsserver für Node.js. Entwickeln Sie Webanwendungen mit JavaScript Servlets: gewöhnlichen JavaScript-Anfragehandlern.",
+    "footer": {
+      "docs": "Dokumentation (Englisch)",
+      "npm": "Achieve auf npm",
+      "github": "Achieve auf GitHub"
+    }
+  },
+  {
+    "code": "fr",
+    "name": "Français",
+    "source": "fr.html",
+    "url": "https://highlevellogic.github.io/achieve/fr/index.htm",
+    "title": "Achieve — Un serveur web Node.js convivial pour les développeurs",
+    "description": "Achieve est un serveur web et d’applications HTTP pour Node.js. Créez des applications avec des gestionnaires de requêtes JavaScript : les JavaScript Servlets.",
+    "footer": {
+      "docs": "Documentation (anglais)",
+      "npm": "Achieve sur npm",
+      "github": "Achieve sur GitHub"
+    }
+  },
+  {
+    "code": "es",
+    "name": "Español",
+    "source": "es.html",
+    "url": "https://highlevellogic.github.io/achieve/es/index.htm",
+    "title": "Achieve — Un servidor web Node.js pensado para desarrolladores",
+    "description": "Achieve es un servidor web y de aplicaciones HTTP para Node.js. Crea aplicaciones con JavaScript Servlets, módulos JavaScript que procesan solicitudes.",
+    "footer": {
+      "docs": "Documentación (inglés)",
+      "npm": "Achieve en npm",
+      "github": "Achieve en GitHub"
+    }
+  },
+  {
+    "code": "pt",
+    "name": "Português",
+    "source": "pt.html",
+    "url": "https://highlevellogic.github.io/achieve/pt/index.htm",
+    "title": "Achieve — Um servidor web Node.js pensado para desenvolvedores",
+    "description": "Achieve é um servidor web e de aplicações HTTP para Node.js. Crie aplicações com JavaScript Servlets, módulos JavaScript que processam requisições.",
+    "footer": {
+      "docs": "Documentação (inglês)",
+      "npm": "Achieve no npm",
+      "github": "Achieve no GitHub"
+    }
+  },
+  {
+    "code": "pl",
+    "name": "Polski",
+    "source": "pl.html",
+    "url": "https://highlevellogic.github.io/achieve/pl/index.htm",
+    "title": "Achieve — Przyjazny programistom serwer WWW dla Node.js",
+    "description": "Achieve to serwer WWW i aplikacji HTTP dla Node.js. Twórz aplikacje z JavaScript Servlets: zwykłymi modułami JavaScript obsługującymi żądania.",
+    "footer": {
+      "docs": "Dokumentacja (angielski)",
+      "npm": "Achieve w npm",
+      "github": "Achieve na GitHub"
+    }
+  },
+  {
+    "code": "uk",
+    "name": "Українська",
+    "source": "uk.html",
+    "url": "https://highlevellogic.github.io/achieve/uk/index.htm",
+    "title": "Achieve — Зручний для розробників вебсервер Node.js",
+    "description": "Achieve — вебсервер і сервер HTTP-застосунків для Node.js. Створюйте застосунки з JavaScript Servlets — звичайними обробниками запитів JavaScript.",
+    "footer": {
+      "docs": "Документація (англійською)",
+      "npm": "Achieve на npm",
+      "github": "Achieve на GitHub"
+    }
+  },
+  {
+    "code": "ro",
+    "name": "Română",
+    "source": "ro.html",
+    "url": "https://highlevellogic.github.io/achieve/ro/index.htm",
+    "title": "Achieve — Un server web Node.js prietenos cu dezvoltatorii",
+    "description": "Achieve este un server web și de aplicații HTTP pentru Node.js. Creează aplicații cu JavaScript Servlets, module JavaScript obișnuite pentru gestionarea cererilor.",
+    "footer": {
+      "docs": "Documentație (engleză)",
+      "npm": "Achieve pe npm",
+      "github": "Achieve pe GitHub"
+    }
+  },
+  {
+    "code": "cs",
+    "name": "Čeština",
+    "source": "cs.html",
+    "url": "https://highlevellogic.github.io/achieve/cs/index.htm",
+    "title": "Achieve — Webový server pro Node.js vstřícný k vývojářům",
+    "description": "Achieve je webový server a server HTTP aplikací pro Node.js. Vytvářejte aplikace s JavaScript Servlets, běžnými moduly pro zpracování požadavků.",
+    "footer": {
+      "docs": "Dokumentace (anglicky)",
+      "npm": "Achieve na npm",
+      "github": "Achieve na GitHub"
+    }
+  },
+  {
+    "code": "sv",
+    "name": "Svenska",
+    "source": "sv.html",
+    "url": "https://highlevellogic.github.io/achieve/sv/index.htm",
+    "title": "Achieve — En utvecklarvänlig webbserver för Node.js",
+    "description": "Achieve är en webbserver och HTTP-applikationsserver för Node.js. Bygg applikationer med JavaScript Servlets: vanliga JavaScript-moduler som hanterar förfrågningar.",
+    "footer": {
+      "docs": "Dokumentation (engelska)",
+      "npm": "Achieve på npm",
+      "github": "Achieve på GitHub"
+    }
+  },
+  {
+    "code": "hi",
+    "name": "हिन्दी",
+    "source": "hi.html",
+    "url": "https://highlevellogic.github.io/achieve/hi/index.htm",
+    "title": "Achieve — डेवलपर के अनुकूल Node.js वेब सर्वर",
+    "description": "Achieve, Node.js के लिए वेब सर्वर और HTTP एप्लिकेशन सर्वर है। साधारण JavaScript अनुरोध हैंडलर, JavaScript Servlets के साथ वेब एप्लिकेशन बनाएँ।",
+    "footer": {
+      "docs": "दस्तावेज़ (अंग्रेज़ी)",
+      "npm": "npm पर Achieve",
+      "github": "GitHub पर Achieve"
+    }
+  },
+  {
+    "code": "bn",
+    "name": "বাংলা",
+    "source": "bn.html",
+    "url": "https://highlevellogic.github.io/achieve/bn/index.htm",
+    "title": "Achieve — ডেভেলপারবান্ধব Node.js ওয়েব সার্ভার",
+    "description": "Achieve হলো Node.js-এর ওয়েব সার্ভার ও HTTP অ্যাপ্লিকেশন সার্ভার। সাধারণ JavaScript অনুরোধ হ্যান্ডলার JavaScript Servlets দিয়ে অ্যাপ্লিকেশন তৈরি করুন।",
+    "footer": {
+      "docs": "ডকুমেন্টেশন (ইংরেজি)",
+      "npm": "npm-এ Achieve",
+      "github": "GitHub-এ Achieve"
+    }
+  },
+  {
+    "code": "ta",
+    "name": "தமிழ்",
+    "source": "ta.html",
+    "url": "https://highlevellogic.github.io/achieve/ta/index.htm",
+    "title": "Achieve — உருவாக்குநர்களுக்கு ஏற்ற Node.js வலைச் சேவையகம்",
+    "description": "Achieve என்பது Node.js-க்கான வலை மற்றும் HTTP பயன்பாட்டுச் சேவையகம். சாதாரண JavaScript கோரிக்கை கையாளிகளான JavaScript Servlets மூலம் பயன்பாடுகளை உருவாக்குங்கள்.",
+    "footer": {
+      "docs": "ஆவணங்கள் (ஆங்கிலம்)",
+      "npm": "npm-இல் Achieve",
+      "github": "GitHub-இல் Achieve"
+    }
+  },
+  {
+    "code": "te",
+    "name": "తెలుగు",
+    "source": "te.html",
+    "url": "https://highlevellogic.github.io/achieve/te/index.htm",
+    "title": "Achieve — డెవలపర్లకు అనుకూలమైన Node.js వెబ్ సర్వర్",
+    "description": "Achieve అనేది Node.js కోసం వెబ్ సర్వర్, HTTP అప్లికేషన్ సర్వర్. సాధారణ JavaScript అభ్యర్థన హ్యాండ్లర్లైన JavaScript Servlets‌తో అప్లికేషన్లను రూపొందించండి.",
+    "footer": {
+      "docs": "డాక్యుమెంటేషన్ (ఆంగ్లం)",
+      "npm": "npmలో Achieve",
+      "github": "GitHubలో Achieve"
+    }
+  },
+  {
+    "code": "mr",
+    "name": "मराठी",
+    "source": "mr.html",
+    "url": "https://highlevellogic.github.io/achieve/mr/index.htm",
+    "title": "Achieve — डेव्हलपरस्नेही Node.js वेब सर्व्हर",
+    "description": "Achieve हा Node.js साठी वेब सर्व्हर आणि HTTP ॲप्लिकेशन सर्व्हर आहे. साध्या JavaScript विनंती हँडलरद्वारे, म्हणजे JavaScript Servlets वापरून, ॲप्लिकेशन तयार करा.",
+    "footer": {
+      "docs": "दस्तऐवज (इंग्रजी)",
+      "npm": "npm वरील Achieve",
+      "github": "GitHub वरील Achieve"
+    }
+  },
+  {
+    "code": "ja",
+    "name": "日本語",
+    "source": "ja.html",
+    "url": "https://highlevellogic.github.io/achieve/ja/index.htm",
+    "title": "Achieve — 開発者にやさしい Node.js ウェブサーバー",
+    "description": "Achieve は Node.js 向けのウェブサーバー兼 HTTP アプリケーションサーバーです。通常の JavaScript リクエストハンドラーである JavaScript Servlets でアプリケーションを開発できます。",
+    "footer": {
+      "docs": "ドキュメント（英語）",
+      "npm": "npm の Achieve",
+      "github": "GitHub の Achieve"
+    }
+  },
+  {
+    "code": "ko",
+    "name": "한국어",
+    "source": "ko.html",
+    "url": "https://highlevellogic.github.io/achieve/ko/index.htm",
+    "title": "Achieve — 개발자 친화적인 Node.js 웹 서버",
+    "description": "Achieve는 Node.js용 웹 서버이자 HTTP 애플리케이션 서버입니다. 일반적인 JavaScript 요청 처리 모듈인 JavaScript Servlets로 웹 애플리케이션을 만드세요.",
+    "footer": {
+      "docs": "문서 (영어)",
+      "npm": "npm의 Achieve",
+      "github": "GitHub의 Achieve"
+    }
+  },
+  {
+    "code": "id",
+    "name": "Bahasa Indonesia",
+    "source": "id.html",
+    "url": "https://highlevellogic.github.io/achieve/id/index.htm",
+    "title": "Achieve — Server web Node.js yang ramah pengembang",
+    "description": "Achieve adalah server web dan server aplikasi HTTP untuk Node.js. Bangun aplikasi dengan JavaScript Servlets: modul JavaScript biasa untuk menangani permintaan.",
+    "footer": {
+      "docs": "Dokumentasi (bahasa Inggris)",
+      "npm": "Achieve di npm",
+      "github": "Achieve di GitHub"
+    }
+  },
+  {
+    "code": "tr",
+    "name": "Türkçe",
+    "source": "tr.html",
+    "url": "https://highlevellogic.github.io/achieve/tr/index.htm",
+    "title": "Achieve — Geliştirici dostu bir Node.js web sunucusu",
+    "description": "Achieve, Node.js için bir web sunucusu ve HTTP uygulama sunucusudur. Sıradan JavaScript istek işleyicileri olan JavaScript Servlets ile uygulama geliştirin.",
+    "footer": {
+      "docs": "Belgeler (İngilizce)",
+      "npm": "npm üzerinde Achieve",
+      "github": "GitHub üzerinde Achieve"
+    }
+  }
+]
