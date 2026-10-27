@@ -1,6 +1,6 @@
 {
   "name": "achieve",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "Achieve - a developer-friendly web server and HTTP application server for Node.js.",
   "main": "./achieve.js",
   "exports": "./achieve.js",
@@ -38,12 +38,12 @@
     "compression",
     "etag",
     "cors",
-	"education",
-	"teaching",
-	"learning",
-	"tutorial",
-	"web-programming",
-	"server-side-javascript"
+    "education",
+    "teaching",
+    "learning",
+    "tutorial",
+    "web-programming",
+    "server-side-javascript"
   ],
   "author": "Roger F. Gay (HLL Project http://hll.nu)",
   "license": "MIT",
