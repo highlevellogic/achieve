@@ -79,7 +79,7 @@ for language in manifest:
     assert any(t == 'link' and a.get('rel') == 'canonical' and a.get('href') == language['url'] for t, a in page.nodes)
     assert not any(t == 'nav' for t, a in page.nodes)
     assert not any(t == 'a' and a.get('href') in {f"../{l['code']}/index.htm" for l in manifest} for t, a in page.nodes)
-    assert re.search(r'<header>\s*<img src="\.\./images/skyhigh1\.jpg" alt="">\s*<h3 id="friend">Friendly in development\. Fast in production\.</h3>\s*</header>\s*<main>\s*<h1>', text)
+    assert re.search(r'<header>\s*<img src="\.\./images/skyhigh1\.jpg" alt="Achieve — High Level Logic Project\. Creating a new meta design pattern\.">\s*<h3 id="friend">Friendly in development\. Fast in production\.</h3>\s*</header>\s*<main>\s*<h1>', text)
     assert text.count('id="friend"') == 1
     assert page.code == expected_code, f'{lang}: servlet example changed'
     footer = re.search(r'<footer>([\s\S]*?)</footer>', text).group(1)
@@ -104,7 +104,9 @@ for language in manifest:
 assert ('h2', 'Mehr als nur die Ausführung von Servlets') in pages['de'].blocks
 baseline = json.loads((ROOT / 'tools/introduction-pages/expansion-review/approved-baseline.json').read_text(encoding='utf-8'))
 for path, digest in baseline.items():
-    assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == digest, f'Approved file changed: {path}'
+    # Approved hashes use LF; normalize only CRLF checkout line endings.
+    content = (ROOT / path).read_bytes().replace(b'\r\n', b'\n')
+    assert hashlib.sha256(content).hexdigest() == digest, f'Approved file changed: {path}'
 print('PASS approved English/German source, CSS and shared example unchanged')
 toc_file = ROOT / 'docs/index.htm'
 toc_text = toc_file.read_text(encoding='utf-8')
