@@ -167,6 +167,21 @@ async function verify(protocol) {
         result=await request(protocol,"alias-last");
         assert.strictEqual(result.status,202);
         assert.deepStrictEqual(JSON.parse(result.body),{autoEnd:false,allowAsync:true});
+        for (const kind of ["sync-delayed","async-before-await","async-after-await","async-after-await-value"]) {
+            result=await request(protocol,kind);
+            assert.strictEqual(result.status,200,`${protocol} ${kind}: delayed response must not end early`);
+            assert.strictEqual(result.body.toString(),"Delayed response",`${protocol} ${kind}`);
+            if (kind.startsWith("async-after-await")) assert.strictEqual(result.headers["x-delayed"],"preserved");
+            console.log(`PASS ${protocol} ${kind}: application completed delayed response`);
+        }
+        result=await request(protocol,"async-normal");
+        assert.strictEqual(result.status,200);
+        assert.strictEqual(result.body.toString(),"async normal");
+        for (const kind of ["sync-throw","async-reject","async-owned-reject"]) {
+            result=await request(protocol,kind);
+            assert.strictEqual(result.status,500,`${protocol} ${kind}: managed errors remain handled`);
+            assert.match(result.body.toString(),/completion failure/);
+        }
         result=await request(protocol,"invalid","GET",protocol === "h2c" || protocol === "h2s");
         if (protocol === "http" || protocol === "https") {
             assert.strictEqual(result.status,500,`${protocol} end(content) exceptions reach managed error handling`);

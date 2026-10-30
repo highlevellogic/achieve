@@ -38,6 +38,45 @@ exports.servlet=function (session) {
             session.response.statusCode=409;
             return {then(resolve) { resolve(undefined); }};
         case "invalid": return {};
+        case "sync-delayed":
+            session.autoEnd=false;
+            setTimeout(() => session.response.end("Delayed response"),50);
+            return "ignored";
+        case "async-before-await":
+            return (async function () {
+                session.autoEnd=false;
+                await Promise.resolve();
+                setTimeout(() => session.response.end("Delayed response"),50);
+            })();
+        case "async-after-await":
+        case "async-after-await-value":
+            return (async function () {
+                await Promise.resolve();
+                session.autoEnd=false;
+                setTimeout(() => {
+                    session.response.setHeader("X-Delayed","preserved");
+                    session.response.end("Delayed response");
+                },50);
+                if (session.params.kind === "async-after-await-value") return "ignored";
+            })();
+        case "async-normal":
+            return (async function () {
+                await Promise.resolve();
+                return "async normal";
+            })();
+        case "async-reject":
+            return (async function () {
+                await Promise.resolve();
+                throw new Error("Async completion failure");
+            })();
+        case "async-owned-reject":
+            return (async function () {
+                await Promise.resolve();
+                session.autoEnd=false;
+                throw new Error("Async completion failure");
+            })();
+        case "sync-throw":
+            throw new Error("Sync completion failure");
         case "auto-default":
             return JSON.stringify({autoEnd:session.autoEnd,allowAsync:session.allowAsync});
         case "auto-owned":

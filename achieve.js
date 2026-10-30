@@ -2397,7 +2397,7 @@ function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
     if (mode === "development") developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
   }
   function complete(content) {
-    if (response.writableEnded || response.destroyed) {
+    if (!context.autoEnd || response.writableEnded || response.destroyed) {
       applicationOwned();
       return;
     }
