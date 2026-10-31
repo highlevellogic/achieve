@@ -6,7 +6,7 @@
 
 <p>Achieve is a standards-compliant, production-ready web and application server implemented on Node.js.</p>
 
-<p>The v3 development process was complemented by extensive automated testing, analysis, and review for <ins><em>standards compliance, reliability, and performance</em></ins>.</p>
+<p>The v3 development process was complemented by extensive automated testing, analysis, and review for <ins><em>standards compliance, reliability, security, and performance</em></ins>.</p>
 
 <p>This document provides a quick introduction and overview of Achieve's features. Tutorials, detailed references, and examples are available in the <a href="https://highlevellogic.github.io/achieve/index.htm">project documentation</a>.</p>
 
