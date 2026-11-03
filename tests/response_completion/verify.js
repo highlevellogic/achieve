@@ -2,6 +2,8 @@ const assert=require("node:assert");
 const http=require("node:http");
 const http2=require("node:http2");
 const https=require("node:https");
+const fs=require("node:fs");
+const os=require("node:os");
 const path=require("node:path");
 const {fork}=require("node:child_process");
 
@@ -10,23 +12,65 @@ const ports={http:24940,https:24941,h2c:24942,h2s:24943};
 
 function start(protocol) {
     return new Promise((resolve,reject) => {
+        const logPath=fs.mkdtempSync(path.join(os.tmpdir(),"achieve-response-completion-"));
         const child=fork(path.join(__dirname,"fixture.js"),[],{
-            env:{...process.env,ACHIEVE_COMPLETION_PROTOCOL:protocol,ACHIEVE_COMPLETION_PORT:String(ports[protocol])},
+            env:{
+                ...process.env,
+                ACHIEVE_COMPLETION_PROTOCOL:protocol,
+                ACHIEVE_COMPLETION_PORT:String(ports[protocol]),
+                ACHIEVE_COMPLETION_LOG_PATH:logPath
+            },
             stdio:["ignore","pipe","pipe","ipc"]
         });
         let output="";
+        let ready=false;
         child.stdout.on("data",data => output+=data);
         child.stderr.on("data",data => output+=data);
-        child.once("message",message => message.type === "ready" && resolve({child,output:() => output}));
-        child.once("exit",code => reject(new Error(`fixture exited (${code})\n${output}`)));
+        child.once("message",message => {
+            if (message.type !== "ready") return;
+            ready=true;
+            resolve({child,logPath,output:() => output});
+        });
+        child.once("error",error => {
+            if (ready) return;
+            fs.rmSync(logPath,{recursive:true,force:true});
+            reject(error);
+        });
+        child.once("exit",code => {
+            if (ready) return;
+            fs.rmSync(logPath,{recursive:true,force:true});
+            reject(new Error(`fixture exited (${code})\n${output}`));
+        });
     });
 }
 
 function stop(testCase) {
     return new Promise(resolve => {
-        testCase.child.once("exit",resolve);
+        function finish() {
+            fs.rmSync(testCase.logPath,{recursive:true,force:true});
+            resolve();
+        }
+        if (testCase.child.exitCode !== null) return finish();
+        testCase.child.once("exit",finish);
         testCase.child.send({type:"stop"});
     });
+}
+
+function serverLogText(logPath) {
+    const directory=path.join(logPath,"server");
+    if (!fs.existsSync(directory)) return "";
+    return fs.readdirSync(directory)
+        .map(name => fs.readFileSync(path.join(directory,name),"utf8"))
+        .join("\n");
+}
+
+async function waitForDiagnostics(logPath,patterns) {
+    for (let attempt=0;attempt<100;attempt++) {
+        const text=serverLogText(logPath);
+        if (patterns.every(pattern => pattern.test(text))) return text;
+        await new Promise(resolve => setTimeout(resolve,20));
+    }
+    return serverLogText(logPath);
 }
 
 function request(protocol,kind,method="GET",allowHeaderlessTermination=false) {
@@ -182,6 +226,32 @@ async function verify(protocol) {
             assert.strictEqual(result.status,500,`${protocol} ${kind}: managed errors remain handled`);
             assert.match(result.body.toString(),/completion failure/);
         }
+        for (const kind of ["head-sync-throw","head-async-reject"]) {
+            result=await request(protocol,kind,"HEAD");
+            assert.strictEqual(result.status,500,`${protocol} HEAD ${kind}: managed errors remain handled`);
+            assert.strictEqual(result.body.length,0,`${protocol} HEAD ${kind}: no response body`);
+            if (protocol === "http" || protocol === "https") {
+                assert.strictEqual(result.headers["transfer-encoding"],undefined,
+                    `${protocol} HEAD ${kind}: no transfer encoding`);
+            }
+        }
+        const diagnosticText=await waitForDiagnostics(testCase.logPath,[
+            /Sync completion failure/,
+            /Async completion failure/,
+            /HEAD synchronous completion failure/,
+            /HEAD asynchronous completion failure/
+        ]);
+        assert.match(diagnosticText,/Sync completion failure/,
+            `${protocol} synchronous GET failure reaches server diagnostics`);
+        assert.match(diagnosticText,/Async completion failure/,
+            `${protocol} asynchronous GET failure reaches server diagnostics`);
+        assert.match(diagnosticText,/HEAD synchronous completion failure/,
+            `${protocol} synchronous HEAD failure reaches server diagnostics`);
+        assert.match(diagnosticText,/HEAD asynchronous completion failure/,
+            `${protocol} asynchronous HEAD failure reaches server diagnostics`);
+        result=await request(protocol,"string");
+        assert.strictEqual(result.status,200,`${protocol} remains healthy after HEAD failures`);
+        assert.strictEqual(result.body.toString(),"hello");
         result=await request(protocol,"invalid","GET",protocol === "h2c" || protocol === "h2s");
         if (protocol === "http" || protocol === "https") {
             assert.strictEqual(result.status,500,`${protocol} end(content) exceptions reach managed error handling`);

@@ -2422,7 +2422,7 @@ function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
     }
     wmsg=rtErrorMsg(err);
     response.statusCode=500;
-    response.write(wmsg);
+    if (sendBody) response.write(wmsg);
     response.end();
     serverError(wmsg,err);
   }

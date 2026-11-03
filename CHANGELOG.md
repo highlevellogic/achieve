@@ -1,5 +1,15 @@
 # Changelog
 
+## Achieve 3.0.5
+
+- Fixed servlet error handling for HEAD requests so error responses do not
+  attempt to write a body.
+- Improved compatibility with Node.js `rejectNonStandardBodyWrites` handling.
+- Added regression coverage for synchronous and asynchronous servlet failures
+  across HTTP, HTTPS, h2c, and secure HTTP/2.
+- Added the centered README tagline, “Friendly in development. Fast in
+  production.”
+
 ## Achieve 3.0.0
 
 Achieve 3 modernizes the server for Node.js 22 while retaining its HTTP,

@@ -1,5 +1,7 @@
 <p><img src="https://highlevellogic.github.io/achieve/images/skyhigh1.jpg" alt="Achieve — High Level Logic Project"></p>
 
+<p align="center"><strong><em>Friendly in development. Fast in production.</em></strong></p>
+
 <h1><a id="achieve" name="achieve"></a>Achieve</h1>
 
 <p><em><strong>Build apps without frameworks or middleware. Just write your application code. Let Achieve do the server work.</strong></em></p>

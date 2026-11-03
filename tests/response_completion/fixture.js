@@ -10,13 +10,18 @@ const credentials={
 };
 
 achieve.setMode("production");
-achieve.setLogging(false);
+achieve.setLogPath(process.env.ACHIEVE_COMPLETION_LOG_PATH);
+achieve.setLogging("server");
 achieve.setCaching(false);
 achieve.setCompress(false);
 achieve.setAppPath(path.join(__dirname,"application"));
 
 const server=protocol === "http" ? achieve.listen(port)
-    : protocol === "https" ? achieve.slisten({...credentials,httpsPort:port})
+    : protocol === "https" ? achieve.slisten({
+        ...credentials,
+        httpsPort:port,
+        rejectNonStandardBodyWrites:true
+    })
     : protocol === "h2c" ? achieve.listen2(port)
     : achieve.listen2({...credentials,http2Port:port});
 

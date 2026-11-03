@@ -69,6 +69,11 @@ exports.servlet=function (session) {
                 await Promise.resolve();
                 throw new Error("Async completion failure");
             })();
+        case "head-async-reject":
+            return (async function () {
+                await Promise.resolve();
+                throw new Error("HEAD asynchronous completion failure");
+            })();
         case "async-owned-reject":
             return (async function () {
                 await Promise.resolve();
@@ -77,6 +82,8 @@ exports.servlet=function (session) {
             })();
         case "sync-throw":
             throw new Error("Sync completion failure");
+        case "head-sync-throw":
+            throw new Error("HEAD synchronous completion failure");
         case "auto-default":
             return JSON.stringify({autoEnd:session.autoEnd,allowAsync:session.allowAsync});
         case "auto-owned":
