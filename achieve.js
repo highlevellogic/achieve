@@ -2155,7 +2155,10 @@ function scheduleCompressedArtifact (sourcePath,artifactPath,ext,sourceStats) {
   compressionJobs.add(artifactPath);
 
   let sourceMtimeMs=sourceStats.mtimeMs;
+  let sourceCtimeMs=sourceStats.ctimeMs;
   let sourceSize=sourceStats.size;
+  let sourceDev=sourceStats.dev;
+  let sourceIno=sourceStats.ino;
   let tempPath = artifactPath +
     ".tmp-" + process.pid +
     "-" + Date.now() +
@@ -2195,7 +2198,10 @@ function scheduleCompressedArtifact (sourcePath,artifactPath,ext,sourceStats) {
             }
             if (
               currentStats.mtimeMs !== sourceMtimeMs ||
-              currentStats.size !== sourceSize
+              currentStats.ctimeMs !== sourceCtimeMs ||
+              currentStats.size !== sourceSize ||
+              currentStats.dev !== sourceDev ||
+              currentStats.ino !== sourceIno
             ) {
               removeCompressionTemp(tempPath,clearJob);
               return;
@@ -2221,7 +2227,10 @@ function checkCPath (path,ext,sourceStats,basePath,schedule = true) {
   try {
     if (fs.existsSync(artifactPath)) {
       let cstats = fs.statSync(artifactPath);
-      if (sourceStats.mtimeMs <= cstats.mtimeMs) return artifactPath;
+      if (
+        sourceStats.mtimeMs <= cstats.mtimeMs &&
+        sourceStats.ctimeMs <= cstats.mtimeMs
+      ) return artifactPath;
     }
   } catch (err) {
     serverError(path + "  Compression failed.",err);

@@ -9,6 +9,7 @@ const zlib=require('node:zlib');
 const {fork}=require('node:child_process');
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'achieve-static-dates-'));
 const now=Date.UTC(2030,0,1),past=Date.UTC(2020,0,2,3,4,5),future=Date.UTC(2040,0,1);
+const compressed=Math.min(now-60000,Math.ceil(Date.now()/1000)*1000+60000);
 const date=ms=>new Date(ms).toUTCString();
 const bytes=Buffer.from('0123456789abcdefghijklmnopqrstuvwxyz'.repeat(100));
 let checks=0;
@@ -48,14 +49,14 @@ async function verify(protocol,index) {
     write('replacement.txt','replacement',future);
     const same=write('same.txt','AAAA',past+100);
     write('media.mp4',bytes,past+3000);
-    write('.compression-cache/static.txt.gz',zlib.gzipSync(bytes),past+1000);
-    write('.compression-cache/static.txt.zl',zlib.deflateSync(bytes),past+2000);
+    write('.compression-cache/static.txt.gz',zlib.gzipSync(bytes),compressed);
+    write('.compression-cache/static.txt.zl',zlib.deflateSync(bytes),compressed+1000);
     write('fallback.txt',bytes,past+3000);
-    write('.compression-cache/fallback.txt.gz',zlib.gzipSync(bytes),past+4000);
+    write('.compression-cache/fallback.txt.gz',zlib.gzipSync(bytes),compressed+2000);
     write('identity-failure.txt',bytes,past+3000);
-    write('.compression-cache/identity-failure.txt.gz',zlib.gzipSync(bytes),past+4000);
+    write('.compression-cache/identity-failure.txt.gz',zlib.gzipSync(bytes),compressed+3000);
     write('forbidden-fallback.txt',bytes,past+3000);
-    write('.compression-cache/forbidden-fallback.txt.gz',zlib.gzipSync(bytes),past+4000);
+    write('.compression-cache/forbidden-fallback.txt.gz',zlib.gzipSync(bytes),compressed+4000);
     write('servlet.jss','exports.servlet=()=>"dynamic";',past);
     write('old.txt',bytes,Date.UTC(1994,10,6,8,49,37));
     const child=fork(path.join(__dirname,'fixture.js'),[],{silent:true,env:{...process.env,
@@ -73,8 +74,8 @@ async function verify(protocol,index) {
         });
         const get=(target='/static.txt',headers={},method='GET')=>request(protocol,port,target,method,{'accept-encoding':'identity',...headers});
         const test=(name,fn)=>check(protocol+' '+name,fn);
-        for(const [target,time,coding] of [['/static.txt',past,'identity'],['/static.txt',past+1000,'gzip'],
-            ['/static.txt',past+2000,'deflate'],['/media.mp4',past+3000,'identity'],['/empty.txt',past,'identity'],
+        for(const [target,time,coding] of [['/static.txt',past,'identity'],['/static.txt',compressed,'gzip'],
+            ['/static.txt',compressed+1000,'deflate'],['/media.mp4',past+3000,'identity'],['/empty.txt',past,'identity'],
             ['/equal.txt',now,'identity'],['/future.txt',now,'identity'],['/fraction.txt',now,'identity']]) {
             for(const method of ['GET','HEAD']) {
                 const r=await get(target,{'accept-encoding':coding},method);

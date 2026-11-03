@@ -6,6 +6,7 @@ const path = require("node:path");
 const zlib = require("node:zlib");
 
 let failures = 0;
+let skips = 0;
 let applicationPath;
 let fixture;
 let messages = [];
@@ -16,6 +17,15 @@ function check(name,condition,detail) {
     console.log((condition ? "PASS" : "FAIL") + " " + name +
         (detail === undefined ? "" : ": " + detail));
     if (!condition) failures++;
+}
+
+function skip(name,detail) {
+    skips++;
+    console.log("SKIP " + name + (detail === undefined ? "" : ": " + detail));
+}
+
+function delay(milliseconds) {
+    return new Promise(resolve => setTimeout(resolve,milliseconds));
 }
 
 function request(port,resource,encoding,headers={},method="GET") {
@@ -340,6 +350,140 @@ async function run() {
     await command("release");
     await waitForRename(gzipPath,false,"stale gzip publication");
 
+    const stableMtimeSeconds=Math.floor(Date.now()/1000)-10;
+    const sameSizeChanged=Buffer.from(original);
+    sameSizeChanged[0]=sameSizeChanged[0] === 65 ? 66 : 65;
+    fs.writeFileSync(sourcePath,original);
+    fs.utimesSync(sourcePath,stableMtimeSeconds,stableMtimeSeconds);
+    const freshnessBefore=fs.statSync(sourcePath);
+    fs.writeFileSync(gzipPath,zlib.gzipSync(original));
+    fs.writeFileSync(deflatePath,zlib.deflateSync(original));
+    const reuseBefore=await state();
+    const unchangedGzipFirst=await request(port,"/static/resource.txt","gzip");
+    const unchangedGzipSecond=await request(port,"/static/resource.txt","gzip");
+    const unchangedDeflateFirst=await request(port,"/static/resource.txt","deflate");
+    const unchangedDeflateSecond=await request(port,"/static/resource.txt","deflate");
+    const reuseAfter=await state();
+    check("unchanged gzip artifact is reused without regeneration",
+        unchangedGzipFirst.headers["content-encoding"] === "gzip" &&
+        unchangedGzipSecond.headers.etag === unchangedGzipFirst.headers.etag &&
+        zlib.gunzipSync(unchangedGzipSecond.body).equals(original) &&
+        reuseAfter.gzip === reuseBefore.gzip);
+    check("unchanged deflate artifact is reused without regeneration",
+        unchangedDeflateFirst.headers["content-encoding"] === "deflate" &&
+        unchangedDeflateSecond.headers.etag === unchangedDeflateFirst.headers.etag &&
+        zlib.inflateSync(unchangedDeflateSecond.body).equals(original) &&
+        reuseAfter.deflate === reuseBefore.deflate);
+
+    await delay(10);
+    fs.writeFileSync(sourcePath,sameSizeChanged);
+    fs.utimesSync(sourcePath,stableMtimeSeconds,stableMtimeSeconds);
+    const freshnessAfter=fs.statSync(sourcePath);
+    const ctimeFreshnessAvailable=(
+        freshnessAfter.mtimeMs === freshnessBefore.mtimeMs &&
+        freshnessAfter.size === freshnessBefore.size &&
+        freshnessAfter.ctimeMs !== freshnessBefore.ctimeMs &&
+        freshnessAfter.ctimeMs > fs.statSync(gzipPath).mtimeMs &&
+        freshnessAfter.ctimeMs > fs.statSync(deflatePath).mtimeMs
+    );
+    if (ctimeFreshnessAvailable) {
+        const gzipRefreshBefore=await state();
+        result=await request(port,"/static/resource.txt","gzip",{"If-None-Match":unchangedGzipFirst.headers.etag});
+        check("changed source rejects stale gzip ETag",
+            result.status === 200 && result.headers["content-encoding"] === undefined && result.body.equals(sameSizeChanged));
+        await waitForMessage(message => message.event === "pipeline-start" && message.encoding === "gzip","preserved-mtime gzip regeneration start");
+        await waitForRename(gzipPath,false,"preserved-mtime gzip publication");
+        const gzipRefreshAfter=await state();
+        check("changed source starts one gzip regeneration",gzipRefreshAfter.gzip-gzipRefreshBefore.gzip === 1,gzipRefreshAfter.gzip-gzipRefreshBefore.gzip);
+        result=await request(port,"/static/resource.txt","gzip");
+        check("regenerated gzip contains current source",result.headers["content-encoding"] === "gzip" && zlib.gunzipSync(result.body).equals(sameSizeChanged));
+
+        const deflateRefreshBefore=await state();
+        result=await request(port,"/static/resource.txt","deflate",{"If-None-Match":unchangedDeflateFirst.headers.etag});
+        check("changed source rejects stale deflate ETag",
+            result.status === 200 && result.headers["content-encoding"] === undefined && result.body.equals(sameSizeChanged));
+        await waitForMessage(message => message.event === "pipeline-start" && message.encoding === "deflate","preserved-mtime deflate regeneration start");
+        await waitForRename(deflatePath,false,"preserved-mtime deflate publication");
+        const deflateRefreshAfter=await state();
+        check("changed source starts one deflate regeneration",deflateRefreshAfter.deflate-deflateRefreshBefore.deflate === 1,deflateRefreshAfter.deflate-deflateRefreshBefore.deflate);
+        result=await request(port,"/static/resource.txt","deflate");
+        check("regenerated deflate contains current source",result.headers["content-encoding"] === "deflate" && zlib.inflateSync(result.body).equals(sameSizeChanged));
+    } else {
+        skip("preserved-mtime compressed-artifact freshness",JSON.stringify({before:freshnessBefore,after:freshnessAfter}));
+    }
+
+    unlinkIfExists(gzipPath);
+    fs.writeFileSync(sourcePath,original);
+    fs.utimesSync(sourcePath,stableMtimeSeconds,stableMtimeSeconds);
+    const inPlaceBefore=fs.statSync(sourcePath);
+    await command("hold");
+    result=await request(port,"/static/resource.txt","gzip");
+    await waitForMessage(message => message.event === "pipeline-start" && message.encoding === "gzip","same-size source-change gzip start");
+    await delay(10);
+    fs.writeFileSync(sourcePath,sameSizeChanged);
+    fs.utimesSync(sourcePath,stableMtimeSeconds,stableMtimeSeconds);
+    const inPlaceAfter=fs.statSync(sourcePath);
+    const inPlaceMetadataAvailable=(
+        inPlaceAfter.mtimeMs === inPlaceBefore.mtimeMs &&
+        inPlaceAfter.size === inPlaceBefore.size &&
+        inPlaceAfter.ctimeMs !== inPlaceBefore.ctimeMs
+    );
+    await command("release");
+    const inPlaceOutcome=await waitForMessage(message =>
+        message.event === "temp-cleanup" ||
+        (message.event === "rename" && message.path === gzipPath),
+        "same-size source-change compression outcome");
+    if (inPlaceMetadataAvailable) {
+        check("same-size source change discards obsolete compression output",
+            inPlaceOutcome.event === "temp-cleanup" && !fs.existsSync(gzipPath),JSON.stringify(inPlaceOutcome));
+    } else {
+        skip("same-size asynchronous source-change metadata",JSON.stringify({before:inPlaceBefore,after:inPlaceAfter}));
+    }
+
+    unlinkIfExists(gzipPath);
+    const replacementPath=sourcePath+".replacement";
+    const previousPath=sourcePath+".previous";
+    unlinkIfExists(replacementPath);
+    unlinkIfExists(previousPath);
+    fs.writeFileSync(sourcePath,original);
+    fs.utimesSync(sourcePath,stableMtimeSeconds,stableMtimeSeconds);
+    const replacementBefore=fs.statSync(sourcePath);
+    await command("hold");
+    result=await request(port,"/static/resource.txt","gzip");
+    await waitForMessage(message => message.event === "pipeline-start" && message.encoding === "gzip","source-replacement gzip start");
+    fs.writeFileSync(replacementPath,sameSizeChanged);
+    fs.utimesSync(replacementPath,stableMtimeSeconds,stableMtimeSeconds);
+    let replacementError;
+    try {
+        fs.renameSync(sourcePath,previousPath);
+        fs.renameSync(replacementPath,sourcePath);
+    } catch (err) {
+        replacementError=err;
+    }
+    const replacementAfter=replacementError ? undefined : fs.statSync(sourcePath);
+    const replacementMetadataAvailable=(
+        !replacementError &&
+        replacementAfter.mtimeMs === replacementBefore.mtimeMs &&
+        replacementAfter.size === replacementBefore.size &&
+        (replacementAfter.dev !== replacementBefore.dev || replacementAfter.ino !== replacementBefore.ino)
+    );
+    await command("release");
+    const replacementOutcome=await waitForMessage(message =>
+        message.event === "temp-cleanup" ||
+        (message.event === "rename" && message.path === gzipPath),
+        "source-replacement compression outcome");
+    if (replacementMetadataAvailable) {
+        check("source replacement discards obsolete compression output",
+            replacementOutcome.event === "temp-cleanup" && !fs.existsSync(gzipPath),JSON.stringify(replacementOutcome));
+    } else {
+        skip("asynchronous source-replacement identity",
+            replacementError ? replacementError.code+" "+replacementError.message : JSON.stringify({before:replacementBefore,after:replacementAfter}));
+    }
+    unlinkIfExists(gzipPath);
+    unlinkIfExists(replacementPath);
+    unlinkIfExists(previousPath);
+    fs.writeFileSync(sourcePath,original);
+
     unlinkIfExists(gzipPath);
     await command("hold");
     let outputBefore=consoleOutput.length;
@@ -402,7 +546,7 @@ async function run() {
         console.error(failures + " compression verification test(s) failed.");
         process.exitCode=1;
     } else {
-        console.log("All compression artifact verification tests passed.");
+        console.log("All compression artifact verification tests passed with " + skips + " skip(s).");
     }
 })().catch(err => {
     console.error(err);
