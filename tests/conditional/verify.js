@@ -122,6 +122,7 @@ function waitForCurrentArtifact(sourcePath,artifactPath,timeout=5000) {
 
 async function staticTests(server) {
     const identity = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "identity"}});
+    const unchangedIdentity = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "identity"}});
     const firstGzip = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "gzip"}});
     const sourcePath = path.join(server.applicationPath,"static","resource.txt");
     const cachePath = path.join(server.applicationPath,".compression-cache","static","resource.txt");
@@ -138,6 +139,7 @@ async function staticTests(server) {
     check("first gzip miss returns identity", firstGzip.status === 200 && firstGzip.headers["content-encoding"] === undefined);
     check("first deflate miss returns identity", firstDeflate.status === 200 && firstDeflate.headers["content-encoding"] === undefined);
     check("identity ETag suffix", /-i"$/.test(identityTag), identityTag);
+    check("unchanged representation retains ETag", unchangedIdentity.headers.etag === identityTag, unchangedIdentity.headers.etag);
     check("gzip ETag suffix", /-g"$/.test(gzipTag), gzipTag);
     check("deflate ETag suffix", /-d"$/.test(deflateTag), deflateTag);
     check("representation ETags distinct", new Set([identityTag, gzipTag, deflateTag]).size === 3);
@@ -285,6 +287,48 @@ async function sourceChangeTest(server, oldTag) {
 
     const oldValidator = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "identity", "If-None-Match": oldTag}});
     check("old validator after source change", oldValidator.status === 200);
+
+    const stableMtimeSeconds = Math.floor(Date.now() / 1000) - 10;
+    fs.writeFileSync(resourcePath, sameSizeFirst);
+    fs.utimesSync(resourcePath, stableMtimeSeconds, stableMtimeSeconds);
+    const ctimeFirstStats = fs.statSync(resourcePath);
+    const ctimeFirst = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "identity"}});
+    fs.writeFileSync(resourcePath, sameSizeSecond);
+    fs.utimesSync(resourcePath, stableMtimeSeconds, stableMtimeSeconds);
+    const ctimeSecondStats = fs.statSync(resourcePath);
+    const ctimeSecond = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "identity"}});
+    if (
+        ctimeFirstStats.mtimeMs === ctimeSecondStats.mtimeMs &&
+        ctimeFirstStats.size === ctimeSecondStats.size &&
+        ctimeFirstStats.ctimeMs !== ctimeSecondStats.ctimeMs
+    ) {
+        check("ctime distinguishes same-size in-place change with restored mtime", ctimeSecond.headers.etag !== ctimeFirst.headers.etag, ctimeSecond.headers.etag);
+    } else {
+        console.log("SKIP ctime metadata distinction is not reliable on this filesystem: " + JSON.stringify({first:ctimeFirstStats,second:ctimeSecondStats}));
+    }
+
+    const replacementPath = resourcePath + ".replacement";
+    const previousPath = resourcePath + ".previous";
+    fs.writeFileSync(replacementPath, sameSizeFirst);
+    fs.utimesSync(replacementPath, stableMtimeSeconds, stableMtimeSeconds);
+    const identityFirstStats = fs.statSync(resourcePath);
+    const identityFirst = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "identity"}});
+    fs.renameSync(resourcePath, previousPath);
+    fs.renameSync(replacementPath, resourcePath);
+    const identitySecondStats = fs.statSync(resourcePath);
+    const identitySecond = await request(server.port, {path: "/static/resource.txt", headers: {"Accept-Encoding": "identity"}});
+    if (
+        identityFirstStats.mtimeMs === identitySecondStats.mtimeMs &&
+        identityFirstStats.size === identitySecondStats.size &&
+        (
+            identityFirstStats.dev !== identitySecondStats.dev ||
+            identityFirstStats.ino !== identitySecondStats.ino
+        )
+    ) {
+        check("file identity distinguishes same-size replacement with preserved mtime", identitySecond.headers.etag !== identityFirst.headers.etag, identitySecond.headers.etag);
+    } else {
+        console.log("SKIP file identity distinction is not reliable on this filesystem: " + JSON.stringify({first:identityFirstStats,second:identitySecondStats}));
+    }
 }
 
 async function cachingDisabledTests(server) {

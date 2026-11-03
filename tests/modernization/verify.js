@@ -90,10 +90,16 @@ function request(port,requestPath) {
 }
 
 function expectedETag(filePath,coding) {
-    const stats=fs.statSync(filePath);
+    const descriptor=fs.openSync(filePath,"r");
+    let stats;
+    try {
+        stats=fs.fstatSync(descriptor);
+    } finally {
+        fs.closeSync(descriptor);
+    }
     const nodeVersion=process.versions.node.split(".").join("");
     const version=require("../../package.json").version;
-    const rawValue=String(stats.mtimeMs)+":"+String(stats.size)+":"+nodeVersion+version;
+    const rawValue=[stats.mtimeMs,stats.ctimeMs,stats.size,stats.dev,stats.ino,nodeVersion+version].join(":");
     return '"'+Buffer.from(rawValue).toString("base64url")+'-'+coding+'"';
 }
 

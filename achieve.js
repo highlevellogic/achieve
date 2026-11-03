@@ -1708,8 +1708,15 @@ function hasEntityTagPrecondition (req) {
     req.headers['if-none-match'] !== undefined
   );
 }
-function representationETag (mtimeMs,size,coding) {
-  var rawVal = String(mtimeMs) + ":" + String(size) + ":" + etagString;
+function representationETag (stats,coding) {
+  var rawVal = [
+    stats.mtimeMs,
+    stats.ctimeMs,
+    stats.size,
+    stats.dev,
+    stats.ino,
+    etagString
+  ].join(":");
   return '"' + Buffer.from(rawVal).toString("base64url") + '-' + coding + '"';
 }
 function entityTagList (fieldValue) {
@@ -2115,7 +2122,7 @@ function setFileInfo (req, res, basePath, requestUrl) {
         }
       }
       if (!notAcceptable && !openError && serveFile && (bCaching || hasEntityTagPrecondition(req))) {
-        etag = representationETag(representationStats.mtimeMs,representationStats.size,etagCoding);
+        etag = representationETag(representationStats,etagCoding);
       }
     }
     return new FileInfo(thisBasePath,currentPath,fullPath,dirPath,suffix,headers,contentType,queryString,serveFile,false,false,checkedPath.reload,etag,audioVisual,notAcceptable,fileDescriptor,representationStats,openError);
@@ -3091,7 +3098,7 @@ let stream = function(req, res, fileInfo, sendBody = true) {
     hasEntityTagPrecondition(req) ||
     evaluateIfRange
   ) {
-    mediaETag=representationETag(stats.mtimeMs,stats.size,"i");
+    mediaETag=representationETag(stats,"i");
     res.setHeader("ETag",mediaETag);
   }
   var modified=staticModificationTime(res,stats);
