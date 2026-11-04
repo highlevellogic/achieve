@@ -1,5 +1,14 @@
 # Changelog
 
+## Achieve 3.0.6
+
+- Strengthened strong ETags with filesystem change and identity metadata already
+  available from the opened resource.
+- Prevented stale gzip and deflate artifacts from being reused when source
+  modification times are preserved.
+- Prevented background compression from publishing an artifact when source
+  metadata changes during compression.
+
 ## Achieve 3.0.5
 
 - Fixed servlet error handling for HEAD requests so error responses do not
