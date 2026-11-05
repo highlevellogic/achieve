@@ -1,0 +1,60 @@
+name: Node 24 Linux qualification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    name: Ubuntu / Node 24.22.2 qualification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up exact Node.js runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.22.2
+          cache: npm
+
+      - name: Verify runtime versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v24.22.2"
+          node -p "JSON.stringify({node:process.version,openssl:process.versions.openssl,nghttp2:process.versions.nghttp2,llhttp:process.versions.llhttp})"
+
+      - name: Install development dependencies
+        run: npm ci
+
+      - name: Run complete Achieve verifier
+        run: node tests/run-verifiers.js --report node24-linux-verifier-results.md
+
+      - name: Require complete Linux verifier result
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F -- "- Suites: 37 executed, 37 passed, 0 failed" node24-linux-verifier-results.md
+          grep -F -- "- Declared environmental skips: 0" node24-linux-verifier-results.md
+          grep -F -- "- Overall result: **PASS**" node24-linux-verifier-results.md
+
+      - name: Run HTTP and TLS protocol qualification
+        run: node tools/node24-linux-protocol-qualification.mjs
+
+      - name: Pack, install, and smoke-test package
+        run: node tools/node24-package-smoke.mjs
+
+      - name: Upload qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: node24-linux-qualification-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            node24-linux-verifier-results.md
+            node24-linux-protocol-results.json
