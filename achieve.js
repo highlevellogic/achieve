@@ -2409,6 +2409,80 @@ async function getModuleAccount (fileInfo) {
 function invokeServlet(request,response,fileInfo,myApp,params,sendBody = true) {
   let context;
   let wmsg;
+  let responseWrite=response.write;
+  let responseEnd=response.end;
+  let responseWriteHead=response.writeHead;
+  let responseFlushHeaders=response.flushHeaders;
+  function prepareResetContent() {
+    if (!response.headersSent) {
+      response.removeHeader("Transfer-Encoding");
+      response.setHeader("Content-Length","0");
+    }
+  }
+  function suppressResetContent(args) {
+    let values=Array.from(args);
+    if (values.length === 0 || values[0] === undefined || typeof values[0] === "function") {
+      return values;
+    }
+    if (typeof values[0] === "string") {
+      values[0]="";
+    } else if (Buffer.isBuffer(values[0])) {
+      values[0]=Buffer.alloc(0);
+    } else if (ArrayBuffer.isView(values[0])) {
+      values[0]=new Uint8Array(0);
+    } else {
+      return false;
+    }
+    return values;
+  }
+  response.write=function () {
+    if (response.statusCode !== 205) return responseWrite.apply(response,arguments);
+    let values=suppressResetContent(arguments);
+    if (values === false) return responseWrite.apply(response,arguments);
+    prepareResetContent();
+    return responseWrite.apply(response,values);
+  };
+  response.end=function () {
+    if (response.statusCode !== 205) return responseEnd.apply(response,arguments);
+    let values=suppressResetContent(arguments);
+    if (values === false) return responseEnd.apply(response,arguments);
+    prepareResetContent();
+    return responseEnd.apply(response,values);
+  };
+  response.writeHead=function (statusCode,statusMessage,headers) {
+    if (statusCode !== 205) return responseWriteHead.apply(response,arguments);
+    prepareResetContent();
+    function resetHeaders(headerValues) {
+      let values={};
+      if (Array.isArray(headerValues)) {
+        values=[];
+        for (let index=0;index<headerValues.length;index+=2) {
+          let name=String(headerValues[index]);
+          if (!/^(content-length|transfer-encoding)$/i.test(name)) {
+            values.push(name,headerValues[index+1]);
+          }
+        }
+        values.push("Content-Length","0");
+        return values;
+      }
+      if (headerValues) {
+        for (let name of Object.keys(headerValues)) {
+          if (!/^(content-length|transfer-encoding)$/i.test(name)) {
+            values[name]=headerValues[name];
+          }
+        }
+      }
+      values["Content-Length"]="0";
+      return values;
+    }
+    return typeof statusMessage === "string"
+      ? responseWriteHead.call(response,statusCode,statusMessage,resetHeaders(headers))
+      : responseWriteHead.call(response,statusCode,resetHeaders(statusMessage));
+  };
+  response.flushHeaders=function () {
+    if (response.statusCode === 205) prepareResetContent();
+    return responseFlushHeaders.apply(response,arguments);
+  };
   function applicationOwned() {
     if (mode === "development") developmentLog("INFO: " + request.method + " " + fileInfo.path + " Session ended or will end by application.");
   }
@@ -3197,6 +3271,8 @@ let stream = function(req, res, fileInfo, sendBody = true) {
     responseCode = 206;
     responseHeader["Content-Range"] = "bytes " + start + "-" + end + "/" + total;
   }
+  var successfulIfRange = evaluateIfRange && contentRange;
+  if (successfulIfRange) delete responseHeader["Content-Type"];
   if (!contentRange && stats.size === 0) {
     setLastModified(res,modified);
     closeFileInfoDescriptor(fileInfo);
@@ -3251,7 +3327,7 @@ let stream = function(req, res, fileInfo, sendBody = true) {
     readStream.destroy();
     return;
   }
-  setLastModified(res,modified);
+  if (!successfulIfRange) setLastModified(res,modified);
   res.writeHead(responseCode, responseHeader);
   readStream.pipe(res);
   res.on("close", function() {

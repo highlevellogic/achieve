@@ -37,6 +37,121 @@ exports.servlet=function (session) {
         case "thenable-null-status":
             session.response.statusCode=409;
             return {then(resolve) { resolve(undefined); }};
+        case "reset-string":
+            session.response.statusCode=205;
+            session.response.setHeader("Content-Length","16");
+            return "forbidden string";
+        case "reset-buffer":
+            session.response.statusCode=205;
+            if (session.request.httpVersion !== "2.0") {
+                session.response.setHeader("Transfer-Encoding","chunked");
+            }
+            return Buffer.from("forbidden buffer");
+        case "reset-uint8":
+            session.response.statusCode=205;
+            return new Uint8Array([1,2,3,4]);
+        case "reset-promise":
+            session.response.statusCode=205;
+            return Promise.resolve("forbidden promise");
+        case "reset-owned-end":
+            session.autoEnd=false;
+            session.response.statusCode=205;
+            session.response.setHeader("Content-Length","16");
+            session.response.end(Buffer.from("forbidden buffer"));
+            return "ignored";
+        case "reset-owned-write":
+            session.autoEnd=false;
+            session.response.statusCode=205;
+            if (session.request.httpVersion !== "2.0") {
+                session.response.setHeader("Transfer-Encoding","chunked");
+            }
+            session.response.write(new Uint8Array([1,2,3,4]));
+            session.response.end();
+            return "ignored";
+        case "reset-owned-write-head":
+            session.autoEnd=false;
+            session.response.writeHead(205,{
+                "Content-Length":"16",
+                "Transfer-Encoding":"chunked",
+                "X-Reset":"preserved"
+            });
+            session.response.end("forbidden string");
+            return "ignored";
+        case "reset-owned-flush":
+            session.autoEnd=false;
+            session.response.statusCode=205;
+            session.response.setHeader("Content-Length","16");
+            session.response.flushHeaders();
+            session.response.end("forbidden string");
+            return "ignored";
+        case "reset-write-head-message":
+            session.autoEnd=false;
+            session.response.writeHead(205,"Reset Content",{
+                "Content-Length":"16",
+                "X-Reset-Form":"message"
+            });
+            session.response.end("forbidden string");
+            return "ignored";
+        case "reset-write-head-array":
+            session.autoEnd=false;
+            session.response.writeHead(205,[
+                "Content-Length","16",
+                "Transfer-Encoding","chunked",
+                "X-Reset-Form","array"
+            ]);
+            session.response.end("forbidden string");
+            return "ignored";
+        case "reset-invalid-write":
+            session.response.statusCode=205;
+            try {
+                session.response.write({invalid:true});
+            } catch (error) {
+                console.log("RESET_INVALID_WRITE " + error.code);
+                session.response.statusCode=200;
+                return error.code;
+            }
+            return "invalid write accepted";
+        case "reset-invalid-end":
+            session.response.statusCode=205;
+            try {
+                session.response.end({invalid:true});
+            } catch (error) {
+                console.log("RESET_INVALID_END " + error.code);
+                session.response.statusCode=200;
+                return error.code;
+            }
+            return "invalid end accepted";
+        case "reset-callback": {
+            session.autoEnd=false;
+            session.response.statusCode=205;
+            session.response.on("error",() => {});
+            const order=["before"];
+            session.response.write("forbidden",error => {
+                order.push(error ? error.code : "callback");
+                console.log("RESET_CALLBACK " + order.join(","));
+            });
+            order.push("after");
+            session.response.end();
+            return "ignored";
+        }
+        case "reset-after-end":
+            session.autoEnd=false;
+            session.response.statusCode=205;
+            session.response.on("error",() => {});
+            session.response.end();
+            session.response.write("forbidden",error => {
+                console.log("RESET_AFTER_END " + (error && error.code));
+            });
+            return "ignored";
+        case "reset-after-destroy":
+            session.autoEnd=false;
+            session.response.statusCode=205;
+            session.response.on("error",() => {});
+            session.response.destroy();
+            session.response.write("forbidden",error => {
+                console.log("RESET_AFTER_DESTROY " + (error && error.code));
+            });
+            return "ignored";
         case "invalid": return {};
         case "sync-delayed":
             session.autoEnd=false;

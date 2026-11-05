@@ -87,14 +87,25 @@ function request(testCase,options) {
         : http1Request(testCase,options);
 }
 
-async function expectRange(testCase,name,range,start,end,extraHeaders={}) {
+async function expectRange(testCase,name,range,start,end,extraHeaders={},matchingIfRange=false) {
     const response=await request(testCase,{headers:Object.assign({Range:range},extraHeaders)});
     assert.strictEqual(response.status,206,name+" status");
     assert.strictEqual(response.headers["accept-ranges"],"bytes",name+" Accept-Ranges");
-    assert(!String(response.headers["content-type"]).startsWith("multipart/"),name+" remains single-part");
     assert.strictEqual(response.headers["content-range"],"bytes "+start+"-"+end+"/"+media.length,name+" Content-Range");
     assert.strictEqual(Number(response.headers["content-length"]),(end-start)+1,name+" Content-Length");
     assert(response.body.equals(media.subarray(start,end+1)),name+" exact bytes");
+    assert(response.headers.date,name+" Date");
+    assert(response.headers.etag,name+" ETag");
+    assert(response.headers.server,name+" Server");
+    if (matchingIfRange) {
+        assert.strictEqual(response.headers.etag,extraHeaders["If-Range"],name+" current ETag");
+        assert.strictEqual(response.headers["content-type"],undefined,name+" omits Content-Type");
+        assert.strictEqual(response.headers["last-modified"],undefined,name+" omits Last-Modified");
+    } else {
+        assert.strictEqual(response.headers["content-type"],"video/mp4",name+" Content-Type");
+        assert(response.headers["last-modified"],name+" Last-Modified");
+        assert(!String(response.headers["content-type"]).startsWith("multipart/"),name+" remains single-part");
+    }
 }
 
 async function protocolChecks(testCase) {
@@ -112,7 +123,7 @@ async function protocolChecks(testCase) {
     await expectRange(testCase,"open-ended range","bytes=58-",58,media.length-1);
     await expectRange(testCase,"suffix range","bytes=-5",media.length-5,media.length-1);
     await expectRange(testCase,"end beyond EOF","bytes=60-999",60,media.length-1);
-    await expectRange(testCase,"matching If-Range","bytes=3-9",3,9,{"If-Range":etag});
+    await expectRange(testCase,"matching If-Range","bytes=3-9",3,9,{"If-Range":etag},true);
 
     let response=await request(testCase,{headers:{Range:"bytes=999-1000,2000-3000"}});
     assert.strictEqual(response.status,416,"all unsatisfiable status");
@@ -134,7 +145,16 @@ async function protocolChecks(testCase) {
     response=await request(testCase,{headers:{Range:"bytes=3-9","If-Range":"\"stale\""}});
     assert.strictEqual(response.status,200,"nonmatching If-Range status");
     assert.strictEqual(response.headers["content-range"],undefined,"nonmatching If-Range Content-Range");
+    assert.strictEqual(response.headers["content-type"],full.headers["content-type"],"nonmatching If-Range Content-Type");
+    assert.strictEqual(response.headers["last-modified"],full.headers["last-modified"],"nonmatching If-Range Last-Modified");
     assert(response.body.equals(media),"nonmatching If-Range full bytes");
+
+    response=await request(testCase,{headers:{Range:"bytes=3-9","If-Range":full.headers["last-modified"]}});
+    assert.strictEqual(response.status,200,"date-form If-Range status when no strong date validator is established");
+    assert.strictEqual(response.headers["content-range"],undefined,"date-form If-Range Content-Range");
+    assert.strictEqual(response.headers["content-type"],full.headers["content-type"],"date-form If-Range Content-Type");
+    assert.strictEqual(response.headers["last-modified"],full.headers["last-modified"],"date-form If-Range Last-Modified");
+    assert(response.body.equals(media),"date-form If-Range full bytes");
 
     response=await request(testCase,{method:"HEAD",headers:{Range:"bytes=3-9"}});
     assert.strictEqual(response.status,200,"HEAD status");

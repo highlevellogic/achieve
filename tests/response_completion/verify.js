@@ -120,14 +120,90 @@ function request(protocol,kind,method="GET",allowHeaderlessTermination=false) {
             return;
         }
         const transport=protocol === "https" ? https : http;
+        let settled=false;
+        function finish(error,value) {
+            if (settled) return;
+            settled=true;
+            if (error && !allowHeaderlessTermination) reject(error);
+            else resolve(value || {status:undefined,headers:undefined,body:Buffer.alloc(0),termination:"error"});
+        }
         const req=transport.request({host:"127.0.0.1",port:ports[protocol],path:target,method,rejectUnauthorized:false},response => {
             const chunks=[];
             response.on("data",chunk => chunks.push(chunk));
-            response.on("end",() => resolve({status:response.statusCode,headers:response.headers,body:Buffer.concat(chunks)}));
+            response.on("end",() => finish(null,{status:response.statusCode,headers:response.headers,body:Buffer.concat(chunks),termination:"end"}));
+            response.on("aborted",() => finish(new Error(`${protocol} response aborted: ${kind}`)));
         });
-        req.on("error",reject);
+        req.on("error",error => finish(error));
         req.end();
     });
+}
+
+async function waitForOutput(testCase,pattern) {
+    for (let attempt=0;attempt<100;attempt++) {
+        if (pattern.test(testCase.output())) return testCase.output();
+        await new Promise(resolve => setTimeout(resolve,20));
+    }
+    return testCase.output();
+}
+
+async function persistentSequence(protocol) {
+    if (protocol === "h2c" || protocol === "h2s") {
+        const secure=protocol === "h2s";
+        const client=http2.connect(`${secure ? "https" : "http"}://127.0.0.1:${ports[protocol]}`,
+            secure ? {rejectUnauthorized:false} : {});
+        async function one(kind) {
+            return new Promise((resolve,reject) => {
+                const chunks=[];
+                let headers;
+                const req=client.request({":method":"GET",":path":`/servlets/returns.jss.cjs?kind=${kind}`});
+                req.on("response",value => headers=value);
+                req.on("data",chunk => chunks.push(chunk));
+                req.on("end",() => resolve({status:headers[":status"],headers,body:Buffer.concat(chunks)}));
+                req.on("error",reject);
+                req.end();
+            });
+        }
+        try {
+            return [await one("reset-string"),await one("string")];
+        } finally {
+            client.close();
+        }
+    }
+    const transport=protocol === "https" ? https : http;
+    const agent=protocol === "https"
+        ? new https.Agent({keepAlive:true,rejectUnauthorized:false})
+        : new http.Agent({keepAlive:true});
+    async function one(kind) {
+        return new Promise((resolve,reject) => {
+            const req=transport.request({
+                host:"127.0.0.1",
+                port:ports[protocol],
+                path:`/servlets/returns.jss.cjs?kind=${kind}`,
+                method:"GET",
+                agent,
+                rejectUnauthorized:false
+            },response => {
+                const chunks=[];
+                response.on("data",chunk => chunks.push(chunk));
+                response.on("end",() => resolve({
+                    status:response.statusCode,
+                    headers:response.headers,
+                    body:Buffer.concat(chunks),
+                    socket:response.socket
+                }));
+            });
+            req.on("error",reject);
+            req.end();
+        });
+    }
+    try {
+        const first=await one("reset-string");
+        const second=await one("string");
+        assert.strictEqual(second.socket,first.socket,`${protocol} reuses the connection after 205`);
+        return [first,second];
+    } finally {
+        agent.destroy();
+    }
 }
 
 async function verify(protocol) {
@@ -184,6 +260,97 @@ async function verify(protocol) {
         result=await request(protocol,"thenable-null-status");
         assert.strictEqual(result.status,409);
         assert.strictEqual(result.body.length,0);
+        for (const kind of [
+            "reset-string",
+            "reset-buffer",
+            "reset-uint8",
+            "reset-promise",
+            "reset-owned-end",
+            "reset-owned-write",
+            "reset-owned-write-head",
+            "reset-owned-flush",
+            "reset-write-head-message",
+            "reset-write-head-array"
+        ]) {
+            result=await request(protocol,kind);
+            assert.strictEqual(result.status,205,`${protocol} ${kind}: status is preserved`);
+            assert.strictEqual(result.body.length,0,`${protocol} ${kind}: 205 has no content`);
+            assert.strictEqual(result.headers["content-length"],"0",
+                `${protocol} ${kind}: 205 has explicit zero length`);
+            assert.strictEqual(result.headers["transfer-encoding"],undefined,
+                `${protocol} ${kind}: 205 has no transfer encoding`);
+            if (kind === "reset-owned-write-head") {
+                assert.strictEqual(result.headers["x-reset"],"preserved",
+                    `${protocol} ${kind}: unrelated headers are preserved`);
+            }
+            if (kind === "reset-write-head-message") {
+                assert.strictEqual(result.headers["x-reset-form"],"message",
+                    `${protocol} ${kind}: status-message overload preserves headers`);
+            }
+            if (kind === "reset-write-head-array") {
+                assert.strictEqual(result.headers["x-reset-form"],"array",
+                    `${protocol} ${kind}: raw-header-array overload preserves headers`);
+            }
+        }
+        result=await request(protocol,"reset-invalid-write");
+        if (protocol === "http" || protocol === "https") {
+            assert.strictEqual(result.status,200,`${protocol} invalid 205 write remains recoverable`);
+            assert.strictEqual(result.body.toString(),"ERR_INVALID_ARG_TYPE");
+        } else {
+            assert.strictEqual(result.status,205,`${protocol} retains native committed 205 status`);
+            assert.strictEqual(result.body.length,0);
+        }
+        let output=await waitForOutput(testCase,/RESET_INVALID_WRITE ERR_INVALID_ARG_TYPE/);
+        assert.match(output,/RESET_INVALID_WRITE ERR_INVALID_ARG_TYPE/,
+            `${protocol} invalid 205 write retains native validation`);
+        result=await request(protocol,"reset-invalid-end");
+        if (protocol === "http" || protocol === "https") {
+            assert.strictEqual(result.status,200,`${protocol} invalid 205 end remains recoverable`);
+            assert.strictEqual(result.body.toString(),"ERR_INVALID_ARG_TYPE");
+        } else {
+            assert.strictEqual(result.status,205,`${protocol} retains native committed 205 status`);
+            assert.strictEqual(result.body.length,0);
+        }
+        output=await waitForOutput(testCase,/RESET_INVALID_END ERR_INVALID_ARG_TYPE/);
+        assert.match(output,/RESET_INVALID_END ERR_INVALID_ARG_TYPE/,
+            `${protocol} invalid 205 end retains native validation`);
+        result=await request(protocol,"reset-callback");
+        assert.strictEqual(result.status,205,`${protocol} callback probe remains a 205`);
+        const callbackResult=protocol === "http" || protocol === "https"
+            ? "before,after,callback"
+            : "before,after,ERR_STREAM_WRITE_AFTER_END";
+        output=await waitForOutput(testCase,new RegExp(`RESET_CALLBACK ${callbackResult}`));
+        assert.match(output,new RegExp(`RESET_CALLBACK ${callbackResult}`),
+            `${protocol} suppressed-write callback matches native ordering and result`);
+        assert.strictEqual((output.match(/RESET_CALLBACK /g) || []).length,1,
+            `${protocol} suppressed-write callback runs exactly once`);
+        result=await request(protocol,"reset-after-end");
+        assert.strictEqual(result.status,205,`${protocol} after-end probe remains a 205`);
+        output=await waitForOutput(testCase,/RESET_AFTER_END ERR_STREAM_WRITE_AFTER_END/);
+        assert.match(output,/RESET_AFTER_END ERR_STREAM_WRITE_AFTER_END/,
+            `${protocol} write after end retains native callback error`);
+        assert.strictEqual((output.match(/RESET_AFTER_END /g) || []).length,1,
+            `${protocol} write-after-end callback runs exactly once`);
+        await request(protocol,"reset-after-destroy","GET",true);
+        await new Promise(resolve => setTimeout(resolve,100));
+        output=testCase.output();
+        if (protocol === "http" || protocol === "https") {
+            assert.match(output,/RESET_AFTER_DESTROY ERR_STREAM_DESTROYED/,
+                `${protocol} write after destroy retains native callback error`);
+            assert.strictEqual((output.match(/RESET_AFTER_DESTROY /g) || []).length,1,
+                `${protocol} write-after-destroy callback runs exactly once`);
+        } else {
+            assert.doesNotMatch(output,/RESET_AFTER_DESTROY /,
+                `${protocol} write after destroy retains native absent callback`);
+        }
+        result=await request(protocol,"string");
+        assert.strictEqual(result.status,200,`${protocol} remains healthy after lifecycle probes`);
+        assert.strictEqual(result.body.toString(),"hello");
+        const [reset,next]=await persistentSequence(protocol);
+        assert.strictEqual(reset.status,205,`${protocol} persistent 205 status`);
+        assert.strictEqual(reset.body.length,0,`${protocol} persistent 205 has no content`);
+        assert.strictEqual(next.status,200,`${protocol} request after 205 succeeds`);
+        assert.strictEqual(next.body.toString(),"hello",`${protocol} request after 205 has expected content`);
         result=await request(protocol,"string","HEAD");
         assert.strictEqual(result.status,200);
         assert.strictEqual(result.body.length,0);
