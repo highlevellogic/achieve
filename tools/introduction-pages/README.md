@@ -18,7 +18,7 @@ The article and footer intentionally repeat documentation/npm/GitHub links. The 
 
 ## Build and validate
 
-From the repository root, with Node.js 22+ and Python 3:
+From the repository root, with Node.js 24+ and Python 3:
 
 ```text
 node tools/introduction-pages/build.mjs

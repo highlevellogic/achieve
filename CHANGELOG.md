@@ -1,5 +1,15 @@
 # Changelog
 
+## Achieve 3.1.0
+
+- Corrected HTTP 205 Reset Content responses so application-supplied content
+  is suppressed while native Node.js response lifecycle behavior is preserved.
+- Omitted unnecessary representation metadata from successful matching
+  `If-Range` 206 Partial Content responses.
+- Raised the minimum supported runtime to Node.js 24. Node.js 22 is no longer
+  supported; Node.js 24.22.2 is the specifically qualified release runtime.
+- Improved HTTP/2 conformance by adopting the qualified newer Node.js runtime.
+
 ## Achieve 3.0.6
 
 - Strengthened strong ETags with filesystem change and identity metadata already
