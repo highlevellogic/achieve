@@ -17,7 +17,7 @@ Run the focused server/access logging regressions with:
 
 # RUNNING THE TESTS
 
-Achieve 3 requires Node.js 22 or later. From the repository root, install the
+Achieve 3.1 requires Node.js 24 or later. From the repository root, install the
 locked development dependencies and run the complete regression suite with:
 
     npm ci

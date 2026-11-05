@@ -1,6 +1,6 @@
 {
   "name": "achieve",
-  "version": "3.0.6",
+  "version": "3.1.0",
   "description": "Achieve - a developer-friendly web server and HTTP application server for Node.js.",
   "main": "./achieve.js",
   "exports": "./achieve.js",
@@ -53,7 +53,7 @@
   },
   "homepage": "https://github.com/highlevellogic/achieve#readme",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "dependencies": {},
   "devDependencies": {

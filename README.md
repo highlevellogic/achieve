@@ -8,6 +8,8 @@
 
 <p>Achieve is a standards-compliant, production-ready web and application server implemented on Node.js.</p>
 
+<p>Achieve 3.1 requires Node.js 24 or newer. Node.js 24.22.2 is the specifically qualified release runtime. Node.js 22 is no longer supported.</p>
+
 <p>The v3 development process was complemented by extensive automated testing, analysis, and review for <ins><em>standards compliance, reliability, security, and performance</em></ins>.</p>
 
 <p>This document provides a quick introduction and overview of Achieve's features. Tutorials, detailed references, and examples are available in the <a href="https://highlevellogic.github.io/achieve/index.htm">project documentation</a>.</p>
@@ -187,12 +189,12 @@ exports.servlet = function (session) {
 
 <p>Achieve 3 has undergone technical review and automated testing of functional behavior, reliability and error handling, security boundaries, and HTTP standards-related behavior. Regression coverage includes routing, JavaScript Servlets, static resources, conditional requests, compression, byte ranges, and response completion.</p>
 
-<p>The automated validation comprises 37 verifier suites. All 37 suites passed on both Windows and Ubuntu using Node.js 22.x in GitHub Actions on October 8, 2026 (commit <code>edf25865</code>). The tests, validation workflow, and CI execution results are publicly available:</p>
+<p>The automated validation comprises 37 verifier suites. All 37 suites passed on Windows and Ubuntu using the specifically qualified Node.js 24.22.2 runtime. The tests, validation workflows, and CI execution results are publicly available:</p>
 
 <ul>
 <li><a href="https://github.com/highlevellogic/achieve/tree/master/tests">Automated test source</a></li>
 <li><a href="https://github.com/highlevellogic/achieve/actions/workflows/test.yml">Cross-platform validation workflow and run history</a></li>
-<li><a href="https://github.com/highlevellogic/achieve/actions/runs/37823012538">Successful Windows and Ubuntu validation run</a></li>
+<li><a href="https://github.com/highlevellogic/achieve/actions/runs/42039651485">Successful Node.js 24.22.2 qualification run</a></li>
 </ul>
 
 <p>To repeat the automated checks in a development checkout, run <code>npm run validate</code>.</p>

@@ -8,6 +8,7 @@ import {fileURLToPath} from "node:url";
 
 if (process.version !== "v24.22.2") throw new Error(`Expected Node v24.22.2, received ${process.version}`);
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
+const expectedVersion=JSON.parse(fs.readFileSync(path.join(root,"package.json"),"utf8")).version;
 const temporary=fs.mkdtempSync(path.join(os.tmpdir(),"achieve-node24-package-"));
 let server;
 const watchdog=setTimeout(()=>{
@@ -34,7 +35,7 @@ try {
     childProcess.execFileSync("npm",["install","--ignore-scripts",tarball],{cwd:project,stdio:"inherit",shell:process.platform==="win32",timeout:120000});
     const require=createRequire(path.join(project,"smoke.cjs"));
     const metadata=JSON.parse(fs.readFileSync(path.join(project,"node_modules/achieve/package.json"),"utf8"));
-    if (metadata.version !== "3.0.6") throw new Error(`Installed version is ${metadata.version}`);
+    if (metadata.version !== expectedVersion) throw new Error(`Installed version is ${metadata.version}; expected ${expectedVersion}`);
     const achieve=require("achieve");
     achieve.setAppPath(application);
     let port;
