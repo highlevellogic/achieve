@@ -47,7 +47,48 @@ try {
     }
     server=achieve.listen(port);
     await new Promise((resolve,reject)=>{if(server.listening)return resolve();server.once("listening",resolve);server.once("error",reject);});
-    await new Promise((resolve,reject)=>{const socket=net.connect(port,"127.0.0.1",()=>{socket.end("GET /index.htm HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")});let response="";socket.setTimeout(5000,()=>socket.destroy(new Error("Smoke request timeout")));socket.on("data",chunk=>response+=chunk);socket.on("error",reject);socket.on("close",()=>response.includes("node24 smoke")?resolve():reject(new Error("Smoke response missing expected body")));});
+    await new Promise((resolve,reject)=>{
+        const request="GET /index.htm HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
+        const expectedBody=Buffer.from("node24 smoke\n");
+        const response=[];
+        const lifecycle=[];
+        let completed=false;
+        const socket=net.connect(port,"127.0.0.1",()=>{
+            lifecycle.push("connect");
+            socket.write(request,()=>lifecycle.push("write"));
+        });
+        socket.setTimeout(5000,()=>socket.destroy(new Error("Smoke request timeout")));
+        socket.on("data",chunk=>{
+            lifecycle.push(`data:${chunk.length}`);
+            response.push(chunk);
+        });
+        socket.on("error",reject);
+        socket.on("end",()=>{
+            lifecycle.push("end");
+            const bytes=Buffer.concat(response);
+            const separator=bytes.indexOf("\r\n\r\n");
+            if (separator < 0) return reject(new Error(`Smoke response missing header terminator: ${JSON.stringify({bytes:bytes.length,lifecycle})}`));
+            const headerText=bytes.subarray(0,separator).toString("latin1");
+            const lines=headerText.split("\r\n");
+            const status=/^HTTP\/1\.1 (\d{3})(?: |$)/.exec(lines.shift());
+            const headers={};
+            for (const line of lines) {
+                const colon=line.indexOf(":");
+                if (colon < 1) return reject(new Error(`Malformed smoke response header: ${JSON.stringify({line,headerText,lifecycle})}`));
+                headers[line.slice(0,colon).toLowerCase()]=line.slice(colon+1).trim();
+            }
+            const body=bytes.subarray(separator+4);
+            const evidence={status:status?Number(status[1]):null,headers,responseBytes:bytes.length,bodyBytes:body.length,body:body.toString("utf8"),lifecycle};
+            if (!status || evidence.status !== 200) return reject(new Error(`Unexpected smoke response status: ${JSON.stringify(evidence)}`));
+            if (!body.equals(expectedBody)) return reject(new Error(`Unexpected smoke response body: ${JSON.stringify(evidence)}`));
+            completed=true;
+            resolve();
+        });
+        socket.on("close",hadError=>{
+            lifecycle.push(`close:${hadError}`);
+            if (!completed && !hadError) reject(new Error(`Smoke connection closed before a complete response: ${JSON.stringify({responseBytes:Buffer.concat(response).length,lifecycle})}`));
+        });
+    });
     await new Promise(resolve=>server.close(resolve));
     server=undefined;
     console.log(JSON.stringify({version:metadata.version,files,smoke:"passed"},null,2));
