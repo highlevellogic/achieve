@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dcterms.created" content="2026-11-06"><meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve 3.1.0 JavaScript Servlet Session API for Node.js</title>
+<meta name="description" content="Achieve 3.1.0 JavaScript Servlet Session API: request, response, parameters, response ownership, application and servlet paths, backend module loading, and compatibility aliases.">
+<style>body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}header img{width:100%;display:block}#friend{text-align:center;font-style:italic;font-weight:bold;color:rgb(40,200,32);border-bottom:solid blue thick;padding:0;margin:0}.navLink{display:inline-block;margin:.6em 5% .2em;color:rgb(30,80,150);font-weight:bold;text-decoration:none}.navLink:hover,.packageLink:hover{color:blue}.backArrow{margin-right:.4em}.packageLink{color:rgb(30,80,150);font-weight:bold;text-decoration:none}main{margin:2% 5% 5%}.documentInfo{color:rgb(50,70,90);font-size:.9em}code{padding:.08em .35em;border-radius:.3em;background-color:rgb(220,235,245);color:blue;font-family:Consolas,"Courier New",monospace}pre{margin:1em 0 1.4em}pre code{display:block;padding:1em;overflow:auto;white-space:pre}footer{padding:1.5% 5%;box-sizing:border-box;border-top:solid blue thick}</style>
+</head><body>
+<header><img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern."><h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3></header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to technical specifications</a>
+<main>
+<h1>Achieve JavaScript Servlet Session API</h1>
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> creates one session object for each JavaScript Servlet invocation. It joins the native Node.js request and response with Achieve's parsed parameters, application paths, response-completion choice, and servlet-relative module loader.</p>
+
+<h2>Request, response, and parameters</h2>
+<p><code>session.request</code> and <code>session.response</code> are the native Node.js request and response objects for the exchange. A servlet can inspect request metadata, consume input that Achieve has not parsed, set response fields and status, or use Node's response methods directly.</p>
+<p><code>session.params</code> is the value Achieve prepared before invocation. GET query input and supported built-in POST form or JSON input are parsed as described in <a href="request_input.html">Request Input</a>. Registered additional methods begin with an empty parameter object and retain their input on the request stream. The legacy <code>session.parms</code> alias refers to the same value as <code>session.params</code>.</p>
+
+<h2>Response ownership</h2>
+<p><code>session.autoEnd</code> defaults to <code>true</code>. Achieve then examines the servlet's direct result or returned Promise and completes the managed response. Setting it to <code>false</code> before the servlet returns transfers normal completion responsibility to the application:</p>
+<pre><code>exports.servlet = function (session) {
+  session.autoEnd = false;
+  session.response.write("Hello ");
+  session.response.end("World!");
+};</code></pre>
+<p><code>session.allowAsync</code> is a compatibility alias with inverse meaning: setting it to <code>true</code> makes <code>autoEnd</code> false, and setting it to <code>false</code> makes <code>autoEnd</code> true. If both properties are assigned, the last assignment determines ownership. Returning a Promise normally does not require application-owned completion; with <code>autoEnd</code> true, Achieve waits for it.</p>
+
+<h2>Application and servlet paths</h2>
+<p><code>session.appPath</code> is the configured application-space root used for the selected servlet. <code>session.dirPath</code> is the directory containing that servlet, so it changes for nested servlet locations while <code>appPath</code> remains the application root. These are server filesystem paths, not request URLs.</p>
+<p>Achieve's public routing remains contained by the application space, but servlet code is ordinary Node.js code. Possession of these paths does not sandbox the servlet or restrict deliberate filesystem access performed with Node APIs.</p>
+
+<h2>Servlet-relative module loading</h2>
+<p><code>session.load()</code> resolves supported backend module filenames from <code>session.dirPath</code>. CommonJS modules load synchronously; ECMAScript modules return a Promise. File forms, reload checks, caching, and error behavior are described in <a href="module_loading.html">Backend Module Loading</a>.</p>
+
+<h2>Responsibility and verification</h2>
+<p>Achieve owns construction of the session, supported input preparation, managed result handling, and errors that propagate through the managed invocation. Applications own direct request-stream processing, response values they set, eventual completion after disabling <code>autoEnd</code>, and detached asynchronous work.</p>
+<p>Session-path tests verify application and servlet directories across nested and replaced application spaces. Response-completion tests verify <code>autoEnd</code>, the inverse <code>allowAsync</code> alias, assignment order, native response behavior, and all four transports. Request-input, registered-method, Promise, servlet-module, and helper-cache suites verify the other documented paths. The <code>parms</code> alias is established by direct construction in the released implementation; no focused assertion currently exercises that alias.</p>
+<p>See <a href="servlet_lifecycle.html">JavaScript Servlet Lifecycle</a> for invocation and result processing and the <a href="../http_standards/methods_and_responses.html">HTTP Methods and Responses</a> specification for status-specific completion rules.</p>
+</main>
+<footer><a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a></footer>
+</body></html>

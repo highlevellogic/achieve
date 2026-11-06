@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dcterms.created" content="2026-11-06"><meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve RFC 9110 HTTP Dates and Last-Modified</title>
+<meta name="description" content="Achieve 3.1.0 RFC 9110 HTTP-date behavior: Date, Last-Modified, accepted formats, timestamp precision, conditional comparisons, validator strength, and date-form If-Range.">
+<style>body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}header img{width:100%;display:block}#friend{text-align:center;font-style:italic;font-weight:bold;color:rgb(40,200,32);border-bottom:solid blue thick;padding:0;margin:0}.navLink{display:inline-block;margin:.6em 5% .2em;color:rgb(30,80,150);font-weight:bold;text-decoration:none}.navLink:hover,.packageLink:hover{color:blue}.backArrow{margin-right:.4em}.packageLink{color:rgb(30,80,150);font-weight:bold;text-decoration:none}main{margin:2% 5% 5%}.documentInfo{color:rgb(50,70,90);font-size:.9em}code{padding:.08em .35em;border-radius:.3em;background-color:rgb(220,235,245);color:blue;font-family:Consolas,"Courier New",monospace}pre{margin:1em 0 1.4em}pre code{display:block;padding:1em;overflow:auto;white-space:pre}footer{padding:1.5% 5%;box-sizing:border-box;border-top:solid blue thick}</style>
+</head><body>
+<header><img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern."><h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3></header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to technical specifications</a>
+<main>
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-5.6.7">RFC 9110 HTTP Dates</a> and <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.2">Last-Modified</a></h1>
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+<p><strong>Requirement levels:</strong> Applicable MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY requirements are labeled below.</p>
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> uses HTTP dates for response origination time, static-resource modification metadata, and date-based preconditions. HTTP dates have one-second protocol resolution even when filesystem timestamps are more precise.</p>
+
+<h2>HTTP-date formats</h2>
+<ul>
+<li><strong>MUST:</strong> A recipient that parses an HTTP timestamp accepts IMF-fixdate and both obsolete formats defined by <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-5.6.7">RFC 9110 §5.6.7</a>.</li>
+<li><strong>MUST:</strong> A sender generates an HTTP-date in IMF-fixdate form and <strong>MUST NOT</strong> add whitespace beyond the grammar.</li>
+<li><strong>MUST:</strong> An RFC 850 two-digit year apparently more than 50 years in the future is interpreted as the most recent matching year in the past.</li>
+</ul>
+<p>Achieve's conditional-date parser recognizes the three exact HTTP formats, rejects non-HTTP extensions and date lists, validates calendar fields, handles a leap-second value, and applies the RFC 850 50-year rule. Generated values use Node's UTC IMF-fixdate serialization.</p>
+
+<h2>Date response field</h2>
+<ul>
+<li><strong>SHOULD:</strong> A generated <code>Date</code> value approximates the message generation time.</li>
+<li><strong>MUST:</strong> An origin server with a clock generates <code>Date</code> on 2xx, 3xx, and 4xx responses; it <strong>MAY</strong> generate it on 1xx and 5xx responses, as specified by <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-6.6.1">§6.6.1</a>.</li>
+</ul>
+<p>For static and audiovisual processing, Achieve records one origination instant, writes its <code>Date</code> value, and uses that same instant when clamping future modification metadata. For ordinary Node-generated responses, Node's response serializer supplies its automatic <code>Date</code> field unless application code deliberately changes that native behavior. Achieve's direct unsupported-CONNECT response also generates a current IMF-fixdate value.</p>
+
+<h2>Last-Modified generation</h2>
+<ul>
+<li><strong>SHOULD:</strong> An origin server sends <code>Last-Modified</code> when the selected representation's modification date can be reasonably and consistently determined.</li>
+<li><strong>SHOULD:</strong> It obtains that value as close as possible to generation of <code>Date</code>.</li>
+<li><strong>MUST NOT:</strong> It sends an implementation-derived <code>Last-Modified</code> later than message origination; a future value is replaced with the origination date.</li>
+</ul>
+<p>Achieve derives static and audiovisual modification time from the metadata of the opened selected representation. It rounds down to whole seconds and clamps a future filesystem time to the response's origination instant. When browser caching is enabled, the resulting value is sent as <code>Last-Modified</code>. When caching is disabled, Achieve does not advertise that field on a normal response, but it can still use the selected representation's modification time to evaluate a supplied precondition.</p>
+<p>Dynamic servlet responses do not receive an automatic Achieve <code>Last-Modified</code> value. A servlet that authors one is responsible for its relationship to the selected representation.</p>
+
+<h2>Date preconditions and precision</h2>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.3">If-Modified-Since</a> applies to GET and HEAD when no <code>If-None-Match</code> is present. <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.4">If-Unmodified-Since</a> is evaluated when no <code>If-Match</code> is present. Invalid dates, date lists, and conditions without available modification metadata are ignored as required. Achieve compares whole-second values: an unchanged or earlier representation can produce 304 for If-Modified-Since, while a representation newer than If-Unmodified-Since produces 412.</p>
+<p>One-second resolution cannot distinguish two changes within the same second. Achieve's strong ETag contains finer filesystem change metadata, so entity-tag preconditions take precedence and can distinguish changes that share one <code>Last-Modified</code> value. See <a href="conditionals.html">Conditional Requests</a> and <a href="etag.html">ETag Validators</a>.</p>
+
+<h2>Date-validator strength and If-Range</h2>
+<p>Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.2.2">RFC 9110 §8.8.2.2</a>, a modification date is implicitly weak unless the origin server reliably knows that the representation did not change twice during the represented second, or one of the RFC's cache-based deductions establishes strength. Exact equality with <code>Last-Modified</code> alone is not sufficient.</p>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.5">Section 13.1.5</a> requires a date-form <code>If-Range</code> condition to be false unless the supplied date is a strong validator and exactly matches the selected representation's <code>Last-Modified</code> value. Achieve's current resource model does not establish the required strong-date guarantee, so it conservatively treats date-form <code>If-Range</code> as false and sends the complete selected representation instead of a 206. Matching strong entity tags remain supported for If-Range. See <a href="range_requests.html">Range Requests and Partial Responses</a>.</p>
+
+<h2>Automated verification and limits</h2>
+<p>The static-date verifier runs over HTTP, HTTPS, h2c, and secure HTTP/2. It covers all three accepted formats, invalid values and lists, the RFC 850 year boundary, GET and HEAD, If-Modified-Since and If-Unmodified-Since comparisons and precedence, future-time clamping, compressed and identity representations, same-second changes, date-form If-Range fallback, disabled validator advertisement, servlet exclusion, descriptor cleanup, and pathname replacement after the representation is opened.</p>
+<p>Those tests establish Achieve's static and media paths on Node.js 24.22.2; they do not establish the correctness of arbitrary application-authored dates or clocks. Filesystem timestamp quality and system-clock synchronization remain deployment properties.</p>
+</main>
+<footer><a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a></footer>
+</body></html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dcterms.created" content="2026-11-06"><meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve 3.1.0 Backend Module Loading and Caching</title>
+<meta name="description" content="Achieve 3.1.0 backend module loading: servlet-relative session.load, application-local achieve.loadModule, CommonJS and ESM behavior, development reload checks, production caches, and errors.">
+<style>body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}header img{width:100%;display:block}#friend{text-align:center;font-style:italic;font-weight:bold;color:rgb(40,200,32);border-bottom:solid blue thick;padding:0;margin:0}.navLink{display:inline-block;margin:.6em 5% .2em;color:rgb(30,80,150);font-weight:bold;text-decoration:none}.navLink:hover,.packageLink:hover{color:blue}.backArrow{margin-right:.4em}.packageLink{color:rgb(30,80,150);font-weight:bold;text-decoration:none}main{margin:2% 5% 5%}.documentInfo{color:rgb(50,70,90);font-size:.9em}code{padding:.08em .35em;border-radius:.3em;background-color:rgb(220,235,245);color:blue;font-family:Consolas,"Courier New",monospace}pre{margin:1em 0 1.4em}pre code{display:block;padding:1em;overflow:auto;white-space:pre}footer{padding:1.5% 5%;box-sizing:border-box;border-top:solid blue thick}</style>
+</head><body>
+<header><img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern."><h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3></header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to technical specifications</a>
+<main>
+<h1>Achieve Backend Module Loading and Caching</h1>
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> provides two backend loading facilities with different resolution contexts. <code>session.load()</code> loads files relative to the current servlet. <code>achieve.loadModule()</code> resolves an installed CommonJS package from the application startup environment.</p>
+
+<h2>Servlet-relative session.load()</h2>
+<pre><code>const helper = session.load("./helper.jss.cjs");
+const module = await session.load("./helper.jss.mjs");</code></pre>
+<p>Relative names are joined to the current servlet directory. Supported forms are <code>.js</code>, <code>.jss</code>, <code>.jss.cjs</code>, and <code>.jss.mjs</code>; an extensionless name selects the corresponding legacy <code>.js</code> file. CommonJS forms return their exports synchronously. The ESM form uses dynamic import and returns a Promise.</p>
+<p>This loader is for backend code, not HTTP routing. Its files execute with the Node.js process's permissions, and loading a module does not make that module public.</p>
+
+<h2>Development reload behavior</h2>
+<p>In development mode, CommonJS helper loading checks the file modification time. When that time advances, Achieve removes the Node <code>require</code> cache entry before loading. Development ESM imports include the observed modification time in the module URL so a changed file can be imported as a new module instance.</p>
+<p>The check is metadata-based: it does not hash helper content, and it does not establish a reload when a change preserves or moves the recorded modification time backward. Application modules imported directly without <code>session.load()</code> retain ordinary Node caching behavior.</p>
+
+<h2>Production caching</h2>
+<p>Production mode stores the first successful CommonJS export or ESM-loading Promise by full helper path and returns that reference on later calls without per-request modification checks. Resetting the configured application path clears Achieve's production helper cache. Restarting the process also obtains the current files.</p>
+<p>A failed ESM loading Promise is removed from Achieve's production helper cache, although the underlying runtime can retain a failed ESM module record for the same module URL. Tests therefore avoid promising recovery from every production ESM evaluation failure without a changed URL or restarted process.</p>
+
+<h2>Application-local achieve.loadModule()</h2>
+<pre><code>const packageApi = achieve.loadModule("application-package");</code></pre>
+<p><code>achieve.loadModule()</code> uses a CommonJS resolver anchored at the server entry file, allowing a package installed for the application to be found even when Achieve itself is installed elsewhere. It resolves and inspects the package entry on each call, removes the Node <code>require</code> cache entry when the recorded modification time advances, and returns the CommonJS export. It is not the ESM helper loader and does not use the production helper-reference cache described above.</p>
+
+<h2>Errors and responsibility</h2>
+<p>An unsupported <code>session.load()</code> suffix throws a type error. CommonJS and ESM loading or evaluation errors propagate through the servlet and can be caught by application code; otherwise Achieve's managed servlet error handling reports them. Error rendering removes internal Achieve frames and avoids exposing the configured application root in the verified client diagnostics.</p>
+<p><code>achieve.loadModule()</code> catches resolution or loading failure, reports a server-side diagnostic, and returns <code>undefined</code>. The caller must check the result when failure is possible. Package behavior, module side effects, and dependency lifecycle remain application responsibilities.</p>
+
+<h2>Verification and limits</h2>
+<p>Servlet-module and helper-cache suites verify supported CommonJS and ESM names, synchronous and asynchronous results, development changes, production reference reuse, failed loads, recovery cases, unsupported suffixes, and sanitized diagnostics. The dedicated load-module suite verifies application-local package resolution from both CommonJS and ESM startup files and the missing-package result.</p>
+<p>See <a href="servlet_session.html">Servlet Session API</a>, <a href="servlet_lifecycle.html">JavaScript Servlet Lifecycle</a>, and <a href="development_mode.html">Development Mode</a>.</p>
+</main>
+<footer><a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a></footer>
+</body></html>
