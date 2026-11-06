@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Source record and evidence index for the Achieve 3.1.0 HTTP conformance assessment.">
+<meta name="dcterms.created" content="2026-11-05">
+<meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve 3.1.0 HTTP Conformance Evidence Index</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; color:#18283b; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,160,32); border-bottom:solid blue thick; padding:.2em; margin:0; }
+nav { padding:.7em 5%; background:#dceff8; border-bottom:1px solid #8ab3d0; }
+nav a,.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; margin-right:1.1em; }
+nav a:hover,.packageLink:hover { color:blue; text-decoration:underline; }
+main { margin:2% 5% 5%; max-width:105em; }
+h1,h2,h3 { color:#153d70; }
+.metadata,.notice { background:#eaf6fb; border-left:.35em solid #326fa8; padding:.7em 1em; margin:1em 0; }
+.notice { border-left-color:#8a6500; background:#fff7da; }
+.counts { border-collapse:collapse; margin:1em 0; }
+.counts th,.counts td { border:1px solid #7fa5bd; padding:.45em .7em; text-align:left; }
+.counts th { background:#d5eaf5; }
+.requirement { background:#edf8fc; border:1px solid #8eb3c9; border-radius:.35em; padding:.8em 1em; margin:1em 0; }
+.requirement h2 { font-size:1.15em; margin:.1em 0 .6em; }
+.requirement dl { display:grid; grid-template-columns:minmax(10em,15em) 1fr; gap:.35em .8em; margin:.5em 0; }
+.requirement dt { font-weight:bold; }
+.requirement dd { margin:0; overflow-wrap:anywhere; }
+.badge { display:inline-block; border-radius:.3em; padding:.15em .45em; font-weight:bold; }
+.conformant { background:#ccebd2; color:#174e24; }
+.nonconformant { background:#ffd2d2; color:#791b1b; }
+.unverified { background:#fff0b8; color:#684e00; }
+.not-applicable { background:#e0e0e0; color:#3d3d3d; }
+.optional-not-implemented { background:#dfd5f5; color:#4b2d72; }
+code { padding:.08em .35em; border-radius:.3em; background:#dcebf4; color:blue; font-family:Consolas,"Courier New",monospace; }
+.compact li { margin:.4em 0; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+@media (max-width:700px) { .requirement dl { display:block; } .requirement dt { margin-top:.5em; } nav a { display:inline-block; margin-bottom:.4em; } }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern.">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<nav aria-label="Specification navigation">
+<a href="index.htm">Specifications index</a>
+<a href="methodology.html">Methodology</a>
+<a href="conformance.html">Conformance summary</a>
+<a href="rfc9110.html">RFC 9110</a>
+<a href="rfc9111.html">RFC 9111</a>
+<a href="rfc9112.html">RFC 9112</a>
+<a href="rfc9113.html">RFC 9113</a>
+<a href="evidence.html">Evidence</a>
+<a href="../index.htm">Documentation home</a>
+</nav>
+<main>
+
+<h1>Achieve HTTP Conformance Evidence Index</h1>
+<div class="metadata"><strong>Achieve:</strong> 3.1.0<br><strong>Evaluated runtime:</strong> Node.js 24.22.2<br><strong>Assessment baseline:</strong> November 5, 2026<br><strong>Document status:</strong> Qualified release assessment</div>
+<p>The V3 ledger is authoritative for current requirement wording, classification, responsibility, and evidence. Earlier assessments remain available for provenance and must not override later corrections.</p>
+<h2>Authoritative current records</h2><ul class="compact"><li><a href="review/requirements-ledger-v3.csv">211-requirement V3 ledger and classifications</a></li><li><a href="review/requirements-v2-v3-mapping.csv">V2-to-V3 traceability mapping</a></li><li><a href="review/requirements-consolidation.md">inventory consolidation and reconciliation</a></li><li><a href="review/conformance-summary.md">Achieve 3.1.0 authoritative narrative summary</a></li><li><a href="review/nonconformity-remediation-plan.md">current and resolved nonconformity decisions</a></li><li><a href="review/node24-adoption-decision.md">Node.js 24.22.2 adoption evidence and boundary</a></li></ul>
+<h2>Batch evidence reviews</h2><ul class="compact"><li><a href="review/batch-a-evidence-review.md">Batch A evidence review</a></li><li><a href="review/batch-b-evidence-review.md">Batch B evidence review</a></li><li><a href="review/batch-c-evidence-review.md">Batch C evidence review</a></li><li><a href="review/batch-d-evidence-review.md">Batch D evidence review</a></li><li><a href="review/batch-e-evidence-review.md">Batch E evidence review</a></li><li><a href="review/batch-f-evidence-review.md">Batch F evidence review</a></li></ul>
+<h2>Focused protocol and quality investigations</h2><ul class="compact"><li><a href="review/final-unverified-investigation.md">final investigation of initially unverified requirements</a></li><li><a href="review/consolidated-quality-review.md">quality-control review</a></li><li><a href="review/quality-review-followup.md">focused inventory and evidence follow-up</a></li><li><a href="review/quality-corrections-applied.md">approved quality corrections</a></li><li><a href="review/http2-frame-hpack-probes.md">HTTP/2 frame and HPACK probes</a></li><li><a href="review/http2-frame-hpack-evidence.csv">structured frame and HPACK evidence</a></li><li><a href="review/http2-five-findings-investigation.md">HTTP/2 root-cause investigation</a></li><li><a href="review/http2-tls-renegotiation-investigation.md">TLS renegotiation investigation</a></li><li><a href="review/rfc9112-h105-investigation.md">overlong request-target investigation</a></li><li><a href="review/rfc9112-h105-node-investigation.md">Node.js parser/API investigation</a></li><li><a href="review/if-range-206-decision.md">matching If-Range response metadata decision</a></li></ul>
+<h2>Historical assessments retained for provenance</h2><ul class="compact"><li><a href="review/requirements-audit.md">original normative inventory audit</a></li><li><a href="review/requirements-ledger-v2-validation.md">V2 ledger validation</a></li><li><a href="review/rfc9110-conformance.md">earlier RFC 9110 assessment</a></li><li><a href="review/rfc9111-conformance.md">earlier RFC 9111 assessment</a></li><li><a href="review/rfc9112-conformance.md">earlier RFC 9112 assessment</a></li><li><a href="review/rfc9113-conformance.md">earlier RFC 9113 assessment</a></li><li><a href="review/node-runtime-upgrade-evaluation.md">runtime upgrade evaluation</a></li><li><a href="review/node24-final-windows-evaluation.md">Windows qualification evidence</a></li><li><a href="review/node24-linux-qualification-plan.md">Linux qualification method</a></li></ul>
+<h2>External qualification evidence</h2>
+<ul class="compact">
+<li><a href="https://github.com/highlevellogic/achieve/actions/runs/42049611849">Final Achieve 3.1.0 Linux qualification run 42049611849</a></li>
+<li><a href="https://github.com/highlevellogic/achieve/releases/tag/v3.1.0">Achieve 3.1.0 GitHub release</a></li>
+<li><a href="https://github.com/highlevellogic/achieve/blob/master/tests/README_TESTS.txt">Verifier-suite entry point and execution guidance</a></li>
+</ul>
+<h2>Evidence cautions</h2>
+<ul class="compact">
+<li>Some historical reports describe Achieve 3.0.6 and Node.js 22.15.0. They establish provenance and earlier failures, not the current baseline.</li>
+<li>The GitHub qualification artifact is external to this documentation tree. Its summarized results are recorded in the current ledger and conformance summary.</li>
+<li>Source/test references in ledger entries use repository paths and occasional line references that can move after later edits; reviewers should verify semantic targets against the release commit.</li>
+</ul>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a>
+</footer>
+</body>
+</html>

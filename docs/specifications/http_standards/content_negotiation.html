@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="dcterms.created" content="2026-11-06"><meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve RFC 9110 Content Negotiation for Node.js</title>
+<meta name="description" content="Achieve 3.1.0 content-coding negotiation on Node.js 24.22.2, including Accept-Encoding quality values, identity, gzip, deflate, Content-Encoding, Vary, and 406 responses.">
+<style>body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}header img{width:100%;display:block}#friend{text-align:center;font-style:italic;font-weight:bold;color:rgb(40,200,32);border-bottom:solid blue thick;padding:0;margin:0}.navLink{display:inline-block;margin:.6em 5% .2em;color:rgb(30,80,150);font-weight:bold;text-decoration:none}.navLink:hover,.packageLink:hover{color:blue}.backArrow{margin-right:.4em}.packageLink{color:rgb(30,80,150);font-weight:bold;text-decoration:none}main{margin:2% 5% 5%}.documentInfo{color:rgb(50,70,90);font-size:.9em}code{padding:.08em .35em;border-radius:.3em;background-color:rgb(220,235,245);color:blue;font-family:Consolas,"Courier New",monospace}footer{padding:1.5% 5%;box-sizing:border-box;border-top:solid blue thick}</style>
+</head><body><header><img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern."><h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3></header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to technical specifications</a><main>
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-12">RFC 9110 Content Negotiation</a></h1>
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+<p><strong>Requirement levels:</strong> Applicable content-coding and selection rules include MUST, SHOULD, and MUST NOT obligations.</p>
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> negotiates identity, gzip, and deflate representations for eligible static resources when compression is enabled. Negotiation selects the representation for the response; generation and maintenance of compressed artifacts are described separately in <a href="../features/static_compression.html">Static Compression</a>.</p>
+<h2>Applicable requirements</h2>
+<ul>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.4.1">RFC 9110 §8.4.1</a>, a sender applying a content coding must list it in <code>Content-Encoding</code> in application order.</li>
+<li><strong>SHOULD:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-12.5.3">§12.5.3</a>, when no acceptable content coding is available, an origin server should send identity unless the request makes identity unacceptable.</li>
+<li><strong>Defined selection semantics:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-12.4.2">§12.4.2</a>, a quality value of zero means a coding is not acceptable; the most specific matching field value determines its quality.</li>
+<li><strong>SHOULD:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-12.5.5">§12.5.5</a>, an origin server should generate <code>Vary</code> on a cacheable response intended for selective reuse based on request fields.</li>
+</ul>
+<h2>Representation selection</h2>
+<p>Achieve parses <code>Accept-Encoding</code> case-insensitively, including quality values and <code>*</code>. It ignores malformed members and unsupported codings, honors explicit exclusions, and selects the available supported representation with the highest quality. Identity has its normal implicit acceptability unless explicitly excluded. When gzip and deflate have equal quality, Achieve prefers gzip.</p>
+<p>If the best compressed representation has not yet been generated and identity is acceptable, Achieve sends identity and schedules artifact generation. If every supported representation, including identity, is unacceptable, it returns <code>406 Not Acceptable</code>.</p>
+<h2>Response metadata</h2>
+<p>A gzip or deflate response carries the corresponding <code>Content-Encoding</code>; identity does not. <code>Content-Length</code>, validators, and modification metadata describe the representation actually sent. Strong entity tags have distinct identity, gzip, and deflate markers. Achieve sends <code>Vary: Accept-Encoding</code> whenever its static compression selection can vary by that request field, including 304 and 406 paths.</p>
+<h2>Verification</h2>
+<p>The compression and conditional suites cover quality ordering, wildcard and explicit precedence, duplicate and malformed members, unsupported codings, identity defaults and exclusions, 406, gzip/deflate metadata, representation-specific entity tags, <code>Vary</code>, HEAD, and fallback when an artifact cannot be opened.</p>
+<h2>Limits</h2>
+<p>Achieve supports gzip and deflate, not Brotli. Automatic compression applies to eligible ordinary static <code>text/*</code> and <code>application/*</code> resources; media range responses and servlet-generated content are not automatically compressed. Application-authored negotiation remains the application's responsibility.</p>
+</main><footer><a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a></footer></body></html>

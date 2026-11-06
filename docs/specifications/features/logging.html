@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dcterms.created" content="2026-11-06">
+<meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve 3.1.0 Logging for Node.js HTTP Applications</title>
+<meta name="description" content="Achieve 3.1.0 logging for Node.js HTTP applications: startup reporting, development diagnostics, persistent server and access logs, configuration, and operational behavior.">
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+.navLink { display:inline-block; margin:.6em 5% .2em; color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.navLink:hover,.packageLink:hover { color:blue; }
+.backArrow { margin-right:.4em; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+main { margin:2% 5% 5%; }
+.documentInfo { color:rgb(50,70,90); font-size:.9em; }
+code { padding:.08em .35em; border-radius:.3em; background-color:rgb(220,235,245); color:blue; font-family:Consolas,"Courier New",monospace; }
+pre { margin:1em 0 1.4em; }
+pre code { display:block; padding:1em; overflow:auto; white-space:pre; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+</style>
+</head>
+<body>
+<header>
+<img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern.">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<a class="navLink" href="../../index.htm"><span class="backArrow">←</span> Back to documentation index</a>
+<main>
+
+<h1>Achieve Logging</h1>
+
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> 3.1.0 is a Node.js HTTP application server with separate facilities for startup reporting, interactive development diagnostics, persistent server events, and persistent access records. These channels serve different purposes and can be controlled without turning all reporting on or off together.</p>
+
+<h2>Startup reporting</h2>
+
+<p>When a listener starts, Achieve identifies the protocol, port, Achieve version, and Node.js version on the console. It then reports the effective application path and configuration, including mode, <code>NODE_ENV</code>, caching, compression, buffered-input limit, logging selections, log path, MIME configuration, CORS policies, route mappings, path mappings, and registered methods.</p>
+
+<p>Startup reporting remains visible in production and when persistent logging is disabled. A startup warning or configuration failure is therefore not hidden by a logging choice. When persistent server logging is enabled, startup and configuration records are also appended to the server log.</p>
+
+<h2>Development and production modes</h2>
+
+<p>Development mode is the default. It writes request flow, resource selection, servlet lifecycle information, warnings, and errors to the console. This diagnostic output supports interactive development and is controlled by <code>setMode()</code>, not by persistent logging configuration.</p>
+
+<p>Production mode suppresses routine developer-oriented console traces and uses stable servlet and helper-module caching until restart. It does not disable error handling, startup reporting, access logging, or persistent server events.</p>
+
+<pre><code>achieve.setMode("production");</code></pre>
+
+<p>Achieve mode and <code>NODE_ENV</code> are separate settings. Changing one does not implicitly change the other.</p>
+
+<h2>Persistent logging</h2>
+
+<p>Persistent logging is disabled by default. <code>setLogging()</code> selects server logging, access logging, or both:</p>
+
+<pre><code>achieve.setLogging("server");
+achieve.setLogging("access");
+achieve.setLogging("server", "access");
+
+achieve.setLogging(true);  // both persistent logs
+achieve.setLogging(false); // neither persistent log</code></pre>
+
+<p>The named form is declarative: selecting only <code>"access"</code> does not enable server logging. Unknown selections and mixed boolean/name forms are rejected rather than partially applied. Logging configuration must be completed before the first call to a listener.</p>
+
+<h2>Log location and organization</h2>
+
+<p>The default log root is a <code>logs</code> directory beneath the server startup entry directory. <code>setLogPath()</code> accepts an absolute path or a path relative to that startup directory. Changing the application space does not relocate the log root.</p>
+
+<pre><code>achieve.setLogPath("./logs");
+achieve.setLogging("server", "access");</code></pre>
+
+<p>Server and access records are separated into local-date files:</p>
+
+<pre><code>logs/server/YYYY-MM-DD.log
+logs/access/YYYY-MM-DD.log</code></pre>
+
+<p>Each record begins with a local timestamp containing milliseconds and the numeric UTC offset. A new daily file is opened when the local date changes.</p>
+
+<h2>Server logs</h2>
+
+<p>The server log contains START and CONFIG records, operational warnings, and server errors. When an Error object is available, the persistent error record includes stack information. Routine development request traces are not copied into the server-event file.</p>
+
+<p>Uncaught synchronous servlet exceptions and rejected servlet promises are reported through the server-error channel when they reach Achieve's response-completion boundary. Errors in registered handlers, compression, file streaming, listener operation, and request dispatch use the same channel. Application code's own <code>console.log()</code> and <code>console.error()</code> calls are not captured automatically.</p>
+
+<h2>Access logs</h2>
+
+<p>Access logging writes one record when a response finishes or closes prematurely. A record contains the remote address, request method, received request target, final status code, elapsed time in milliseconds, and a completion state of <code>complete</code> or <code>aborted</code>.</p>
+
+<pre><code>remote="127.0.0.1" method="GET" target="/report.htm"
+status=200 elapsed=1.427ms state=complete</code></pre>
+
+<p>Quoted values escape backslashes, quotation marks, and control characters so a request value cannot create a second physical record. Access records are not printed to the console or mixed into the server log. The same record form is used in development and production and for requests accepted through Node.js HTTP/1.1 and HTTP/2 compatibility interfaces.</p>
+
+<h2>Operational behavior</h2>
+
+<p>Selected persistent sinks are initialized before the listener starts. If a directory or initial file cannot be opened, Achieve reports the failure directly and does not start the listener while claiming that the selected logging is active.</p>
+
+<p>A write failure after startup disables the affected sink and reports the failure once. Later records for that sink are dropped, while the HTTP service and an independent healthy sink remain available. Restart the process after correcting a failed destination.</p>
+
+<p>The built-in facilities provide append-only daily text files. Retention, archival, compression, aggregation, search, and application-specific audit records remain deployment or application responsibilities. Access logs can contain request targets and client addresses, so deployments should apply retention and access controls appropriate to that data.</p>
+
+<h2>Automated verification</h2>
+
+<p>The logging regression suite verifies startup reporting across HTTP, HTTPS, h2c, and secure HTTP/2; development and production console behavior; configuration validation and startup locking; daily file names and timestamps; path resolution; server/access separation; access-record fields and escaping; aborted requests; and HTTP/2 access records.</p>
+
+<p>Fault-injection cases verify initialization failures, runtime stream failures, daily rollover failures, one-time diagnostics, sink isolation, continued HTTP service after a runtime logging failure, and catchall error reporting followed by a successful request.</p>
+
+<p>See the <a href="../../reference/config.htm#setLogging">Configuration Reference</a> for the public API and <a href="https://github.com/highlevellogic/achieve/blob/master/tests/README_TESTS.txt">Achieve test documentation</a> for the stable verifier entry point.</p>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a>
+</footer>
+</body>
+</html>

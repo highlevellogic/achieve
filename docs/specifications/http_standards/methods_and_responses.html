@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dcterms.created" content="2026-11-06">
+<meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve RFC 9110 HTTP Methods and Responses for Node.js</title>
+<meta name="description" content="Achieve 3.1.0 HTTP method and response semantics on Node.js 24.22.2, including GET, HEAD, POST, OPTIONS, response completion, and status-specific content rules.">
+<style>
+body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}header img{width:100%;display:block}#friend{text-align:center;font-style:italic;font-weight:bold;color:rgb(40,200,32);border-bottom:solid blue thick;padding:0;margin:0}.navLink{display:inline-block;margin:.6em 5% .2em;color:rgb(30,80,150);font-weight:bold;text-decoration:none}.navLink:hover,.packageLink:hover{color:blue}.backArrow{margin-right:.4em}.packageLink{color:rgb(30,80,150);font-weight:bold;text-decoration:none}main{margin:2% 5% 5%}.documentInfo{color:rgb(50,70,90);font-size:.9em}code{padding:.08em .35em;border-radius:.3em;background-color:rgb(220,235,245);color:blue;font-family:Consolas,"Courier New",monospace}pre{margin:1em 0 1.4em}pre code{display:block;padding:1em;overflow:auto;white-space:pre}footer{padding:1.5% 5%;box-sizing:border-box;border-top:solid blue thick}
+</style>
+</head>
+<body>
+<header><img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern."><h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3></header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to technical specifications</a>
+<main>
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9">RFC 9110 HTTP Methods and Responses</a></h1>
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+<p><strong>Requirement levels:</strong> The applicable rules include MUST, MUST NOT, SHOULD, and MAY requirements; each is identified with its context below.</p>
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> supplies built-in handling for GET, HEAD, POST, and OPTIONS and can dispatch additional registered methods to JavaScript Servlets. Method semantics matter because they determine whether content is sent, how response metadata is calculated, and who completes the exchange.</p>
+
+<h2>Applicable requirements</h2>
+<ul>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.1">RFC 9110 §9.1</a>, a general-purpose origin server must support GET and HEAD.</li>
+<li><strong>MUST NOT / SHOULD:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.2">§9.3.2</a>, a server must not send content for HEAD and should send the same fields as GET except those determined only while generating content.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-6.2">§6.2</a>, a server must send a final response after interpreting a request unless connection closure or an error prevents completion.</li>
+<li><strong>MUST NOT:</strong> <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.6">§8.6</a> restricts Content-Length on HEAD and 304 and prohibits it on 1xx, 204, and successful 2xx CONNECT responses.</li>
+<li><strong>MUST NOT:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.6">§15.3.6</a>, a server must not generate content in a 205 response.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.6">§15.5.6</a>, an origin server generating 405 must generate an <code>Allow</code> field listing currently supported methods. The qualified Node runtime does not satisfy this for its HTTP/2 CONNECT rejection, as noted below.</li>
+</ul>
+
+<h2>Method handling</h2>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.1">GET</a> follows normal resource routing. <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.2">HEAD</a> performs the corresponding GET selection and processing but sends no response content. Achieve still invokes a servlet for HEAD so that its status and headers describe the same operation; the managed completion path suppresses the returned content.</p>
+<p>POST follows normal routing. Achieve parses supported form and JSON input for servlet use; other request content remains available as the Node.js request stream. OPTIONS is handled by Achieve and returns server or resource capabilities with an <code>Allow</code> field. Additional valid method tokens can be registered to one servlet handler per method. An unregistered method receives <code>501 Not Implemented</code>.</p>
+
+<h2>Response completion and content rules</h2>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-6.2">RFC 9110 §6.2</a> requires a server to send a final response after it receives and interprets a request unless the connection closes or an error prevents completion. Achieve completes ordinary returned servlet values and Promises, while <code>session.autoEnd = false</code> transfers normal completion responsibility to the application.</p>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.6">RFC 9110 §8.6</a> places strict conditions on <code>Content-Length</code> for HEAD, 304, informational responses, 204, and successful CONNECT. Achieve chooses whether content is permitted; Node.js serializes the selected HTTP version. For a HEAD response, any content length describes the corresponding GET representation rather than bytes sent on the wire.</p>
+<p>A servlet result of <code>null</code> or <code>undefined</code> changes the default 200 status to <code>204 No Content</code>. An empty string remains content and retains the selected status. For <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.6">205 Reset Content</a>, the server <strong>MUST NOT</strong> generate content. Achieve therefore substitutes empty content at the servlet response boundary, removes transfer coding, and selects a zero content length while preserving Node's native validation and response lifecycle behavior.</p>
+
+<h2>Application and runtime responsibility</h2>
+<p>Achieve owns servlet invocation, method dispatch, managed completion, and its generated response fields. Node.js owns HTTP/1.1 and HTTP/2 serialization and several protocol-level rejection paths. Application code remains responsible for the semantics of status codes and fields it deliberately selects, except where Achieve enforces a protocol rule on its supported response API.</p>
+<p>A qualified-runtime limitation remains for classic CONNECT over HTTP/2: Node's compatibility layer can generate <code>405 Method Not Allowed</code> without the <code>Allow</code> field that <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.6">RFC 9110 §15.5.6</a> says an origin server <strong>MUST</strong> generate. The request does not reach Achieve's compatibility request handler, so the assessed endpoint records this as a runtime-owned nonconformance.</p>
+
+<h2>Automated verification</h2>
+<p>The response-completion, request-method, registered-method, input, CONNECT, CORS, and static-resource verifiers exercise normal and error completion. Focused tests cover GET/HEAD correspondence, Promise settlement, application-owned completion, empty results, 204 and 205 content suppression, native write validation, callbacks, and connection reuse over HTTP, HTTPS, h2c, and secure HTTP/2.</p>
+<p>See <a href="https://github.com/highlevellogic/achieve/blob/master/tests/README_TESTS.txt">Achieve HTTP conformance testing</a> for the stable test-suite entry point.</p>
+
+<h2>Limits</h2>
+<p>Achieve does not implement successful CONNECT tunneling. Registered methods are global method handlers rather than URL-specific routes, and their request bodies are not automatically parsed. Direct manipulation below the supported Node response API is outside Achieve's managed completion contract.</p>
+</main>
+<footer><a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a></footer>
+</body>
+</html>

@@ -1,0 +1,1573 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Complete Achieve 3.1.0 conformance register for RFC 9110 HTTP Semantics.">
+<meta name="dcterms.created" content="2026-11-05">
+<meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve 3.1.0 RFC 9110 Conformance Register</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; color:#18283b; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,160,32); border-bottom:solid blue thick; padding:.2em; margin:0; }
+nav { padding:.7em 5%; background:#dceff8; border-bottom:1px solid #8ab3d0; }
+nav a,.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; margin-right:1.1em; }
+nav a:hover,.packageLink:hover { color:blue; text-decoration:underline; }
+main { margin:2% 5% 5%; max-width:105em; }
+h1,h2,h3 { color:#153d70; }
+.metadata,.notice { background:#eaf6fb; border-left:.35em solid #326fa8; padding:.7em 1em; margin:1em 0; }
+.notice { border-left-color:#8a6500; background:#fff7da; }
+.counts { border-collapse:collapse; margin:1em 0; }
+.counts th,.counts td { border:1px solid #7fa5bd; padding:.45em .7em; text-align:left; }
+.counts th { background:#d5eaf5; }
+.requirement { background:#edf8fc; border:1px solid #8eb3c9; border-radius:.35em; padding:.8em 1em; margin:1em 0; }
+.requirement h2 { font-size:1.15em; margin:.1em 0 .6em; }
+.requirement dl { display:grid; grid-template-columns:minmax(10em,15em) 1fr; gap:.35em .8em; margin:.5em 0; }
+.requirement dt { font-weight:bold; }
+.requirement dd { margin:0; overflow-wrap:anywhere; }
+.badge { display:inline-block; border-radius:.3em; padding:.15em .45em; font-weight:bold; }
+.conformant { background:#ccebd2; color:#174e24; }
+.nonconformant { background:#ffd2d2; color:#791b1b; }
+.unverified { background:#fff0b8; color:#684e00; }
+.not-applicable { background:#e0e0e0; color:#3d3d3d; }
+.optional-not-implemented { background:#dfd5f5; color:#4b2d72; }
+code { padding:.08em .35em; border-radius:.3em; background:#dcebf4; color:blue; font-family:Consolas,"Courier New",monospace; }
+.compact li { margin:.4em 0; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+@media (max-width:700px) { .requirement dl { display:block; } .requirement dt { margin-top:.5em; } nav a { display:inline-block; margin-bottom:.4em; } }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern.">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<nav aria-label="Specification navigation">
+<a href="index.htm">Specifications index</a>
+<a href="methodology.html">Methodology</a>
+<a href="conformance.html">Conformance summary</a>
+<a href="rfc9110.html">RFC 9110</a>
+<a href="rfc9111.html">RFC 9111</a>
+<a href="rfc9112.html">RFC 9112</a>
+<a href="rfc9113.html">RFC 9113</a>
+<a href="evidence.html">Evidence</a>
+<a href="../index.htm">Documentation home</a>
+</nav>
+<main>
+
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110 HTTP Semantics</a></h1>
+<div class="metadata"><strong>Achieve:</strong> 3.1.0<br><strong>Evaluated runtime:</strong> Node.js 24.22.2<br><strong>Assessment baseline:</strong> November 5, 2026<br><strong>Document status:</strong> Qualified release assessment</div>
+<p>This register presents all 100 authoritative V3 requirements for RFC 9110. Requirement text is a traceable summary; the linked RFC Editor section supplies the controlling normative text and conditions.</p>
+<table class="counts"><thead><tr><th>Classification</th><th>Count</th></tr></thead><tbody><tr><td><span class="badge conformant">Conformant</span></td><td>83</td></tr><tr><td><span class="badge nonconformant">Nonconformant</span></td><td>1</td></tr><tr><td><span class="badge unverified">Unverified</span></td><td>5</td></tr><tr><td><span class="badge not-applicable">Not applicable</span></td><td>8</td></tr><tr><td><span class="badge optional-not-implemented">Optional not implemented</span></td><td>3</td></tr><tr><th>Total</th><th>100</th></tr></tbody></table>
+<p><a href="conformance.html">Review the overall findings</a> · <a href="methodology.html">Read the methodology</a> · <a href="evidence.html">Inspect evidence sources</a></p>
+<article class="requirement" id="V3-9110-001">
+<h2><code>V3-9110-001</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-2.2">RFC 9110 §2.2</a></h2>
+<p><span class="badge unverified">Unverified</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A sender must not generate protocol elements that violate the corresponding ABNF.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Shared/Node/Achieve</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441; Achieve additionally validates request-target syntax and authorities before dispatch.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js exercises malformed targets, but no exhaustive field-parser/size/connection-identity corpus exists.</dd>
+<dt>Assessment rationale</dt><dd>The available source and tests do not establish every condition of this obligation; absence of a demonstrated failure is not treated as conformance.</dd>
+<dt>Open question</dt><dd>Needs a focused protocol probe or authoritative Node-version evidence covering the exact condition and transport variants.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-001</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-002">
+<h2><code>V3-9110-002</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-2.2">RFC 9110 §2.2</a></h2>
+<p><span class="badge unverified">Unverified</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A sender must not generate syntax allowed only for a role it does not have.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Shared</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441; Achieve additionally validates request-target syntax and authorities before dispatch.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js exercises malformed targets, but no exhaustive field-parser/size/connection-identity corpus exists.</dd>
+<dt>Assessment rationale</dt><dd>The available source and tests do not establish every condition of this obligation; absence of a demonstrated failure is not treated as conformance.</dd>
+<dt>Open question</dt><dd>Needs a focused protocol probe or authoritative Node-version evidence covering the exact condition and transport variants.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-002</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-003">
+<h2><code>V3-9110-003</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-2.3">RFC 9110 §2.3</a></h2>
+<p><span class="badge unverified">Unverified</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>Recipients should parse defensively with only marginal assumptions about conformance and size.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Node/shared</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441; Achieve additionally validates request-target syntax and authorities before dispatch.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js exercises malformed targets, but no exhaustive field-parser/size/connection-identity corpus exists.</dd>
+<dt>Assessment rationale</dt><dd>The available source and tests do not establish every condition of this obligation; absence of a demonstrated failure is not treated as conformance.</dd>
+<dt>Open question</dt><dd>Needs a focused protocol probe or authoritative Node-version evidence covering the exact condition and transport variants.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-003</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-004">
+<h2><code>V3-9110-004</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-2.3">RFC 9110 §2.3</a></h2>
+<p><span class="badge unverified">Unverified</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient must accept elements at least as long as values it generates for the same elements.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Node/shared</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441; Achieve additionally validates request-target syntax and authorities before dispatch.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js exercises malformed targets, but no exhaustive field-parser/size/connection-identity corpus exists.</dd>
+<dt>Assessment rationale</dt><dd>The available source and tests do not establish every condition of this obligation; absence of a demonstrated failure is not treated as conformance.</dd>
+<dt>Open question</dt><dd>Needs a focused protocol probe or authoritative Node-version evidence covering the exact condition and transport variants.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-004</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-005">
+<h2><code>V3-9110-005</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-2.4">RFC 9110 §2.4</a></h2>
+<p><span class="badge unverified">Unverified</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient must interpret received elements according to defined semantics absent a justified compatibility workaround.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Shared</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441; Achieve additionally validates request-target syntax and authorities before dispatch.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js exercises malformed targets, but no exhaustive field-parser/size/connection-identity corpus exists.</dd>
+<dt>Assessment rationale</dt><dd>The available source and tests do not establish every condition of this obligation; absence of a demonstrated failure is not treated as conformance.</dd>
+<dt>Open question</dt><dd>Needs a focused protocol probe or authoritative Node-version evidence covering the exact condition and transport variants.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-005</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-006">
+<h2><code>V3-9110-006</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-3.3">RFC 9110 §3.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A server must not assume two requests on one connection are from the same user agent unless the connection is secured and specific to it.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Achieve request dispatch; Node supplies transport objects</dd>
+<dt>Implementation evidence</dt><dd>achieve.js creates a new request Context for each dispatched request and contains no user-agent identity, authentication, or session binding derived from the transport connection.</dd>
+<dt>Test evidence</dt><dd>Batch B temporary probe sent two HTTP/1.1 keep-alive requests on one socket with User-Agent values agent-a and agent-b; distinct request contexts reported the current value. Two streams on one h2c session likewise reported distinct request contexts and current values.</dd>
+<dt>Assessment rationale</dt><dd>Source and positive controls establish per-request processing without a connection-based user-agent identity assumption. Different HTTP/2 request wrappers are a Node compatibility-API detail, not evidence of identity coupling.</dd>
+<dt>Open question</dt><dd>None for Achieve core. Applications that implement authentication remain responsible for their own identity model.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-006</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-007">
+<h2><code>V3-9110-007</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-5.1">RFC 9110 §5.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>A non-proxy recipient should ignore unrecognized header and trailer fields unless another rule applies.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>non-proxy recipient (including origin server)</dd>
+<dt>Responsible layer</dt><dd>Shared/application</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441; Achieve additionally validates request-target syntax and authorities before dispatch.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js exercises malformed targets, but no exhaustive field-parser/size/connection-identity corpus exists.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-007</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-008">
+<h2><code>V3-9110-008</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-5.3">RFC 9110 §5.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A sender must not generate duplicate field lines unless the field permits list recombination.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender</dd>
+<dt>Responsible layer</dt><dd>Achieve for core-generated fields; servlet application for application-authored fields; Node serializes</dd>
+<dt>Implementation evidence</dt><dd>Core response paths use setHeader/writeHead objects, which replace or uniquely name fields; the only appendHeader use is Vary: Origin, whose definition permits list recombination. Achieve does not synthesize duplicate non-list field lines.</dd>
+<dt>Test evidence</dt><dd>Batch B wire captures found no duplicate non-list core fields on representative HTTP/1.1 and h2c static, range, conditional, and error responses. A negative-control servlet deliberately setting an array for X-Non-List produced duplicate HTTP/1.1 lines, confirming that Node does not enforce application semantics.</dd>
+<dt>Assessment rationale</dt><dd>Achieve-generated output satisfies the sender obligation. The negative control is application-authored misuse through the general Node response API, not an Achieve-generated protocol defect.</dd>
+<dt>Open question</dt><dd>Servlet authors remain responsible for field definitions when deliberately supplying multiple values.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-008</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-009">
+<h2><code>V3-9110-009</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-5.3">RFC 9110 §5.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A server must not apply a request before receiving the complete header section.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node/shared</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441; Achieve additionally validates request-target syntax and authorities before dispatch.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js exercises malformed targets, but no exhaustive field-parser/size/connection-identity corpus exists.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-009</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-010">
+<h2><code>V3-9110-010</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-5.3">RFC 9110 §5.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MAY</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MAY combine repeated field lines with the same name only without changing message semantics, preserving their order and using comma plus optional whitespace.</dd>
+<dt>Conditions</dt><dd>Only fields whose definition permits list recombination; Set-Cookie is a known exception.</dd>
+<dt>Applicable role</dt><dd>recipient</dd>
+<dt>Responsible layer</dt><dd>Node.js/shared</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441 and exposes normalized and raw field views to Achieve.</dd>
+<dt>Test evidence</dt><dd>Batch C raw HTTP/1.1 probes on Node.js 22.15.0 observed ordered comma-SP combination of repeated Accept, semicolon-SP combination of Cookie, retention of the first Authorization value without combination, rejection of duplicate Content-Length with 400, and preservation of all original lines in rawHeaders; standalone Node produced identical results.</dd>
+<dt>Assessment rationale</dt><dd>The exercised list, special-case, non-list, and invalid framing controls show that the combinations Node performs preserve the applicable field semantics and order. Achieve does not recombine the lines independently.</dd>
+<dt>Open question</dt><dd>Bounded to Node.js 22.15.0 and the field classes exercised; newly defined field semantics remain dependent on Node parser support.</dd>
+<dt>V2 traceability</dt><dd>V2-S003</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-011">
+<h2><code>V3-9110-011</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-5.4">RFC 9110 §5.4</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server declining an oversized request field/section must respond with an appropriate 4xx rather than silently ignore it.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node/shared</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441; parser overflow is handled before Achieve dispatch.</dd>
+<dt>Test evidence</dt><dd>Batch C raw HTTP/1.1 probes on Node.js 22.15.0 sent both one 17,000-octet field value and an aggregate section of 180 individually small fields; Achieve and standalone Node returned 431 and closed rather than dispatching with omitted fields. The short-target oversized-field result independently matches rfc9112-h105-investigation.md.</dd>
+<dt>Assessment rationale</dt><dd>Both individual-field and aggregate-section refusal conditions produced an appropriate 4xx and no silent omission. The separate overlong request-target 431 defect remains recorded under RFC 9112 and does not invalidate the proper oversized-field result.</dd>
+<dt>Open question</dt><dd>Bounded to the tested Node.js 22.15.0 parser configuration.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-010</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-012">
+<h2><code>V3-9110-012</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-5.5">RFC 9110 §5.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A field parser must exclude permitted leading/trailing whitespace before evaluating the value.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node/shared</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441; Achieve additionally validates request-target syntax and authorities before dispatch.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js exercises malformed targets, but no exhaustive field-parser/size/connection-identity corpus exists.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-011</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-013">
+<h2><code>V3-9110-013</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-5.5">RFC 9110 §5.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient of CR, LF, or NUL in a field value must reject the message or replace each with SP before further processing.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Node</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441; Achieve additionally validates request-target syntax and authorities before dispatch.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js exercises malformed targets, but no exhaustive field-parser/size/connection-identity corpus exists.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-012</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-014">
+<h2><code>V3-9110-014</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-5.6.7">RFC 9110 §5.6.7</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A timestamp parser must accept IMF-fixdate and both obsolete HTTP-date forms.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Achieve/Node</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441; Achieve additionally validates request-target syntax and authorities before dispatch.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js exercises malformed targets, but no exhaustive field-parser/size/connection-identity corpus exists.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-013</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-015">
+<h2><code>V3-9110-015</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-5.6.7">RFC 9110 §5.6.7</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A sender must generate HTTP-date timestamps in IMF-fixdate form.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Shared</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441; Achieve additionally validates request-target syntax and authorities before dispatch.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js exercises malformed targets, but no exhaustive field-parser/size/connection-identity corpus exists.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-014</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-016">
+<h2><code>V3-9110-016</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-5.6.7">RFC 9110 §5.6.7</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient must interpret an rfc850 two-digit year apparently over 50 years in the future as the most recent matching past year.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Achieve/Node</dd>
+<dt>Implementation evidence</dt><dd>Node parses request fields before achieveApp at achieve.js:1407-1441; Achieve additionally validates request-target syntax and authorities before dispatch.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js exercises malformed targets, but no exhaustive field-parser/size/connection-identity corpus exists.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-015</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-017">
+<h2><code>V3-9110-017</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-6.2">RFC 9110 §6.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST send a final response after receiving and interpreting a request unless the connection is closed or an error prevents completion.</dd>
+<dt>Conditions</dt><dd>Protocol-specific framing, connection errors, and request aborts can terminate the exchange instead.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>shared</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:661-735, achieve.js:1663-1674, and achieve.js:2408-2471 cover normal and exceptional Achieve-managed completion.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:133-242, tests/servlet_startup_errors/verify.js, and tests/promise_servlets/verify.js cover completion and failure paths.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-S005</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-018">
+<h2><code>V3-9110-018</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-6.5.1">RFC 9110 §6.5.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A sender must not generate a trailer unless the field definition permits trailers.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender</dd>
+<dt>Responsible layer</dt><dd>Achieve for core output; servlet application for application-authored trailers</dd>
+<dt>Implementation evidence</dt><dd>No Achieve core response path calls addTrailers or sendTrailers; core responses therefore generate no trailer fields. Servlets receive the Node response object and can author trailers independently.</dd>
+<dt>Test evidence</dt><dd>Source-wide search found no core trailer-generation call. Batch B ordinary HTTP/1.1 and h2c responses contained no response trailers; request-trailer controls do not change the sender finding.</dd>
+<dt>Assessment rationale</dt><dd>Achieve core cannot generate a prohibited trailer because it generates no trailers. A servlet that explicitly adds trailers is responsible for knowing the field definition.</dd>
+<dt>Open question</dt><dd>None for Achieve-generated output.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-016</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-019">
+<h2><code>V3-9110-019</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-6.5.1">RFC 9110 §6.5.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient must not merge trailers into headers unless the definition explicitly permits and defines safe merging.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>recipient</dd>
+<dt>Responsible layer</dt><dd>Node request parser and compatibility API; Achieve preserves the request object</dd>
+<dt>Implementation evidence</dt><dd>Achieve passes Node's request object to each servlet as session.request and does not merge request.trailers into request.headers.</dd>
+<dt>Test evidence</dt><dd>Batch B sent X-Batch-Trailer: tail-value after buffered JSON input over chunked HTTP/1.1 and h2c trailing HEADERS. In both protocols the servlet observed the value only in trailers/rawTrailers and not in headers.</dd>
+<dt>Assessment rationale</dt><dd>Positive trailer controls directly establish separation from the header section across HTTP/1.1 and HTTP/2.</dd>
+<dt>Open question</dt><dd>None for the tested supported transports.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-017</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-020">
+<h2><code>V3-9110-020</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-6.5.1">RFC 9110 §6.5.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A server should not put information essential to the user agent only in trailers.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Achieve for core output; servlet application for application-authored trailers</dd>
+<dt>Implementation evidence</dt><dd>Achieve core generates no trailers and therefore cannot place information essential to the user agent only in a trailer. Servlet-authored trailer semantics are application responsibility.</dd>
+<dt>Test evidence</dt><dd>Source-wide search found no addTrailers/sendTrailers call in Achieve core; representative Batch B responses contained no response trailers.</dd>
+<dt>Assessment rationale</dt><dd>The core follows the recommendation by not generating trailers at all. Application-authored content does not establish a core violation.</dd>
+<dt>Open question</dt><dd>None for Achieve-generated responses.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-018</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-021">
+<h2><code>V3-9110-021</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-7.2">RFC 9110 §7.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An HTTP/1.1 origin server receiving no Host field MUST respond 400.</dd>
+<dt>Conditions</dt><dd>HTTP/1.1 request lacks Host.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve/Node.js</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1098-1143 and achieve.js:1407-1433 validate request targets/authority before dispatch; Node owns HTTP/1 field parsing.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js:57-101; all 560 request-target checks passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-X001</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-022">
+<h2><code>V3-9110-022</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-7.2">RFC 9110 §7.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An HTTP/1.1 origin server receiving more than one Host field MUST respond 400.</dd>
+<dt>Conditions</dt><dd>More than one Host field line or combined Host value.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve/Node.js</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1098-1143 and achieve.js:1407-1433 validate request targets/authority before dispatch; Node owns HTTP/1 field parsing.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js:57-101; all 560 request-target checks passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-X002</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-023">
+<h2><code>V3-9110-023</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-7.2">RFC 9110 §7.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An HTTP/1.1 origin server receiving an invalid Host field MUST respond 400.</dd>
+<dt>Conditions</dt><dd>Host does not conform to authority syntax required for the request.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve/Node.js</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1098-1143 and achieve.js:1407-1433 validate request targets/authority before dispatch; Node owns HTTP/1 field parsing.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js:57-101; all 560 request-target checks passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-X003</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-024">
+<h2><code>V3-9110-024</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.3">RFC 9110 §8.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>A sender that generates content SHOULD generate Content-Type unless the intended media type is unknown.</dd>
+<dt>Conditions</dt><dd>Exception when the intended media type is unknown.</dd>
+<dt>Applicable role</dt><dd>sender</dd>
+<dt>Responsible layer</dt><dd>Achieve/application</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1650-1661 maps media types; achieve.js:2057-2070 emits Vary and Content-Encoding; achieve.js:2242-2287 performs content-coding negotiation.</dd>
+<dt>Test evidence</dt><dd>tests/compression/verify.js:184-245 and tests/conditional/verify.js:138-155; existing checks cover coding selection, exclusion, Content-Encoding, and Vary.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S011</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-025">
+<h2><code>V3-9110-025</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.4.1">RFC 9110 §8.4.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A sender applying a content coding MUST list it in Content-Encoding in application order.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1650-1661 maps media types; achieve.js:2057-2070 emits Vary and Content-Encoding; achieve.js:2242-2287 performs content-coding negotiation.</dd>
+<dt>Test evidence</dt><dd>tests/compression/verify.js:184-245 and tests/conditional/verify.js:138-155; existing checks cover coding selection, exclusion, Content-Encoding, and Vary.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S012</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-026">
+<h2><code>V3-9110-026</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.6">RFC 9110 §8.6</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST NOT send Content-Length on HEAD unless it equals the octet count that would have been sent for the corresponding GET.</dd>
+<dt>Conditions</dt><dd>Conditional permission to send Content-Length on HEAD.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>shared</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:970-980 carries a no-body flag for HEAD; achieve.js:1663-1673, achieve.js:2415-2443, and achieve.js:2844-2866 complete responses without bodies where Achieve owns completion; Node enforces protocol framing.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:133-242 and tests/static_dates/verify.js:82-98; focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-S015</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-027">
+<h2><code>V3-9110-027</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.6">RFC 9110 §8.6</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST NOT send Content-Length on 304 unless it equals the content length of the corresponding 200 response.</dd>
+<dt>Conditions</dt><dd>Conditional permission to send Content-Length on 304.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>shared</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:970-980 carries a no-body flag for HEAD; achieve.js:1663-1673, achieve.js:2415-2443, and achieve.js:2844-2866 complete responses without bodies where Achieve owns completion; Node enforces protocol framing.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:133-242 and tests/static_dates/verify.js:82-98; focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-S016</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-028">
+<h2><code>V3-9110-028</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.6">RFC 9110 §8.6</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST NOT send Content-Length in a 1xx response.</dd>
+<dt>Conditions</dt><dd>Any informational response.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js/shared</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:970-980 carries a no-body flag for HEAD; achieve.js:1663-1673, achieve.js:2415-2443, and achieve.js:2844-2866 complete responses without bodies where Achieve owns completion; Node enforces protocol framing.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:133-242 and tests/static_dates/verify.js:82-98; focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-X004</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-029">
+<h2><code>V3-9110-029</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.6">RFC 9110 §8.6</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST NOT send Content-Length in a 204 response.</dd>
+<dt>Conditions</dt><dd>Any 204 response.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js/shared</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:970-980 carries a no-body flag for HEAD; achieve.js:1663-1673, achieve.js:2415-2443, and achieve.js:2844-2866 complete responses without bodies where Achieve owns completion; Node enforces protocol framing.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:133-242 and tests/static_dates/verify.js:82-98; focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-X005</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-030">
+<h2><code>V3-9110-030</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.6">RFC 9110 §8.6</a></h2>
+<p><span class="badge optional-not-implemented">Optional not implemented</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST NOT send Content-Length in a successful 2xx response to CONNECT.</dd>
+<dt>Conditions</dt><dd>Successful CONNECT only.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js/shared</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1052-1073 and achieve.js:1267-1342 validate authority-form CONNECT and implement only rejection/error responses, not successful tunneling.</dd>
+<dt>Test evidence</dt><dd>tests/connect/verify.js:140-288; focused CONNECT suite passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>The referenced capability is optional and Achieve does not implement the triggering successful/optional behavior.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X006</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-031">
+<h2><code>V3-9110-031</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.1">RFC 9110 §8.8.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>A strong validator changes whenever representation data observable in a 200 response changes.</dd>
+<dt>Conditions</dt><dd>This is the defining property of a strong validator, not an explicit BCP 14 keyword.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1711-1720 constructs representation-specific strong tags; achieve.js:1770-1807 generates/clamps dates and parses all three HTTP-date forms; achieve.js:2077-2126 uses the opened representation metadata.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S017</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-032">
+<h2><code>V3-9110-032</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.1">RFC 9110 §8.8.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>A validator shared by representations with different representation data is weak; content-coded and identity data therefore require distinct strong validators when their bytes differ.</dd>
+<dt>Conditions</dt><dd>Representations may share a strong validator only when their representation data are identical.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve/application</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1711-1720 constructs representation-specific strong tags; achieve.js:1770-1807 generates/clamps dates and parses all three HTTP-date forms; achieve.js:2077-2126 uses the opened representation metadata.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S023</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-033">
+<h2><code>V3-9110-033</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.2.1">RFC 9110 §8.8.2.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>The origin server should obtain Last-Modified as close as possible to Date generation.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1711-1720 constructs representation-specific strong tags; achieve.js:1770-1807 generates/clamps dates and parses all three HTTP-date forms; achieve.js:2077-2126 uses the opened representation metadata.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-019</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-034">
+<h2><code>V3-9110-034</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.2.1">RFC 9110 §8.8.2.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A future implementation-derived Last-Modified value must be replaced with message origination Date.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1711-1720 constructs representation-specific strong tags; achieve.js:1770-1807 generates/clamps dates and parses all three HTTP-date forms; achieve.js:2077-2126 uses the opened representation metadata.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-020</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-035">
+<h2><code>V3-9110-035</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.2.1">RFC 9110 §8.8.2.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server SHOULD send Last-Modified when a modification date can be reasonably and consistently determined.</dd>
+<dt>Conditions</dt><dd>Only for selected representations with a reasonably and consistently determinable modification date.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve/application</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1711-1720 constructs representation-specific strong tags; achieve.js:1770-1807 generates/clamps dates and parses all three HTTP-date forms; achieve.js:2077-2126 uses the opened representation metadata.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S019</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-036">
+<h2><code>V3-9110-036</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3">RFC 9110 §8.8.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server should send ETag where changes can be reasonably and consistently detected.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1711-1720 constructs representation-specific strong tags; achieve.js:1770-1807 generates/clamps dates and parses all three HTTP-date forms; achieve.js:2077-2126 uses the opened representation metadata.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-021</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-037">
+<h2><code>V3-9110-037</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3">RFC 9110 §8.8.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>An entity tag has the grammar entity-tag = [ weak ] opaque-tag, with opaque-tag enclosed in DQUOTE.</dd>
+<dt>Conditions</dt><dd>Senders must generate grammar-conforming entity tags.</dd>
+<dt>Applicable role</dt><dd>sender</dd>
+<dt>Responsible layer</dt><dd>Achieve/application</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1711-1720 constructs representation-specific strong tags; achieve.js:1770-1807 generates/clamps dates and parses all three HTTP-date forms; achieve.js:2077-2126 uses the opened representation metadata.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S021</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-038">
+<h2><code>V3-9110-038</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3">RFC 9110 §8.8.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A validator that is not strong MUST be marked weak with W/.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1711-1720 constructs representation-specific strong tags; achieve.js:1770-1807 generates/clamps dates and parses all three HTTP-date forms; achieve.js:2077-2126 uses the opened representation metadata.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S022</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-039">
+<h2><code>V3-9110-039</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.1">RFC 9110 §9.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>All general-purpose origin servers MUST support GET and HEAD.</dd>
+<dt>Conditions</dt><dd>Applies to general-purpose origin servers.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:944-980 and achieve.js:1011-1049 provide GET and HEAD dispatch paths.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:133-242 and tests/request_methods/verify.js provide GET/HEAD request coverage.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S026</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-040">
+<h2><code>V3-9110-040</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.2.1">RFC 9110 §9.2.1</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> SHOULD NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A client SHOULD NOT automatically retry a non-idempotent request without knowing it was not applied.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>client</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>Relevant request dispatch and response handling are in achieve.js:944-1049 and achieve.js:1407-1441; no more specific core enforcement was identified.</dd>
+<dt>Test evidence</dt><dd>No focused test establishing this complete obligation was identified.</dd>
+<dt>Assessment rationale</dt><dd>The obligation is conditional on a role, status, or feature that Achieve core does not exercise in its supported origin-server behavior.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S024</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-041">
+<h2><code>V3-9110-041</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.2">RFC 9110 §9.3.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST NOT send content in a HEAD response.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Shared</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:970-980 carries a no-body flag for HEAD; achieve.js:1663-1673, achieve.js:2415-2443, and achieve.js:2844-2866 complete responses without bodies where Achieve owns completion; Node enforces protocol framing.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:133-242 and tests/static_dates/verify.js:82-98; focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-S027</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-042">
+<h2><code>V3-9110-042</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.2">RFC 9110 §9.3.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>HEAD SHOULD send the same header fields as GET except fields determined only while generating content.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:970-980 carries a no-body flag for HEAD; achieve.js:1663-1673, achieve.js:2415-2443, and achieve.js:2844-2866 complete responses without bodies where Achieve owns completion; Node enforces protocol framing.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:133-242 and tests/static_dates/verify.js:82-98; focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S028</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-043">
+<h2><code>V3-9110-043</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.6">RFC 9110 §9.3.6</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST reject a CONNECT request whose target is not valid authority-form, including an empty or invalid port, with 400.</dd>
+<dt>Conditions</dt><dd>Classic CONNECT; extended CONNECT has separate HTTP/2 rules.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Achieve/Node.js</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1052-1073 and achieve.js:1267-1342 validate authority-form CONNECT and implement only rejection/error responses, not successful tunneling.</dd>
+<dt>Test evidence</dt><dd>tests/connect/verify.js:140-288; focused CONNECT suite passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-S030</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-044">
+<h2><code>V3-9110-044</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.6">RFC 9110 §9.3.6</a></h2>
+<p><span class="badge optional-not-implemented">Optional not implemented</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST NOT send Transfer-Encoding or Content-Length in a successful 2xx CONNECT response.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1052-1073 and achieve.js:1267-1342 validate authority-form CONNECT and implement only rejection/error responses, not successful tunneling.</dd>
+<dt>Test evidence</dt><dd>tests/connect/verify.js:140-288; focused CONNECT suite passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>The referenced capability is optional and Achieve does not implement the triggering successful/optional behavior.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S031</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-045">
+<h2><code>V3-9110-045</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.7">RFC 9110 §9.3.7</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A client MUST NOT send content in TRACE.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>client</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>Relevant request dispatch and response handling are in achieve.js:944-1049 and achieve.js:1407-1441; no more specific core enforcement was identified.</dd>
+<dt>Test evidence</dt><dd>No focused test establishing this complete obligation was identified.</dd>
+<dt>Assessment rationale</dt><dd>The obligation is conditional on a role, status, or feature that Achieve core does not exercise in its supported origin-server behavior.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S032</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-046">
+<h2><code>V3-9110-046</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-10.1.1">RFC 9110 §10.1.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>For a qualifying HTTP/1.1 100-continue request, an origin server must send either 100 Continue or a final response.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Node/shared</dd>
+<dt>Implementation evidence</dt><dd>Achieve creates Node HTTP/1.1 servers with a request listener at achieve.js:1559-1591 and installs no checkContinue or checkExpectation override, so Node owns the interim/default expectation boundary.</dd>
+<dt>Test evidence</dt><dd>A Batch C raw TCP probe withheld the four-octet request content after complete qualifying HTTP/1.1 headers and observed an exact HTTP/1.1 100 Continue response, followed by 200 after content delivery. Unsupported Expect produced final 417; an HTTP/1.0 control emitted no 100. Standalone Node matched Achieve.</dd>
+<dt>Assessment rationale</dt><dd>The qualifying request received one of the two required immediate alternatives. Positive and negative controls establish that the result was expectation processing rather than an ordinary response artifact.</dd>
+<dt>Open question</dt><dd>Bounded to the tested Node.js 22.15.0 HTTP/1.1 endpoint.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-022</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-047">
+<h2><code>V3-9110-047</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-10.1.1">RFC 9110 §10.1.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>The origin server must not wait for request content before sending the 100 response.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Node/shared</dd>
+<dt>Implementation evidence</dt><dd>Achieve creates Node HTTP/1.1 servers with a request listener at achieve.js:1559-1591 and installs no checkContinue override.</dd>
+<dt>Test evidence</dt><dd>The Batch C raw TCP client sent complete qualifying headers but withheld all request content. Achieve returned the complete 100 Continue response in 1 ms; only then did the probe transmit DATA and receive final 200. Standalone Node behaved identically.</dd>
+<dt>Assessment rationale</dt><dd>The wire ordering directly establishes that the endpoint did not wait for request content before sending 100 Continue.</dd>
+<dt>Open question</dt><dd>Timing is an observed local bound, not a universal latency guarantee; the protocol ordering is the material evidence.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-023</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-048">
+<h2><code>V3-9110-048</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-10.2.1">RFC 9110 §10.2.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server with a clock MUST generate Date in 2xx responses.</dd>
+<dt>Conditions</dt><dd>Origin server has a clock.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Node.js/shared</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1770-1777 explicitly sets Date for filesystem responses; other response Date generation is delegated to Node HTTP servers created at achieve.js:1463-1512 and achieve.js:1515-1591.</dd>
+<dt>Test evidence</dt><dd>tests/static_dates/verify.js:82-108 verifies Date for static successes; no focused all-status/no-clock matrix exists.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-X007</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-049">
+<h2><code>V3-9110-049</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-10.2.1">RFC 9110 §10.2.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server with a clock MUST generate Date in 3xx responses.</dd>
+<dt>Conditions</dt><dd>Origin server has a clock.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Node.js/shared</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1770-1777 explicitly sets Date for filesystem responses; other response Date generation is delegated to Node HTTP servers created at achieve.js:1463-1512 and achieve.js:1515-1591.</dd>
+<dt>Test evidence</dt><dd>tests/static_dates/verify.js:82-108 verifies Date for static successes; no focused all-status/no-clock matrix exists.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-X008</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-050">
+<h2><code>V3-9110-050</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-10.2.1">RFC 9110 §10.2.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server with a clock MUST generate Date in 4xx responses.</dd>
+<dt>Conditions</dt><dd>Origin server has a clock.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Node.js/shared</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1770-1777 explicitly sets Date for filesystem responses; other response Date generation is delegated to Node HTTP servers created at achieve.js:1463-1512 and achieve.js:1515-1591.</dd>
+<dt>Test evidence</dt><dd>tests/static_dates/verify.js:82-108 verifies Date for static successes; no focused all-status/no-clock matrix exists.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to the supported Node 22 runtime and tested transports.</dd>
+<dt>V2 traceability</dt><dd>V2-X009</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-051">
+<h2><code>V3-9110-051</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-10.2.1">RFC 9110 §10.2.1</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server without a clock MUST NOT generate Date.</dd>
+<dt>Conditions</dt><dd>Origin server lacks a clock.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Node.js/shared</dd>
+<dt>Implementation evidence</dt><dd>The assessed Achieve 3.0.6 endpoint runs on Node.js 22.15.0 with a usable system clock; achieve.js:1768-1777 uses that clock for static-response Date and Node generates Date on other ordinary HTTP responses.</dd>
+<dt>Test evidence</dt><dd>tests/static_dates/verify.js:82-108 validates clock-backed Date behavior. The Batch C environment had a functioning clock; no representative clockless Node configuration exists in the supported endpoint.</dd>
+<dt>Assessment rationale</dt><dd>The RFC prohibition is conditional on the origin server lacking a clock. That condition is false for the assessed configuration, so ordinary Date generation neither exercises nor violates this requirement.</dd>
+<dt>Open question</dt><dd>Reassess only if Achieve supports an environment in which Node has no usable clock; replacing Date in a test would not establish such a platform condition.</dd>
+<dt>V2 traceability</dt><dd>V2-X010</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-052">
+<h2><code>V3-9110-052</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-11.6.1">RFC 9110 §11.6.1</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server generating a 401 response MUST send at least one WWW-Authenticate challenge.</dd>
+<dt>Conditions</dt><dd>Every generated 401 response.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Servlet application when it selects 401; Achieve core does not generate 401</dd>
+<dt>Implementation evidence</dt><dd>No Achieve core response path selects status 401. Servlets receive the Node response object and are responsible for pairing an application-selected 401 with an applicable WWW-Authenticate challenge.</dd>
+<dt>Test evidence</dt><dd>Source search found no core 401 generation or authentication challenge path. No artificial servlet omission is treated as an Achieve-core failure.</dd>
+<dt>Assessment rationale</dt><dd>The conditional obligation is not reached by Achieve core. It applies to an application that chooses to generate a 401 response.</dd>
+<dt>Open question</dt><dd>None for Achieve core; application conformance depends on the deployed servlet.</dd>
+<dt>V2 traceability</dt><dd>V2-S036</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-053">
+<h2><code>V3-9110-053</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-12.5.3">RFC 9110 §12.5.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>If no acceptable coding is available, the origin server should send identity unless identity is unacceptable.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1650-1661 maps media types; achieve.js:2057-2070 emits Vary and Content-Encoding; achieve.js:2242-2287 performs content-coding negotiation.</dd>
+<dt>Test evidence</dt><dd>tests/compression/verify.js:184-245 and tests/conditional/verify.js:138-155; existing checks cover coding selection, exclusion, Content-Encoding, and Vary.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-024</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-054">
+<h2><code>V3-9110-054</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-12.5.5">RFC 9110 §12.5.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server SHOULD generate Vary on a cacheable response intended for selective reuse based on request fields.</dd>
+<dt>Conditions</dt><dd>When selective reuse depends on request fields; omission can be intentional when revalidation is always desired.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve/application</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1650-1661 maps media types; achieve.js:2057-2070 emits Vary and Content-Encoding; achieve.js:2242-2287 performs content-coding negotiation.</dd>
+<dt>Test evidence</dt><dd>tests/compression/verify.js:184-245 and tests/conditional/verify.js:138-155; existing checks cover coding selection, exclusion, Content-Encoding, and Vary.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S037</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-055">
+<h2><code>V3-9110-055</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-12.5.5">RFC 9110 §12.5.5</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A proxy MUST NOT generate Vary with the value &quot;*&quot;.</dd>
+<dt>Conditions</dt><dd>Proxy-only generation rule.</dd>
+<dt>Applicable role</dt><dd>proxy</dd>
+<dt>Responsible layer</dt><dd>external</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:573 appends Vary for origin-sensitive CORS and achieve.js:2057 emits Vary: Accept-Encoding for negotiated static representations.</dd>
+<dt>Test evidence</dt><dd>No focused test establishing this complete obligation was identified.</dd>
+<dt>Assessment rationale</dt><dd>The obligation is conditional on a role, status, or feature that Achieve core does not exercise in its supported origin-server behavior.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S038</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-056">
+<h2><code>V3-9110-056</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.1">RFC 9110 §13.1.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server receiving If-Match MUST evaluate it before performing the method.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S039</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-057">
+<h2><code>V3-9110-057</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.1">RFC 9110 §13.1.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>If If-Match evaluates false, the origin server MUST NOT perform the requested method.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S040</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-058">
+<h2><code>V3-9110-058</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.2">RFC 9110 §13.1.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server receiving If-None-Match MUST evaluate it before performing the method.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S041</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-059">
+<h2><code>V3-9110-059</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.2">RFC 9110 §13.1.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>False If-None-Match MUST produce 304 for GET/HEAD or 412 for other methods.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S042</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-060">
+<h2><code>V3-9110-060</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.3">RFC 9110 §13.1.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server MUST ignore If-Modified-Since when If-None-Match is present.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S043</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-061">
+<h2><code>V3-9110-061</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.3">RFC 9110 §13.1.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MUST ignore If-Modified-Since when If-None-Match is present.</dd>
+<dt>Conditions</dt><dd>Both fields present.</dd>
+<dt>Applicable role</dt><dd>origin server/cache</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X011</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-062">
+<h2><code>V3-9110-062</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.3">RFC 9110 §13.1.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MUST ignore If-Modified-Since when the value is invalid or has more than one member.</dd>
+<dt>Conditions</dt><dd>Invalid/list date.</dd>
+<dt>Applicable role</dt><dd>origin server/cache</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X012</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-063">
+<h2><code>V3-9110-063</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.3">RFC 9110 §13.1.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MUST ignore If-Modified-Since for methods other than GET and HEAD.</dd>
+<dt>Conditions</dt><dd>Non-GET/HEAD request.</dd>
+<dt>Applicable role</dt><dd>origin server/cache</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X013</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-064">
+<h2><code>V3-9110-064</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.3">RFC 9110 §13.1.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MUST ignore If-Modified-Since when no modification date is available.</dd>
+<dt>Conditions</dt><dd>Selected representation lacks modification date.</dd>
+<dt>Applicable role</dt><dd>origin server/cache</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X014</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-065">
+<h2><code>V3-9110-065</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.3">RFC 9110 §13.1.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server SHOULD evaluate a valid applicable If-Modified-Since before performing the method.</dd>
+<dt>Conditions</dt><dd>No If-None-Match; request selects representation.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X015</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-066">
+<h2><code>V3-9110-066</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.3">RFC 9110 §13.1.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD NOT</p>
+<dl>
+<dt>Requirement</dt><dd>When evaluated If-Modified-Since is false, the origin server SHOULD NOT perform the method.</dd>
+<dt>Conditions</dt><dd>Condition evaluates false.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X016</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-067">
+<h2><code>V3-9110-067</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.3">RFC 9110 §13.1.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>When evaluated If-Modified-Since is false, the origin server SHOULD generate 304 with useful cache metadata.</dd>
+<dt>Conditions</dt><dd>GET or HEAD condition evaluates false.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X017</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-068">
+<h2><code>V3-9110-068</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.4">RFC 9110 §13.1.4</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>If valid If-Unmodified-Since is false, the origin server MUST NOT perform the method.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S047</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-069">
+<h2><code>V3-9110-069</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.4">RFC 9110 §13.1.4</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MUST ignore If-Unmodified-Since when If-Match is present.</dd>
+<dt>Conditions</dt><dd>Both fields present.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X018</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-070">
+<h2><code>V3-9110-070</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.4">RFC 9110 §13.1.4</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MUST ignore If-Unmodified-Since when its value is invalid or appears to be a list.</dd>
+<dt>Conditions</dt><dd>Invalid/list date.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X019</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-071">
+<h2><code>V3-9110-071</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.4">RFC 9110 §13.1.4</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MUST ignore If-Unmodified-Since when no modification date is available.</dd>
+<dt>Conditions</dt><dd>Selected representation lacks modification date.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X020</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-072">
+<h2><code>V3-9110-072</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.5">RFC 9110 §13.1.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server receiving If-Range on a Range request MUST evaluate it before performing the method.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S048</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-073">
+<h2><code>V3-9110-073</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.5">RFC 9110 §13.1.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>During mandatory If-Range evaluation, a date-form condition is true only when the date is a strong validator under §8.8.2.2 and exactly matches Last-Modified.</dd>
+<dt>Conditions</dt><dd>A non-strong date or any non-exact match is false.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S049</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-074">
+<h2><code>V3-9110-074</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.5">RFC 9110 §13.1.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MUST ignore Range when If-Range evaluates false.</dd>
+<dt>Conditions</dt><dd>If-Range false.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X021</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-075">
+<h2><code>V3-9110-075</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.5">RFC 9110 §13.1.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient SHOULD process Range when If-Range evaluates true.</dd>
+<dt>Conditions</dt><dd>If-Range true.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X022</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-076">
+<h2><code>V3-9110-076</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.2.1">RFC 9110 §13.2.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MUST ignore preconditions when the normal response would not be 2xx or 412.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S051</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-077">
+<h2><code>V3-9110-077</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.2.1">RFC 9110 §13.2.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST ignore conditional fields for methods whose selection is not conditional, including CONNECT, OPTIONS, and TRACE.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S052</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-078">
+<h2><code>V3-9110-078</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.2.2">RFC 9110 §13.2.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>Preconditions MUST be evaluated in the specified order: If-Match, If-Unmodified-Since, If-None-Match, If-Modified-Since, then If-Range.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1705-1766 parses/compares entity tags; achieve.js:1809-1855 evaluates preconditions; achieve.js:3100-3139 evaluates If-Range and Range for media.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S053</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-079">
+<h2><code>V3-9110-079</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-14.2">RFC 9110 §14.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST ignore a Range field with an unknown range unit.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:3008-3087 parses byte ranges; achieve.js:3132-3204 selects full/206/400/416 behavior and emits Content-Range and lengths.</dd>
+<dt>Test evidence</dt><dd>tests/byte_ranges/verify.js:92-143 and tests/conditional/verify.js:223-248; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S054</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-080">
+<h2><code>V3-9110-080</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-14.2">RFC 9110 §14.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST ignore Range on a request method for which range handling is not defined.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:3008-3087 parses byte ranges; achieve.js:3132-3204 selects full/206/400/416 behavior and emits Content-Range and lengths.</dd>
+<dt>Test evidence</dt><dd>tests/byte_ranges/verify.js:92-143 and tests/conditional/verify.js:223-248; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S055</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-081">
+<h2><code>V3-9110-081</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-14.2">RFC 9110 §14.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server that supports a range unit SHOULD send 206 for a satisfiable Range request.</dd>
+<dt>Conditions</dt><dd>Applicable Range request is satisfiable.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:3008-3087 parses byte ranges; achieve.js:3132-3204 selects full/206/400/416 behavior and emits Content-Range and lengths.</dd>
+<dt>Test evidence</dt><dd>tests/byte_ranges/verify.js:92-143 and tests/conditional/verify.js:223-248; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X023</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-082">
+<h2><code>V3-9110-082</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-14.2">RFC 9110 §14.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server SHOULD send 416 for an unsatisfiable applicable Range request.</dd>
+<dt>Conditions</dt><dd>No requested range is satisfiable.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:3008-3087 parses byte ranges; achieve.js:3132-3204 selects full/206/400/416 behavior and emits Content-Range and lengths.</dd>
+<dt>Test evidence</dt><dd>tests/byte_ranges/verify.js:92-143 and tests/conditional/verify.js:223-248; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X024</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-083">
+<h2><code>V3-9110-083</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-14.2">RFC 9110 §14.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MAY</p>
+<dl>
+<dt>Requirement</dt><dd>A server MAY ignore or reject a Range field containing invalid range syntax.</dd>
+<dt>Conditions</dt><dd>Invalid range-set syntax.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:3008-3087 parses byte ranges; achieve.js:3132-3204 selects full/206/400/416 behavior and emits Content-Range and lengths.</dd>
+<dt>Test evidence</dt><dd>tests/byte_ranges/verify.js:92-143 and tests/conditional/verify.js:223-248; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X025</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-084">
+<h2><code>V3-9110-084</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-14.2">RFC 9110 §14.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MAY</p>
+<dl>
+<dt>Requirement</dt><dd>A server MAY ignore or reject a Range request containing excessive or overlapping ranges indicating abuse.</dd>
+<dt>Conditions</dt><dd>Potential denial-of-service range set.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:3008-3087 parses byte ranges; achieve.js:3132-3204 selects full/206/400/416 behavior and emits Content-Range and lengths.</dd>
+<dt>Test evidence</dt><dd>tests/byte_ranges/verify.js:92-143 and tests/conditional/verify.js:223-248; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X026</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-085">
+<h2><code>V3-9110-085</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-14.4">RFC 9110 §14.4</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>A 416 response to a byte-range request SHOULD send Content-Range with the current complete length.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:3008-3087 parses byte ranges; achieve.js:3132-3204 selects full/206/400/416 behavior and emits Content-Range and lengths.</dd>
+<dt>Test evidence</dt><dd>tests/byte_ranges/verify.js:92-143 and tests/conditional/verify.js:223-248; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S058</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-086">
+<h2><code>V3-9110-086</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.6">RFC 9110 §15.3.6</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A server must not generate content in a 205 response.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Achieve servlet response boundary and Node.js HTTP serializers</dd>
+<dt>Implementation evidence</dt><dd>achieve.js invokeServlet wraps the exposed response write, end, writeHead, and flushHeaders paths. For status 205 it removes Transfer-Encoding, sets Content-Length to 0, replaces supported content with an empty value, and still invokes Node's native methods. Unsupported chunks pass unchanged to Node for validation.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js exercises managed string, Buffer, Uint8Array, and Promise results; application-owned write/end/writeHead/flushHeaders; invalid chunks; writes after end and destruction; callback ordering; header overloads; and connection reuse over HTTP, HTTPS, h2c, and secure HTTP/2. The focused verifier and all 37 aggregate suites pass on Node.js 22.15.0.</dd>
+<dt>Assessment rationale</dt><dd>All supported tested servlet response paths preserve status 205 while transmitting no content, no Transfer-Encoding, and Content-Length 0. Native validation, lifecycle errors, callback results, and transport distinctions are preserved by invoking the original Node response methods.</dd>
+<dt>Open question</dt><dd>Lower-level direct socket or HTTP/2 stream manipulation is outside the supported servlet response API and was not treated as an application response path.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-030</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-087">
+<h2><code>V3-9110-087</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.7">RFC 9110 §15.3.7</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A 206 sender must include Date, Cache-Control, ETag, Expires, Content-Location, and Vary when each would appear on the corresponding 200.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Achieve static/media response generation; Node serializes</dd>
+<dt>Implementation evidence</dt><dd>The static/media path sets Date and ETag before range selection and applies the same relevant metadata to 200 and 206 responses; fields not generated on 200 are not conditionally required on 206.</dd>
+<dt>Test evidence</dt><dd>Batch B paired 200 and ordinary/If-Range 206 responses over HTTP/1.1 and h2c. Date and ETag appeared on all; Cache-Control, Expires, Content-Location, and Vary were absent from both corresponding 200 and 206 responses.</dd>
+<dt>Assessment rationale</dt><dd>Every field in the section 15.3.7 mandatory list that appeared on the corresponding 200 also appeared on each 206 in both tested protocols.</dd>
+<dt>Open question</dt><dd>None for the tested static identity representation.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-025</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-088">
+<h2><code>V3-9110-088</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.7">RFC 9110 §15.3.7</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD NOT</p>
+<dl>
+<dt>Requirement</dt><dd>For 206 responding to If-Range, the sender should not repeat unnecessary representation fields beyond the required set.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Achieve static/media response generation</dd>
+<dt>Implementation evidence</dt><dd>After If-Range evaluation and range parsing, the media response path identifies the successful If-Range single-part 206 case, omits Content-Type, and skips Last-Modified while retaining Date, ETag, Content-Range, partial Content-Length, Accept-Ranges, and Server. Ordinary 206 and false-condition 200 paths retain their normal metadata.</dd>
+<dt>Test evidence</dt><dd>The byte_ranges verifier checks matching strong If-Range, ordinary Range, nonmatching entity-tag, and conservative date-form cases over HTTP, HTTPS, h2c, and secure HTTP/2. It verifies exact partial bytes, current ETag, Content-Range, partial Content-Length, required metadata retention, and Content-Type/Last-Modified omission only on the successful If-Range 206 path.</dd>
+<dt>Assessment rationale</dt><dd>The localized field selection follows the section 15.3.7 SHOULD NOT recommendation without changing validators, range bytes, framing, file I/O, ordinary 206 responses, or full 200 responses.</dd>
+<dt>Open question</dt><dd>Date-form If-Range remains conservatively false because no strong date validator is established in the current resource model; the successful-response condition also covers a future supported match.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-026</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-089">
+<h2><code>V3-9110-089</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.7">RFC 9110 §15.3.7</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>Otherwise, a 206 sender must include all representation fields that the corresponding 200 would send.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Achieve static/media response generation</dd>
+<dt>Implementation evidence</dt><dd>Ordinary range responses use the same representation-selection metadata as the corresponding full response while adjusting message length and adding Content-Range.</dd>
+<dt>Test evidence</dt><dd>Batch B ordinary 206 responses over HTTP/1.1 and h2c retained the corresponding 200 ETag, Last-Modified, and Content-Type; Date was also present. No Content-Encoding, Content-Location, or Vary appeared on either response.</dd>
+<dt>Assessment rationale</dt><dd>All representation fields actually sent on the corresponding 200 were present on the non-If-Range 206. Message-specific Content-Length and Content-Range differences are expected.</dd>
+<dt>Open question</dt><dd>None for the tested static identity representation.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-027</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-090">
+<h2><code>V3-9110-090</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.7.1">RFC 9110 §15.3.7.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A single-part 206 response MUST generate Content-Range describing the enclosed selected range.</dd>
+<dt>Conditions</dt><dd>One selected range is transferred.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:3008-3087 parses byte ranges; achieve.js:3132-3204 selects full/206/400/416 behavior and emits Content-Range and lengths.</dd>
+<dt>Test evidence</dt><dd>tests/byte_ranges/verify.js:92-143 and tests/conditional/verify.js:223-248; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X027</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-091">
+<h2><code>V3-9110-091</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.7.1">RFC 9110 §15.3.7.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>The content of a single-part 206 response consists of the representation data for the range identified by Content-Range.</dd>
+<dt>Conditions</dt><dd>One selected range is transferred.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:3008-3087 parses byte ranges; achieve.js:3132-3204 selects full/206/400/416 behavior and emits Content-Range and lengths.</dd>
+<dt>Test evidence</dt><dd>tests/byte_ranges/verify.js:92-143 and tests/conditional/verify.js:223-248; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-X028</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-092">
+<h2><code>V3-9110-092</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.7.3">RFC 9110 §15.3.7.3</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>If a 206 transfers multiple parts, the sender MUST use multipart/byteranges.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:3008-3087 parses byte ranges; achieve.js:3132-3204 selects full/206/400/416 behavior and emits Content-Range and lengths.</dd>
+<dt>Test evidence</dt><dd>tests/byte_ranges/verify.js:92-143 and tests/conditional/verify.js:223-248; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>The obligation is conditional on a role, status, or feature that Achieve core does not exercise in its supported origin-server behavior.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S060</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-093">
+<h2><code>V3-9110-093</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.7.3">RFC 9110 §15.3.7.3</a></h2>
+<p><span class="badge optional-not-implemented">Optional not implemented</span> <strong>Normative level:</strong> MAY</p>
+<dl>
+<dt>Requirement</dt><dd>When multiple ranges were requested but only one remains satisfiable or after coalescing, a server MAY generate multipart/byteranges with one body part.</dd>
+<dt>Conditions</dt><dd>Only when multiple ranges were requested and selection leaves one part.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Achieve/application</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:3008-3087 parses byte ranges; achieve.js:3132-3204 selects full/206/400/416 behavior and emits Content-Range and lengths.</dd>
+<dt>Test evidence</dt><dd>tests/byte_ranges/verify.js:92-143 and tests/conditional/verify.js:223-248; both focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>The referenced capability is optional and Achieve does not implement the triggering successful/optional behavior.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S066</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-094">
+<h2><code>V3-9110-094</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.4.5">RFC 9110 §15.4.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A 304 server must generate the listed cache/validator fields that the corresponding 200 would have sent.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender of a 304 response</dd>
+<dt>Responsible layer</dt><dd>Achieve conditional static/media response generation; Node serializes</dd>
+<dt>Implementation evidence</dt><dd>The conditional path sets Date before evaluation and explicitly adds current ETag and Last-Modified when selecting 304; representation fields absent from the corresponding 200 are not required.</dd>
+<dt>Test evidence</dt><dd>Batch B paired 200 and matching If-None-Match 304 responses over HTTP/1.1 and h2c. Date and ETag appeared on both; Cache-Control, Expires, Content-Location, and Vary were absent from both. The 304 carried no body.</dd>
+<dt>Assessment rationale</dt><dd>Every section 15.4.5 listed field that would have appeared on the corresponding 200 was generated on 304.</dd>
+<dt>Open question</dt><dd>None for the tested static identity representation.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-028</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-095">
+<h2><code>V3-9110-095</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.4.5">RFC 9110 §15.4.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A 304 sender should not emit other representation metadata unless useful for cache updates.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender of a 304 response</dd>
+<dt>Responsible layer</dt><dd>Achieve conditional static/media response generation</dd>
+<dt>Implementation evidence</dt><dd>The 304 path emits the mandatory Date and ETag plus Last-Modified, a validator used to guide cache updates, and omits Content-Type and other representation metadata.</dd>
+<dt>Test evidence</dt><dd>Batch B HTTP/1.1 and h2c 304 responses contained Date, ETag, and Last-Modified, omitted Content-Type, and contained no body. The corresponding 200 supplied the same Last-Modified validator.</dd>
+<dt>Assessment rationale</dt><dd>Last-Modified is directly useful for cache validation/update and is the RFC's example of permissible additional 304 metadata; no unnecessary representation metadata was observed.</dd>
+<dt>Open question</dt><dd>None for the tested static identity representation.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-029</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-096">
+<h2><code>V3-9110-096</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.4.5">RFC 9110 §15.4.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A 304 response MUST NOT contain content.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:970-980 carries a no-body flag for HEAD; achieve.js:1663-1673, achieve.js:2415-2443, and achieve.js:2844-2866 complete responses without bodies where Achieve owns completion; Node enforces protocol framing.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:133-242 and tests/static_dates/verify.js:82-98; focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S061</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-097">
+<h2><code>V3-9110-097</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.10">RFC 9110 §15.5.10</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>A server responding 409 SHOULD generate content with enough information for a user to recognize the source of the conflict.</dd>
+<dt>Conditions</dt><dd>Unless the request method or response context precludes content.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Servlet application when it selects 409; Achieve core does not generate 409</dd>
+<dt>Implementation evidence</dt><dd>No Achieve core path selects status 409. Servlets directly control an application-selected 409 status and its explanatory content.</dd>
+<dt>Test evidence</dt><dd>Source search found no core 409 generation. Existing response-completion coverage includes an application-selected 409 with no value only as completion semantics, not an Achieve conflict response.</dd>
+<dt>Assessment rationale</dt><dd>The conditional recommendation is not reached by Achieve core. A deployed application choosing 409 is responsible for useful conflict information.</dd>
+<dt>Open question</dt><dd>None for Achieve core; application conformance depends on the servlet and request context.</dd>
+<dt>V2 traceability</dt><dd>V2-S064</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-098">
+<h2><code>V3-9110-098</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.6">RFC 9110 §15.5.6</a></h2>
+<p><span class="badge nonconformant">Nonconformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server generating a 405 response MUST generate an Allow field listing the target resource's currently supported methods.</dd>
+<dt>Conditions</dt><dd>The origin server generates a 405 response.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 compatibility layer; complete Achieve endpoint</dd>
+<dt>Implementation evidence</dt><dd>Achieve listen2() uses Node's HTTP/2 compatibility server. Node handles classic CONNECT before invoking the compatibility request handler and generates the 405 response.</dd>
+<dt>Test evidence</dt><dd>The original focused reproduction assigned the behavior to Node's compatibility layer. Final Node.js 24.22.2 Windows and Linux qualification sent valid classic CONNECT and again observed :status 405 and date with no Allow field; the compatibility request handler was not invoked.</dd>
+<dt>Assessment rationale</dt><dd>The qualified Achieve HTTP/2 endpoint generates 405 without the mandatory Allow field. Standalone Node reproduces the behavior, assigning it to Node's compatibility layer rather than Achieve application logic.</dd>
+<dt>Open question</dt><dd>Normal Achieve request handling cannot add the field because Node does not dispatch this CONNECT request to it; reassess when the supported Node baseline changes.</dd>
+<dt>V2 traceability</dt><dd>V2-S062</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-099">
+<h2><code>V3-9110-099</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.9">RFC 9110 §15.5.9</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> None</p>
+<dl>
+<dt>Requirement</dt><dd>RFC 9110 defines 408 Request Timeout but does not require or recommend a Connection: close field.</dd>
+<dt>Conditions</dt><dd>No normative connection-field obligation exists in RFC 9110 section 15.5.9.</dd>
+<dt>Applicable role</dt><dd>informational status definition</dd>
+<dt>Responsible layer</dt><dd>Inventory correction</dd>
+<dt>Implementation evidence</dt><dd>RFC 9110 section 15.5.9 says that a new connection will be used if the current connection is unusable; it contains no MUST, SHOULD, or MAY concerning a Connection field.</dd>
+<dt>Test evidence</dt><dd>For operational context only, a bounded Batch C timeout probe observed Node.js 22.15.0 emit HTTP/1.1 408 Request Timeout with Connection: close and close the socket for both Achieve and standalone Node.</dd>
+<dt>Assessment rationale</dt><dd>The former SHOULD wording was inherited from superseded RFC 7231 section 6.5.7 and is not a normative RFC 9110 requirement. The V3 identifier is retained for traceability but cannot be a conformance success.</dd>
+<dt>Open question</dt><dd>No RFC 9110 conformance verification is required for the removed obligation; Node timeout behavior remains documented as an observation.</dd>
+<dt>V2 traceability</dt><dd>V2-S063</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9110-100">
+<h2><code>V3-9110-100</code> — <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.6.1">RFC 9110 §15.6.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>A 500 response SHOULD include a representation explaining the condition unless HEAD or disclosure is inappropriate.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Achieve</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:661-735, achieve.js:1663-1674, and achieve.js:2408-2471 cover normal and exceptional Achieve-managed completion.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:133-242 and tests/static_dates/verify.js:82-98; focused suites passed during this assessment.</dd>
+<dt>Assessment rationale</dt><dd>Direct implementation structure and focused tests adequately establish the stated obligation within Achieve-owned behavior and the tested Node 22 endpoint.</dd>
+<dt>Open question</dt><dd>None recorded.</dd>
+<dt>V2 traceability</dt><dd>V2-S065</dd>
+</dl>
+</article>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a>
+</footer>
+</body>
+</html>

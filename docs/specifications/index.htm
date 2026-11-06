@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Achieve 3.1.0 technical specifications for Node.js 24.22.2, with focused HTTP standards and implementation articles plus complete conformance assessment records.">
+<meta name="dcterms.created" content="2026-11-05">
+<meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve Technical Specifications</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; color:#18283b; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,160,32); border-bottom:solid blue thick; padding:.2em; margin:0; }
+nav { padding:.7em 5%; background:#dceff8; border-bottom:1px solid #8ab3d0; }
+nav a,.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; margin-right:1.1em; }
+nav a:hover,.packageLink:hover { color:blue; text-decoration:underline; }
+main { margin:2% 5% 5%; max-width:105em; }
+h1,h2,h3 { color:#153d70; }
+.metadata,.notice { background:#eaf6fb; border-left:.35em solid #326fa8; padding:.7em 1em; margin:1em 0; }
+.notice { border-left-color:#8a6500; background:#fff7da; }
+.counts { border-collapse:collapse; margin:1em 0; }
+.counts th,.counts td { border:1px solid #7fa5bd; padding:.45em .7em; text-align:left; }
+.counts th { background:#d5eaf5; }
+.requirement { background:#edf8fc; border:1px solid #8eb3c9; border-radius:.35em; padding:.8em 1em; margin:1em 0; }
+.requirement h2 { font-size:1.15em; margin:.1em 0 .6em; }
+.requirement dl { display:grid; grid-template-columns:minmax(10em,15em) 1fr; gap:.35em .8em; margin:.5em 0; }
+.requirement dt { font-weight:bold; }
+.requirement dd { margin:0; overflow-wrap:anywhere; }
+.badge { display:inline-block; border-radius:.3em; padding:.15em .45em; font-weight:bold; }
+.conformant { background:#ccebd2; color:#174e24; }
+.nonconformant { background:#ffd2d2; color:#791b1b; }
+.unverified { background:#fff0b8; color:#684e00; }
+.not-applicable { background:#e0e0e0; color:#3d3d3d; }
+.optional-not-implemented { background:#dfd5f5; color:#4b2d72; }
+code { padding:.08em .35em; border-radius:.3em; background:#dcebf4; color:blue; font-family:Consolas,"Courier New",monospace; }
+.compact li { margin:.4em 0; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+@media (max-width:700px) { .requirement dl { display:block; } .requirement dt { margin-top:.5em; } nav a { display:inline-block; margin-bottom:.4em; } }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern.">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<nav aria-label="Specification navigation">
+<a href="#technical-specifications">Technical Specifications</a>
+<a href="#http-standards">HTTP Standards</a>
+<a href="#achieve-features">Achieve Features</a>
+<a href="#conformance-assessment">Conformance Assessment</a>
+<a href="../index.htm">Documentation home</a>
+</nav>
+<main>
+
+<h1>Achieve Technical Specifications</h1>
+<div class="metadata"><strong>Achieve:</strong> 3.1.0<br><strong>Evaluated runtime:</strong> Node.js 24.22.2<br><strong>Assessment baseline:</strong> November 5, 2026<br><strong>Document status:</strong> Qualified release documentation</div>
+<div class="notice"><strong>Qualification scope:</strong> These results apply to the released Achieve 3.1.0 endpoint on the specifically qualified Node.js 24.22.2 runtime. Known nonconformances and unverified requirements remain explicitly documented; the assessment does not claim universal HTTP conformance.</div>
+
+<h2 id="technical-specifications">Technical Specifications</h2>
+<p>Focused specifications explain what a protocol feature requires, how Achieve and its qualified Node.js runtime implement it, how the behavior is verified, and which limitations remain. They are the primary entry point for readers interested in Achieve's HTTP behavior.</p>
+
+<h2 id="http-standards">HTTP Standards</h2>
+
+<h3>RFC 9110 — HTTP Semantics</h3>
+<ul class="compact">
+<li><a href="http_standards/etag.html">Achieve RFC 9110 §8.8.3 ETag</a> — metadata-based strong validators and representation distinctions.</li>
+<li><a href="http_standards/conditionals.html">Achieve RFC 9110 §13 Conditional Requests</a> — validator preconditions, precedence, and response behavior.</li>
+<li><a href="http_standards/methods_and_responses.html">HTTP Methods and Responses</a> — built-in and registered methods, completion, content rules, and status-specific behavior.</li>
+<li><a href="http_standards/range_requests.html">Range Requests and Partial Responses</a> — byte ranges, If-Range, 206 and 416 responses, and single-range limits.</li>
+<li><a href="http_standards/content_negotiation.html">Content Negotiation</a> — identity, gzip, and deflate selection, content coding, quality values, and Vary.</li>
+<li><a href="http_standards/http_content_types.html">Content-Type and Media Types</a> — representation media types, generated fields, request types, and application responsibility.</li>
+<li><a href="http_standards/http_content_length.html">Content-Length</a> — selected-representation lengths, HEAD, conditional, partial, and no-content restrictions.</li>
+<li><a href="http_standards/http_dates.html">HTTP Dates and Last-Modified</a> — date formats, origination time, modification metadata, precision, and date-validator strength.</li>
+<li><a href="http_standards/http_redirects.html">HTTP Redirects</a> — directory canonicalization, 301 semantics, Location, and query preservation.</li>
+</ul>
+
+<h3>RFC 9111 — HTTP Caching</h3>
+<ul class="compact">
+<li><a href="http_standards/http_caching.html">HTTP Caching</a> — origin-server metadata, validators, revalidation, and the boundary with external caches.</li>
+</ul>
+
+<h3>RFC 9112 — HTTP/1.1</h3>
+<ul class="compact">
+<li><a href="http_standards/http1_message_framing.html">HTTP/1.1 Message Framing</a> — message length, transfer coding, chunking, trailers, connections, and the Node parser boundary.</li>
+<li><a href="http_standards/http1_connections.html">HTTP/1.1 Connections</a> — request completion, reuse, pipelining, explicit close behavior, and TLS closure.</li>
+<li><a href="http_standards/http1_request_syntax.html">HTTP/1.1 Request Syntax</a> — request lines, fields, Host and request-target validation, and parser boundaries.</li>
+<li><a href="http_standards/http1_response_syntax.html">HTTP/1.1 Response Syntax</a> — status lines, field serialization, framing, and the Node response boundary.</li>
+<li><a href="http_standards/request_targets_and_authority.html">Request Targets and Authority</a> — HTTP/1.1 target forms, Host, HTTP/2 authority, validation, and routing handoff.</li>
+</ul>
+
+<h3>RFC 9113 — HTTP/2</h3>
+<ul class="compact">
+<li><a href="http_standards/http2_stream_errors.html">HTTP/2 Stream Errors and Connection Errors</a> — required error scope and codes, Node/nghttp2 behavior, and qualified-runtime limitations.</li>
+<li><a href="http_standards/http2_stream_states.html">HTTP/2 Stream States</a> — lifecycle, identifiers, concurrency limits, permitted frames, and known error-scope limitations.</li>
+<li><a href="http_standards/http2_frames.html">HTTP/2 Frames</a> — binary framing, limits, SETTINGS, PING, field-block sequencing, and the runtime boundary.</li>
+<li><a href="http_standards/http2_header_compression.html">HTTP/2 Header Compression</a> — HPACK state, contiguous field blocks, decoding failures, and compression-context verification.</li>
+<li><a href="http_standards/http2_connections.html">HTTP/2 Connections</a> — h2c and TLS establishment, client and server prefaces, and application handoff.</li>
+<li><a href="http_standards/http2_settings.html">HTTP/2 SETTINGS</a> — acknowledgement, value validation, stream limits, and flow-control effects.</li>
+<li><a href="http_standards/http2_priority.html">HTTP/2 Prioritization</a> — deprecated priority signaling, runtime scheduling, and deliberately unverified policy.</li>
+<li><a href="http_standards/http2_server_push.html">HTTP/2 Server Push</a> — optional push, Achieve's non-use, disabled-push behavior, and client PUSH_PROMISE rejection.</li>
+<li><a href="http_standards/http2_tls.html">HTTP/2 TLS</a> — ALPN, TLS versions, mandatory cipher support, renegotiation, and qualified-runtime limitations.</li>
+<li><a href="http_standards/http2_flow_control.html">HTTP/2 Flow Control</a> — connection and stream windows, DATA accounting, WINDOW_UPDATE, SETTINGS, and runtime limitations.</li>
+<li><a href="http_standards/http2_request_fields.html">HTTP/2 Request Fields</a> — pseudo-header ordering and presence, lowercase names, prohibited fields, and malformed-request handling.</li>
+</ul>
+
+<h2 id="achieve-features">Achieve Features</h2>
+<p>Implementation articles describe stable Achieve facilities without forcing them into a standards-audit structure.</p>
+<ul class="compact">
+<li><a href="features/logging.html">Logging in Achieve</a> — startup reporting, development diagnostics, persistent server logs, access logs, and servlet errors.</li>
+<li><a href="features/error_handling.html">Error Handling and Response Recovery</a> — managed failures, incomplete responses, diagnostics, and application-owned work.</li>
+<li><a href="features/cors.html">Cross-Origin Resource Sharing</a> — origin, path and asset policies, response fields, denial, and preflight.</li>
+<li><a href="features/server_configuration.html">Server Configuration and Startup</a> — application space, listeners, startup validation, and configuration boundaries.</li>
+<li><a href="features/mime_types.html">MIME Types</a> — built-in mappings, custom ordinary and audiovisual types, and protected suffixes.</li>
+<li><a href="features/directory_handling.html">Directory Handling</a> — slash redirects, default-document order, servlet indexes, and containment.</li>
+<li><a href="features/development_mode.html">Development Mode</a> — diagnostics, servlet and helper reloading, production caches, and NODE_ENV separation.</li>
+<li><a href="features/routing.html">Application-Space Routing</a> — required application root, automatic routes, exact and subtree mappings, precedence, and containment.</li>
+<li><a href="features/servlet_lifecycle.html">JavaScript Servlet Lifecycle</a> — loading, session state, synchronous and asynchronous results, completion ownership, errors, and caching.</li>
+<li><a href="features/servlet_session.html">JavaScript Servlet Session API</a> — request, response, parameters, response ownership, paths, module loading, and compatibility aliases.</li>
+<li><a href="features/module_loading.html">Backend Module Loading</a> — servlet-relative and application-local resolution, CommonJS and ESM, reloading, caching, and errors.</li>
+<li><a href="features/static_resources.html">Static Resources</a> — application-space lookup, media types, descriptor-based delivery, containment, and response behavior.</li>
+<li><a href="features/static_compression.html">Static Compression</a> — asynchronous artifact generation, representation selection, freshness, reuse, and protected cache storage.</li>
+<li><a href="features/request_input.html">Request Input</a> — query parameters, buffered POST parsing, size limits, streaming, and application responsibilities.</li>
+</ul>
+
+<h2 id="conformance-assessment">Conformance Assessment</h2>
+<p>The assessment records Achieve 3.1.0 as an HTTP origin server on the specifically qualified Node.js 24.22.2 runtime. It covers <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>, <a href="https://www.rfc-editor.org/rfc/rfc9111.html">RFC 9111</a>, <a href="https://www.rfc-editor.org/rfc/rfc9112.html">RFC 9112</a>, and <a href="https://www.rfc-editor.org/rfc/rfc9113.html">RFC 9113</a>. Runtime-owned behavior remains part of the assessed endpoint while responsibility is recorded separately.</p>
+<ul class="compact">
+<li><a href="conformance.html">Conformance summary</a> — current results, nine nonconformities, eight unverified requirements, and qualification boundary.</li>
+<li><a href="methodology.html">Methodology and classification model</a> — scope, evidence rules, responsibility, and limitations.</li>
+<li><a href="evidence.html">Evidence and source record index</a> — authoritative ledger, traceability, batch reviews, focused investigations, and qualification records.</li>
+</ul>
+<table class="counts"><thead><tr><th>Classification</th><th>Requirements</th></tr></thead><tbody><tr><td><span class="badge conformant">Conformant</span></td><td>163</td></tr><tr><td><span class="badge nonconformant">Nonconformant</span></td><td>9</td></tr><tr><td><span class="badge unverified">Unverified</span></td><td>8</td></tr><tr><td><span class="badge not-applicable">Not applicable</span></td><td>22</td></tr><tr><td><span class="badge optional-not-implemented">Optional not implemented</span></td><td>9</td></tr><tr><th>Total</th><th>211</th></tr></tbody></table>
+
+<h3>Complete RFC conformance registers</h3>
+<p>The registers provide complete requirements coverage and audit traceability. They support the focused technical specifications but do not determine their subject organization.</p>
+<ul class="compact">
+<li><a href="rfc9110.html">RFC 9110 — HTTP Semantics</a> (100 requirements)</li>
+<li><a href="rfc9111.html">RFC 9111 — HTTP Caching</a> (7 requirements)</li>
+<li><a href="rfc9112.html">RFC 9112 — HTTP/1.1</a> (42 requirements)</li>
+<li><a href="rfc9113.html">RFC 9113 — HTTP/2</a> (62 requirements)</li>
+</ul>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a>
+</footer>
+</body>
+</html>

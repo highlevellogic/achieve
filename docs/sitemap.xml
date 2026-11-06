@@ -31,4 +31,52 @@
   <url><loc>https://highlevellogic.github.io/achieve/ko/index.htm</loc></url>
   <url><loc>https://highlevellogic.github.io/achieve/id/index.htm</loc></url>
   <url><loc>https://highlevellogic.github.io/achieve/tr/index.htm</loc></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/index.htm</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/etag.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/conditionals.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/methods_and_responses.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/range_requests.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/content_negotiation.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http_content_types.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http_content_length.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http_dates.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http_redirects.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http_caching.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http1_message_framing.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http1_connections.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http1_request_syntax.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http1_response_syntax.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/request_targets_and_authority.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http2_stream_errors.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http2_stream_states.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http2_frames.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http2_header_compression.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http2_connections.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http2_settings.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http2_priority.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http2_server_push.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http2_tls.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http2_flow_control.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/http_standards/http2_request_fields.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/logging.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/error_handling.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/cors.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/server_configuration.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/mime_types.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/directory_handling.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/development_mode.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/routing.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/servlet_lifecycle.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/servlet_session.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/module_loading.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/static_resources.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/static_compression.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/features/request_input.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/conformance.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/methodology.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/evidence.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/rfc9110.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/rfc9111.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/rfc9112.html</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://highlevellogic.github.io/achieve/specifications/rfc9113.html</loc><lastmod>2026-11-06</lastmod></url>
 </urlset>

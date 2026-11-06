@@ -8,7 +8,9 @@ const testRoot=fs.mkdtempSync(path.join(os.tmpdir(),"achieve-static-lookup-"));
 const directoryPath=path.join(testRoot,"directory");
 fs.mkdirSync(directoryPath,{recursive:true});
 const staticBody="Achieve static lookup verification. ".repeat(4);
+const unknownBody=Buffer.from([0x00,0x41,0x80,0xff,0x0a]);
 fs.writeFileSync(path.join(testRoot,"tiny.txt"),staticBody);
+fs.writeFileSync(path.join(testRoot,"unknown.unregistered"),unknownBody);
 fs.writeFileSync(path.join(directoryPath,"index.html"),"directory index");
 fs.writeFileSync(path.join(testRoot,"hello.jss"),
     "exports.servlet=function () { return 'servlet'; };\n");
@@ -53,10 +55,12 @@ function request(target,headers={}) {
             const chunks=[];
             res.on("data",chunk => chunks.push(chunk));
             res.on("end",function () {
+                const bytes=Buffer.concat(chunks);
                 resolve({
                     status:res.statusCode,
                     headers:res.headers,
-                    body:Buffer.concat(chunks).toString()
+                    bytes:bytes,
+                    body:bytes.toString()
                 });
             });
         });
@@ -103,6 +107,14 @@ async function command(child,name,event) {
             "Static request did not stream the opened physical file: "+JSON.stringify(counts));
         assert(counts.paths.some(value => value.startsWith("createReadStream:") && value.includes("tiny.txt")),
             "Static request did not retain its selected representation identity: "+JSON.stringify(counts));
+
+        response=await request("/unknown.unregistered",{"Accept-Encoding":"identity"});
+        assert(response.status === 200,
+            "Unknown static extension did not return 200: "+JSON.stringify({status:response.status,headers:response.headers}));
+        assert(response.headers["content-type"] === "text/plain",
+            "Unknown static extension did not use text/plain: "+JSON.stringify(response.headers));
+        assert(response.bytes.equals(unknownBody),
+            "Unknown static extension changed response bytes: "+JSON.stringify({expected:[...unknownBody],actual:[...response.bytes]}));
 
         response=await request("/directory");
         assert(response.status === 301 && response.headers.location === "/directory/",

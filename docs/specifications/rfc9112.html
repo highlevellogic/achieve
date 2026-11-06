@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Complete Achieve 3.1.0 conformance register for RFC 9112 HTTP/1.1.">
+<meta name="dcterms.created" content="2026-11-05">
+<meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve 3.1.0 RFC 9112 Conformance Register</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; color:#18283b; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,160,32); border-bottom:solid blue thick; padding:.2em; margin:0; }
+nav { padding:.7em 5%; background:#dceff8; border-bottom:1px solid #8ab3d0; }
+nav a,.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; margin-right:1.1em; }
+nav a:hover,.packageLink:hover { color:blue; text-decoration:underline; }
+main { margin:2% 5% 5%; max-width:105em; }
+h1,h2,h3 { color:#153d70; }
+.metadata,.notice { background:#eaf6fb; border-left:.35em solid #326fa8; padding:.7em 1em; margin:1em 0; }
+.notice { border-left-color:#8a6500; background:#fff7da; }
+.counts { border-collapse:collapse; margin:1em 0; }
+.counts th,.counts td { border:1px solid #7fa5bd; padding:.45em .7em; text-align:left; }
+.counts th { background:#d5eaf5; }
+.requirement { background:#edf8fc; border:1px solid #8eb3c9; border-radius:.35em; padding:.8em 1em; margin:1em 0; }
+.requirement h2 { font-size:1.15em; margin:.1em 0 .6em; }
+.requirement dl { display:grid; grid-template-columns:minmax(10em,15em) 1fr; gap:.35em .8em; margin:.5em 0; }
+.requirement dt { font-weight:bold; }
+.requirement dd { margin:0; overflow-wrap:anywhere; }
+.badge { display:inline-block; border-radius:.3em; padding:.15em .45em; font-weight:bold; }
+.conformant { background:#ccebd2; color:#174e24; }
+.nonconformant { background:#ffd2d2; color:#791b1b; }
+.unverified { background:#fff0b8; color:#684e00; }
+.not-applicable { background:#e0e0e0; color:#3d3d3d; }
+.optional-not-implemented { background:#dfd5f5; color:#4b2d72; }
+code { padding:.08em .35em; border-radius:.3em; background:#dcebf4; color:blue; font-family:Consolas,"Courier New",monospace; }
+.compact li { margin:.4em 0; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+@media (max-width:700px) { .requirement dl { display:block; } .requirement dt { margin-top:.5em; } nav a { display:inline-block; margin-bottom:.4em; } }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern.">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<nav aria-label="Specification navigation">
+<a href="index.htm">Specifications index</a>
+<a href="methodology.html">Methodology</a>
+<a href="conformance.html">Conformance summary</a>
+<a href="rfc9110.html">RFC 9110</a>
+<a href="rfc9111.html">RFC 9111</a>
+<a href="rfc9112.html">RFC 9112</a>
+<a href="rfc9113.html">RFC 9113</a>
+<a href="evidence.html">Evidence</a>
+<a href="../index.htm">Documentation home</a>
+</nav>
+<main>
+
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9112.html">RFC 9112 HTTP/1.1</a></h1>
+<div class="metadata"><strong>Achieve:</strong> 3.1.0<br><strong>Evaluated runtime:</strong> Node.js 24.22.2<br><strong>Assessment baseline:</strong> November 5, 2026<br><strong>Document status:</strong> Qualified release assessment</div>
+<p>This register presents all 42 authoritative V3 requirements for RFC 9112. Requirement text is a traceable summary; the linked RFC Editor section supplies the controlling normative text and conditions.</p>
+<table class="counts"><thead><tr><th>Classification</th><th>Count</th></tr></thead><tbody><tr><td><span class="badge conformant">Conformant</span></td><td>31</td></tr><tr><td><span class="badge nonconformant">Nonconformant</span></td><td>2</td></tr><tr><td><span class="badge unverified">Unverified</span></td><td>0</td></tr><tr><td><span class="badge not-applicable">Not applicable</span></td><td>8</td></tr><tr><td><span class="badge optional-not-implemented">Optional not implemented</span></td><td>1</td></tr><tr><th>Total</th><th>42</th></tr></tbody></table>
+<p><a href="conformance.html">Review the overall findings</a> · <a href="methodology.html">Read the methodology</a> · <a href="evidence.html">Inspect evidence sources</a></p>
+<article class="requirement" id="V3-9112-001">
+<h2><code>V3-9112-001</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-2.2">RFC 9112 §2.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An HTTP/1.1 sender MUST generate messages conforming to the HTTP-message grammar and use the protocol version appropriate to that syntax.</dd>
+<dt>Conditions</dt><dd>Version-specific sender conditions in RFC 9112 §2.2 apply.</dd>
+<dt>Applicable role</dt><dd>sender</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP sender; Achieve selects status, fields, and body</dd>
+<dt>Implementation evidence</dt><dd>Node http.Server centrally serializes ordinary responses created at achieve.js:1559-1591; Achieve's fixed CONNECT response template at achieve.js:1255-1264 uses an HTTP/1.1 status line, CRLF field framing, explicit Content-Length, and Connection close.</dd>
+<dt>Test evidence</dt><dd>Batch D byte-level capture validated representative static 200, missing-resource 404, parser 400, HTTP/1.0-request, Content-Length, chunked, field-name, and status-line output. Node rejected attempted invalid field syntax rather than serializing it.</dd>
+<dt>Assessment rationale</dt><dd>For Achieve core output through supported Node response APIs, representative wire checks plus the centralized serializer and fixed direct template support Conformant. This is not an exhaustive proof of every grammar production or arbitrary application socket output.</dd>
+<dt>Open question</dt><dd>Bounded to tested core paths and supported response APIs on Node.js 22.15.0; direct application socket writes remain application responsibility.</dd>
+<dt>V2 traceability</dt><dd>V2-H101</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-002">
+<h2><code>V3-9112-002</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-2.2">RFC 9112 §2.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An HTTP/1.1 recipient MUST parse messages as an octet sequence in an encoding that is a superset of US-ASCII.</dd>
+<dt>Conditions</dt><dd>Parsing as Unicode without octet boundaries is unsafe.</dd>
+<dt>Applicable role</dt><dd>recipient</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser</dd>
+<dt>Implementation evidence</dt><dd>Requests reach Achieve only after Node's native HTTP parser delineates request lines and fields at achieve.js:1407-1441 and 1559-1591.</dd>
+<dt>Test evidence</dt><dd>A Batch D raw field-value control used octets 0x80, 0xff, 0xc2, and 0x85. Achieve and standalone Node preserved one octet per exposed code unit instead of UTF-8-decoding 0xc2 0x85; a high-bit field-name octet was rejected with 400.</dd>
+<dt>Assessment rationale</dt><dd>The direct controls support octet-oriented parsing for the tested request-line/field parser boundary on Node.js 22.15.0. They do not independently enumerate every request component or future parser implementation.</dd>
+<dt>Open question</dt><dd>Bounded to the tested components and Node.js 22.15.0; runtime parser changes require reassessment.</dd>
+<dt>V2 traceability</dt><dd>V2-H102</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-003">
+<h2><code>V3-9112-003</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-2.2">RFC 9112 §2.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>A server receiving one or more empty lines before a request-line SHOULD ignore at least one such line.</dd>
+<dt>Conditions</dt><dd>Leading CRLF before request-line.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>No pre-existing focused assertion. Runtime probe: Raw TCP: leading CRLF before GET produced 200 and the expected body; connection closed normally.</dd>
+<dt>Assessment rationale</dt><dd>The supported Node 22.15 endpoint ignored at least one leading empty line as recommended.</dd>
+<dt>Open question</dt><dd>Repeat on other supported Node 22 patch levels if runtime-matrix assurance is required.</dd>
+<dt>V2 traceability</dt><dd>V2-X031</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-004">
+<h2><code>V3-9112-004</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-2.3">RFC 9112 §2.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server receiving whitespace between request-line and first field must reject the request or consume and ignore each whitespace line.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>No pre-existing focused assertion. Runtime probe: Raw TCP: whitespace-preceded line after request-line produced 400 and Connection: close.</dd>
+<dt>Assessment rationale</dt><dd>Rejection is one of the two permitted behaviors.</dd>
+<dt>Open question</dt><dd>None for the probed runtime.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-036</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-005">
+<h2><code>V3-9112-005</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3">RFC 9112 §3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>An HTTP/1.1 request-line has the grammar method SP request-target SP HTTP-version; recipients parse those components before field processing.</dd>
+<dt>Conditions</dt><dd>Malformed request-line handling is recorded separately.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser; Achieve validates target after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1098-1145, 1407-1433 (Achieve validates parsed request-target and authority)</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js:12-101 (raw HTTP/HTTPS and HTTP/2 target checks; 560 checks) Runtime probe: Raw valid requests were parsed; malformed request-line cases were rejected with 400.</dd>
+<dt>Assessment rationale</dt><dd>Observed parsing follows the request-line component model and malformed input does not reach application dispatch.</dd>
+<dt>Open question</dt><dd>The ledger row states grammar rather than a discrete BCP 14 obligation.</dd>
+<dt>V2 traceability</dt><dd>V2-H104</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-006">
+<h2><code>V3-9112-006</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3">RFC 9112 §3</a></h2>
+<p><span class="badge nonconformant">Nonconformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server that receives a request-target longer than any URI it wishes to parse MUST respond with 414 (URI Too Long).</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/1.1 parser and the complete Achieve endpoint</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>Raw probes on the final Node.js 24.22.2 Windows and Linux qualification endpoints sent a 20,001-character request-target and received 431; the Windows parser reported HPE_HEADER_OVERFLOW. Earlier Node 22 and standalone controls produced the same status.</dd>
+<dt>Assessment rationale</dt><dd>On the qualified Node.js 24.22.2 endpoint, an overlong request-target receives 431 because target and field overflow share the parser's overflow handling. RFC 9112 requires 414 for the demonstrated request-target-length condition.</dd>
+<dt>Open question</dt><dd>An upstream Node correction is preferred. Issue nodejs/node#26296 was closed after the generic 431 change in PR #25605, which did not distinguish target overflow.</dd>
+<dt>V2 traceability</dt><dd>V2-H105</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-007">
+<h2><code>V3-9112-007</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3">RFC 9112 §3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>A server receiving an invalid request-line SHOULD respond with 400 (Bad Request) unless it redirects with a properly encoded request-target using 301.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>Malformed-target coverage exists, but not invalid method-token coverage. Runtime probe: Raw request with method 'GE(T' produced 400 and Connection: close.</dd>
+<dt>Assessment rationale</dt><dd>The observed 400 satisfies the ledger expectation and RFC invalid-request-line recommendation.</dd>
+<dt>Open question</dt><dd>Ledger wording should cite §3 invalid request-line handling; §3.1 itself defines method as token but does not state this exact SHOULD.</dd>
+<dt>V2 traceability</dt><dd>V2-H106</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-008">
+<h2><code>V3-9112-008</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3.2.1">RFC 9112 §3.2.1</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A client MUST generate origin-form when making a request directly to an origin server other than CONNECT or server-wide OPTIONS.</dd>
+<dt>Conditions</dt><dd>Client-only generation rule.</dd>
+<dt>Applicable role</dt><dd>client</dd>
+<dt>Responsible layer</dt><dd>External HTTP client</dd>
+<dt>Implementation evidence</dt><dd>Achieve does not generate origin-server requests.</dd>
+<dt>Test evidence</dt><dd>Not applicable. Runtime probe: Not run.</dd>
+<dt>Assessment rationale</dt><dd>Client request-target generation is outside Achieve’s supported origin-server role.</dd>
+<dt>Open question</dt><dd>None.</dd>
+<dt>V2 traceability</dt><dd>V2-H107</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-009">
+<h2><code>V3-9112-009</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3.2.2">RFC 9112 §3.2.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server MUST accept absolute-form in requests to permit transition from proxy use.</dd>
+<dt>Conditions</dt><dd>Applies even though clients normally send origin-form directly.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Node.js parser and Achieve request-target logic</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1098-1145, 1407-1433 (Achieve validates parsed request-target and authority)</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js:12-101 (raw HTTP/HTTPS and HTTP/2 target checks; 560 checks) Runtime probe: Raw HTTP/HTTPS absolute-form requests returned 200.</dd>
+<dt>Assessment rationale</dt><dd>The endpoint accepts absolute-form and maps its path/query for origin-server processing.</dd>
+<dt>Open question</dt><dd>None for tested schemes and forms.</dd>
+<dt>V2 traceability</dt><dd>V2-H108</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-010">
+<h2><code>V3-9112-010</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3.2.2">RFC 9112 §3.2.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>When an origin server receives absolute-form, it MUST accept it and use the target authority for request-target reconstruction rather than the Host field.</dd>
+<dt>Conditions</dt><dd>Applies to HTTP/1.1 absolute-form requests; proxy generation rules are separate.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve request-target and authority validation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1117-1145, 1426-1433</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js:12-101 (raw HTTP/HTTPS and HTTP/2 target checks; 560 checks) Runtime probe: Absolute-form requests with a conflicting Host are tested and accepted using target authority.</dd>
+<dt>Assessment rationale</dt><dd>Achieve extracts authority from absolute-form and does not use Host as the target authority.</dd>
+<dt>Open question</dt><dd>No forwarding/proxy behavior is claimed.</dd>
+<dt>V2 traceability</dt><dd>V2-S008</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-011">
+<h2><code>V3-9112-011</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3.2.3">RFC 9112 §3.2.3</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A client MUST send authority-form only for CONNECT requests.</dd>
+<dt>Conditions</dt><dd>Client-only generation rule; server validation is separate.</dd>
+<dt>Applicable role</dt><dd>client</dd>
+<dt>Responsible layer</dt><dd>External HTTP client</dd>
+<dt>Implementation evidence</dt><dd>Achieve does not generate CONNECT requests as a client.</dd>
+<dt>Test evidence</dt><dd>Not applicable. Runtime probe: Not run.</dd>
+<dt>Assessment rationale</dt><dd>This is a client-only generation rule. Achieve’s server-side CONNECT behavior is assessed separately.</dd>
+<dt>Open question</dt><dd>None.</dd>
+<dt>V2 traceability</dt><dd>V2-H109</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-012">
+<h2><code>V3-9112-012</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3.2.4">RFC 9112 §3.2.4</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A client requesting OPTIONS for the server as a whole MUST send only asterisk-form as the request-target.</dd>
+<dt>Conditions</dt><dd>Server-wide OPTIONS and empty-path compatibility conditions.</dd>
+<dt>Applicable role</dt><dd>client</dd>
+<dt>Responsible layer</dt><dd>External HTTP client</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:985-1008, 1107-1109</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js:12-101 (raw HTTP/HTTPS and HTTP/2 target checks; 560 checks); tests/registered_methods/verify.js:117-120 Runtime probe: OPTIONS * is handled with 204; no empty-path compatibility probe was possible from the row as written.</dd>
+<dt>Assessment rationale</dt><dd>Client request construction is outside Achieve origin-server responsibility.</dd>
+<dt>Open question</dt><dd>None for Achieve origin-server scope.</dd>
+<dt>V2 traceability</dt><dd>V2-H110</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-013">
+<h2><code>V3-9112-013</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3.2.4">RFC 9112 §3.2.4</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>The last proxy forwarding an absolute-form OPTIONS request whose URI has an empty path and no query MUST send asterisk-form to the origin server.</dd>
+<dt>Conditions</dt><dd>Server-wide OPTIONS and empty-path compatibility conditions.</dd>
+<dt>Applicable role</dt><dd>final proxy</dd>
+<dt>Responsible layer</dt><dd>External final proxy</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:985-1008, 1107-1109</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js:12-101 (raw HTTP/HTTPS and HTTP/2 target checks; 560 checks); tests/registered_methods/verify.js:117-120 Runtime probe: OPTIONS * is handled with 204; no empty-path compatibility probe was possible from the row as written.</dd>
+<dt>Assessment rationale</dt><dd>Achieve is not an HTTP forwarding proxy; V2 incorrectly assigned this rule to origin-server empty-path processing.</dd>
+<dt>Open question</dt><dd>None for Achieve origin-server scope.</dd>
+<dt>V2 traceability</dt><dd>V2-H110</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-014">
+<h2><code>V3-9112-014</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-5">RFC 9112 §5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server must reject whitespace between a field name and colon with 400.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>No pre-existing focused assertion. Runtime probe: Raw Host field with whitespace before colon produced 400 and Connection: close.</dd>
+<dt>Assessment rationale</dt><dd>The required rejection was observed.</dd>
+<dt>Open question</dt><dd>None for the probed runtime.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-037</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-015">
+<h2><code>V3-9112-015</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-5.2">RFC 9112 §5.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server receiving obsolete line folding must reject with 400 or replace each fold with SP before interpretation/forwarding.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>No pre-existing focused assertion. Runtime probe: Raw obs-fold request produced 400 and Connection: close.</dd>
+<dt>Assessment rationale</dt><dd>Rejecting obs-fold is one of the permitted required alternatives.</dd>
+<dt>Open question</dt><dd>No test of replacement behavior is needed because rejection is sufficient.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-038</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-016">
+<h2><code>V3-9112-016</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.1">RFC 9112 §6.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient of an HTTP/1.0 message containing Transfer-Encoding MUST treat framing as faulty and close the connection after processing.</dd>
+<dt>Conditions</dt><dd>Even when Content-Length is also present.</dd>
+<dt>Applicable role</dt><dd>recipient</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser/socket</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>No pre-existing focused HTTP/1.0 Transfer-Encoding assertion. Runtime probe: Raw HTTP/1.0 request with Transfer-Encoding: chunked received a response and the connection closed.</dd>
+<dt>Assessment rationale</dt><dd>The endpoint did not reuse the faulty-framed HTTP/1.0 connection; RFC permits processing before closure.</dd>
+<dt>Open question</dt><dd>The response was 200; this row requires faulty framing treatment and closure, not a particular status.</dd>
+<dt>V2 traceability</dt><dd>V2-H112</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-017">
+<h2><code>V3-9112-017</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.1">RFC 9112 §6.1</a></h2>
+<p><span class="badge nonconformant">Nonconformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>A server receiving an unrecognized request transfer coding should respond 501.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser/Achieve endpoint</dd>
+<dt>Implementation evidence</dt><dd>Node parses Transfer-Encoding before dispatch at achieve.js:1407-1441 and 1559-1591; Achieve has no transfer-coding decoder or registration mechanism.</dd>
+<dt>Test evidence</dt><dd>Batch D isolated the final-chunked case with standalone and Achieve controls. Final Node.js 24.22.2 Windows and Linux qualification repeated the unknown-coding request: the endpoint returned 200, removed chunk framing, and delivered the remaining bytes rather than returning 501.</dd>
+<dt>Assessment rationale</dt><dd>The final-chunked probe isolates the §6.1 recommendation from §6.3's mandatory final-coding rejection. The qualified endpoint does not understand or decode frobnicate and no documented reason for departing from the 501 SHOULD was identified.</dd>
+<dt>Open question</dt><dd>This is a SHOULD-level Node-inherited endpoint defect, not a malformed-final-framing result. Reassess on a newer Node parser or if Achieve gains explicit transfer-coding support.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-040</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-018">
+<h2><code>V3-9112-018</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.1">RFC 9112 §6.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MAY</p>
+<dl>
+<dt>Requirement</dt><dd>A server MAY reject a request containing both Transfer-Encoding and Content-Length or process Transfer-Encoding alone.</dd>
+<dt>Conditions</dt><dd>Both fields are present.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser/socket</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>No focused TE+CL test. Runtime probe: Raw request containing chunked Transfer-Encoding and Content-Length produced 400.</dd>
+<dt>Assessment rationale</dt><dd>Rejection is expressly permitted instead of processing Transfer-Encoding alone.</dd>
+<dt>Open question</dt><dd>None for the probed runtime.</dd>
+<dt>V2 traceability</dt><dd>V2-X037</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-019">
+<h2><code>V3-9112-019</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.1">RFC 9112 §6.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>After responding to a request containing both Transfer-Encoding and Content-Length, the server MUST close the connection.</dd>
+<dt>Conditions</dt><dd>Both fields are present, regardless of reject/process choice.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser/socket</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>No focused TE+CL closure test. Runtime probe: The TE+CL rejection included Connection: close and the socket ended.</dd>
+<dt>Assessment rationale</dt><dd>Mandatory closure after responding was observed.</dd>
+<dt>Open question</dt><dd>None for the probed runtime.</dd>
+<dt>V2 traceability</dt><dd>V2-X038</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-020">
+<h2><code>V3-9112-020</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.3">RFC 9112 §6.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>For a request without Transfer-Encoding or Content-Length, the message body length is zero.</dd>
+<dt>Conditions</dt><dd>Applies after all earlier §6.3 framing cases are excluded.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:2480-2540 (POST stream consumption; GET/HEAD dispatch)</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js:12-101 (raw HTTP/HTTPS and HTTP/2 target checks; 560 checks); tests/request_input/verify.js:57-208 (buffered and streamed request input, including abort survival) Runtime probe: Raw GET requests without framing fields were processed as bodyless requests.</dd>
+<dt>Assessment rationale</dt><dd>Requests with neither Transfer-Encoding nor Content-Length are delivered with zero-length bodies.</dd>
+<dt>Open question</dt><dd>A dedicated assertion of no data events would improve traceability but is not needed to establish observed framing.</dd>
+<dt>V2 traceability</dt><dd>V2-H115</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-021">
+<h2><code>V3-9112-021</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.3">RFC 9112 §6.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A request whose final transfer coding is not chunked must receive 400 and connection closure.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser/socket</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>No focused final-nonchunked test. Runtime probe: Raw request with Transfer-Encoding: unknown (non-chunked final coding) produced 400, Connection: close, and socket end.</dd>
+<dt>Assessment rationale</dt><dd>The mandatory status and closure were observed.</dd>
+<dt>Open question</dt><dd>The probe also involved an unrecognized coding; a recognized nonfinal coding would isolate this rule further.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-041</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-022">
+<h2><code>V3-9112-022</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.3">RFC 9112 §6.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>Invalid or conflicting Content-Length in a request requires 400 and connection closure, except the permitted identical-list normalization.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser/socket</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>tests/buffered_abort/verify.js:90-260 (incomplete Content-Length/chunked POST aborts) Runtime probe: Conflicting duplicate Content-Length produced 400/close; an identical comma-list was also conservatively rejected with 400/close.</dd>
+<dt>Assessment rationale</dt><dd>Invalid/conflicting Content-Length is treated as unrecoverable. The identical-list exception permits successful normalization but does not require it.</dd>
+<dt>Open question</dt><dd>A focused accepted identical-list test is unnecessary because rejection remains conservative.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-042</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-023">
+<h2><code>V3-9112-023</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-8">RFC 9112 §8</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server that receives an incomplete request message MUST close the connection; an incomplete request caused by premature closure MUST be treated as incomplete.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser/socket and Achieve buffered-input listeners</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:2480-2540 (POST stream consumption; GET/HEAD dispatch)</dd>
+<dt>Test evidence</dt><dd>tests/buffered_abort/verify.js:90-260 (incomplete Content-Length/chunked POST aborts); tests/request_input/verify.js:57-208 (buffered and streamed request input, including abort survival) Runtime probe: Existing suites exercise incomplete Content-Length and chunked requests and verify server survival/cleanup.</dd>
+<dt>Assessment rationale</dt><dd>Prematurely terminated framed request bodies are not delivered as complete application input and their connections are closed.</dd>
+<dt>Open question</dt><dd>The ledger combines sender close and recipient timeout paths; explicit timeout injection is not separately covered.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-043</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-024">
+<h2><code>V3-9112-024</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.3">RFC 9112 §6.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>A response to HEAD and any 1xx, 204, or 304 response is terminated by the first empty line and cannot contain a message body.</dd>
+<dt>Conditions</dt><dd>Specified request/status cases.</dd>
+<dt>Applicable role</dt><dd>recipient/sender</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP sender plus Achieve sendBody/status logic</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:944-1044 (GET/POST/HEAD/OPTIONS dispatch and body suppression)</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:133-279 (HTTP/HTTPS/h2 response completion and HEAD no-body behavior); tests/static_dates/verify.js:75-208 (HEAD/304 no-body and static response framing) Runtime probe: HEAD and 304 responses are verified bodyless across HTTP/HTTPS and HTTP/2.</dd>
+<dt>Assessment rationale</dt><dd>The supported HTTP/1.1 endpoint suppresses prohibited bodies for tested HEAD/304 and error paths; Node owns final wire framing.</dd>
+<dt>Open question</dt><dd>No Achieve path was found that emits a 1xx response; 204 is exercised by OPTIONS.</dd>
+<dt>V2 traceability</dt><dd>V2-X032</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-025">
+<h2><code>V3-9112-025</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.3">RFC 9112 §6.3</a></h2>
+<p><span class="badge optional-not-implemented">Optional not implemented</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>A successful 2xx CONNECT response switches to tunnel mode immediately after the header section.</dd>
+<dt>Conditions</dt><dd>Successful CONNECT.</dd>
+<dt>Applicable role</dt><dd>recipient/sender</dd>
+<dt>Responsible layer</dt><dd>Achieve/Node CONNECT endpoint</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1255-1342 (explicit CONNECT rejection)</dd>
+<dt>Test evidence</dt><dd>tests/connect/verify.js:83-288 (raw CONNECT rejection/closure and HTTP/2 behavior) Runtime probe: Raw CONNECT requests receive non-2xx rejection and closure.</dd>
+<dt>Assessment rationale</dt><dd>Achieve does not establish successful CONNECT tunnels, so the conditional 2xx tunnel framing case is absent and permitted.</dd>
+<dt>Open question</dt><dd>None unless CONNECT tunneling is added.</dd>
+<dt>V2 traceability</dt><dd>V2-X033</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-026">
+<h2><code>V3-9112-026</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.3">RFC 9112 §6.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>When Transfer-Encoding ends in chunked, body length is determined by decoding chunks through the terminal chunk.</dd>
+<dt>Conditions</dt><dd>Transfer-Encoding final coding is chunked.</dd>
+<dt>Applicable role</dt><dd>recipient</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser and Achieve request stream</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:2480-2540 (POST stream consumption; GET/HEAD dispatch)</dd>
+<dt>Test evidence</dt><dd>tests/request_input/verify.js:57-208 (buffered and streamed request input, including abort survival); tests/buffered_abort/verify.js:90-260 (incomplete Content-Length/chunked POST aborts) Runtime probe: Complete chunked inputs are delivered; incomplete terminal-chunk cases abort.</dd>
+<dt>Assessment rationale</dt><dd>Observed request-body completion depends on decoding through the terminal chunk.</dd>
+<dt>Open question</dt><dd>Large chunk-size overflow limits were not separately assessed because that is a distinct §7.1 requirement absent from this ledger.</dd>
+<dt>V2 traceability</dt><dd>V2-X034</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-027">
+<h2><code>V3-9112-027</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.3">RFC 9112 §6.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>A valid Content-Length without Transfer-Encoding defines the expected message body length.</dd>
+<dt>Conditions</dt><dd>Valid Content-Length and no Transfer-Encoding.</dd>
+<dt>Applicable role</dt><dd>recipient</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser and Achieve request stream</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:2480-2540 (POST stream consumption; GET/HEAD dispatch)</dd>
+<dt>Test evidence</dt><dd>tests/request_input/verify.js:57-208 (buffered and streamed request input, including abort survival); tests/buffered_abort/verify.js:90-260 (incomplete Content-Length/chunked POST aborts) Runtime probe: Content-Length input is buffered to end; short bodies abort rather than complete.</dd>
+<dt>Assessment rationale</dt><dd>Valid Content-Length controls expected request length, and incomplete bodies are not treated as complete.</dd>
+<dt>Open question</dt><dd>None for the exercised buffered paths.</dd>
+<dt>V2 traceability</dt><dd>V2-X035</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-028">
+<h2><code>V3-9112-028</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.3">RFC 9112 §6.3</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>A response with neither Transfer-Encoding nor Content-Length is close-delimited unless an earlier framing case applies.</dd>
+<dt>Conditions</dt><dd>Response-only final framing case.</dd>
+<dt>Applicable role</dt><dd>response recipient</dd>
+<dt>Responsible layer</dt><dd>External HTTP response recipient</dd>
+<dt>Implementation evidence</dt><dd>Achieve is the response sender, not a user agent/proxy parsing close-delimited responses.</dd>
+<dt>Test evidence</dt><dd>Not applicable. Runtime probe: Not run.</dd>
+<dt>Assessment rationale</dt><dd>The row’s response-recipient framing algorithm does not apply to Achieve’s supported origin-server role.</dd>
+<dt>Open question</dt><dd>The ledger applicability should not say generally applicable to Achieve HTTP/1.1 without identifying a client role.</dd>
+<dt>V2 traceability</dt><dd>V2-X036</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-029">
+<h2><code>V3-9112-029</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-7">RFC 9112 §7</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>If a transfer coding is applied to a request, chunked must be the final coding.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>request sender</dd>
+<dt>Responsible layer</dt><dd>External request sender</dd>
+<dt>Implementation evidence</dt><dd>Achieve does not originate HTTP requests. Node/application response transfer coding is a different clause.</dd>
+<dt>Test evidence</dt><dd>Not applicable. Runtime probe: Not run.</dd>
+<dt>Assessment rationale</dt><dd>The recorded obligation explicitly concerns transfer coding applied to a request, while its applicability text incorrectly refers to application-authored responses.</dd>
+<dt>Open question</dt><dd>Correct the role/applicability mismatch in the ledger.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-044</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-030">
+<h2><code>V3-9112-030</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-7">RFC 9112 §7</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A sender must not apply chunked more than once.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP response sender</dd>
+<dt>Implementation evidence</dt><dd>Node serializes application responses; Achieve does not apply Transfer-Encoding itself.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:133-279 (HTTP/HTTPS/h2 response completion and HEAD no-body behavior) Runtime probe: Observed chunked responses have a single Transfer-Encoding layer and parse to completion.</dd>
+<dt>Assessment rationale</dt><dd>No Achieve response path applies chunked twice; Node controls serialization.</dd>
+<dt>Open question</dt><dd>A byte-level focused test would make the delegation evidence more explicit.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-045</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-031">
+<h2><code>V3-9112-031</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-7.1">RFC 9112 §7.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A sender using chunked transfer coding MUST generate chunks, the zero-sized terminal chunk, optional permitted trailers, and final CRLF according to the chunked grammar.</dd>
+<dt>Conditions</dt><dd>Only when chunked is selected and permitted for the message.</dd>
+<dt>Applicable role</dt><dd>sender</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP response sender</dd>
+<dt>Implementation evidence</dt><dd>Node serializes chunked output from ServerResponse; Achieve supplies content.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:133-279 (HTTP/HTTPS/h2 response completion and HEAD no-body behavior) Runtime probe: HTTP/1.1 streaming/delayed responses parse and terminate successfully.</dd>
+<dt>Assessment rationale</dt><dd>Successful parsing to end by Node clients establishes valid terminal framing for exercised chunked responses.</dd>
+<dt>Open question</dt><dd>A raw byte grammar assertion would improve but is not necessary for the observed sender behavior.</dd>
+<dt>V2 traceability</dt><dd>V2-H116</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-032">
+<h2><code>V3-9112-032</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-7.1.1">RFC 9112 §7.1.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MUST ignore unrecognized chunk extensions.</dd>
+<dt>Conditions</dt><dd>Recipients ought to limit extension length and count to avoid abuse.</dd>
+<dt>Applicable role</dt><dd>recipient</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser</dd>
+<dt>Implementation evidence</dt><dd>Chunk extensions are consumed by Node before Achieve receives body data.</dd>
+<dt>Test evidence</dt><dd>Batch D fragmented a chunk-size line across TCP writes and supplied token, quoted-string with escaped quote, valueless, and terminal-chunk extensions. Achieve and standalone Node ignored every extension and delivered exactly DATAXYZ. A chunked request without extensions delivered the DATA control. tests/request_input/verify.js also passed all buffered, streamed, malformed, and aborted-input checks.</dd>
+<dt>Assessment rationale</dt><dd>The positive and ordinary controls directly establish that unrecognized valid extensions are ignored without altering decoded content.</dd>
+<dt>Open question</dt><dd>The separate ought-to extension-size limit is not part of this MUST record and was not assessed.</dd>
+<dt>V2 traceability</dt><dd>V2-H117</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-033">
+<h2><code>V3-9112-033</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-7.1.2">RFC 9112 §7.1.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MUST NOT merge trailer fields into the header section unless the field definition explicitly permits and defines safe merging.</dd>
+<dt>Conditions</dt><dd>Trailer field definitions and RFC 9110 §6.5.1 control permission.</dd>
+<dt>Applicable role</dt><dd>recipient</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP parser; application can inspect IncomingMessage trailers</dd>
+<dt>Implementation evidence</dt><dd>Achieve passes the Node request object to servlets and does not merge trailers itself.</dd>
+<dt>Test evidence</dt><dd>Batch B observed x-batch-trailer only in trailers/rawTrailers over HTTP/1.1 and h2c. Batch D independently sent Authorization in both headers and trailers plus trailer-only X-Trailer: the header retained Basic head, trailers retained Basic tail and tail-value, rawTrailers preserved both lines, and no trailer appeared in headers. Standalone Node matched.</dd>
+<dt>Assessment rationale</dt><dd>Direct positive controls establish separate storage of retained non-mergeable trailers; Achieve performs no additional merge.</dd>
+<dt>Open question</dt><dd>Bounded to Node.js 22.15.0 and retained trailer fields; discarding a trailer would also be permitted by §7.1.2.</dd>
+<dt>V2 traceability</dt><dd>V2-H118</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-034">
+<h2><code>V3-9112-034</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-9.3">RFC 9112 §9.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST read the entire request message body or close the connection before reusing it.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js socket/parser plus Achieve input handling</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:2480-2540 (POST stream consumption; GET/HEAD dispatch)</dd>
+<dt>Test evidence</dt><dd>tests/request_input/verify.js:57-208 (buffered and streamed request input, including abort survival); tests/buffered_abort/verify.js:90-260 (incomplete Content-Length/chunked POST aborts) Runtime probe: Raw GET with Content-Length: 4 followed by a pipelined GET produced two ordered 200 responses; POST paths consume or abort before reuse.</dd>
+<dt>Assessment rationale</dt><dd>Observed GET body bytes were framed/consumed before the next request, while POST body listeners consume complete input and aborted bodies close.</dd>
+<dt>Open question</dt><dd>Repeat for early servlet responses to unusual methods if registered-method handlers are allowed request bodies.</dd>
+<dt>V2 traceability</dt><dd>V2-H119</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-035">
+<h2><code>V3-9112-035</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-9.3.2">RFC 9112 §9.3.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server receiving pipelined requests MUST send the corresponding responses in the same order the requests were received.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP server/socket</dd>
+<dt>Implementation evidence</dt><dd>Node dispatches parsed requests; Achieve responds per request.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js:12-101 (raw HTTP/HTTPS and HTTP/2 target checks; 560 checks) Runtime probe: Raw pipelined GET /missing then GET /index.html produced responses 404 then 200 in request order.</dd>
+<dt>Assessment rationale</dt><dd>The optional permission to process safe requests in parallel was removed from this mandatory ordering record. Existing pipelining evidence establishes response order.</dd>
+<dt>Open question</dt><dd>The ledger should split the MAY parallelize clause from the MUST preserve response order clause.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-046</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-036">
+<h2><code>V3-9112-036</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-9.6">RFC 9112 §9.6</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server that receives Connection: close MUST close after its final response.</dd>
+<dt>Conditions</dt><dd>Received close option.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP server/socket</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>Many raw tests send Connection: close. Runtime probe: Raw requests with Connection: close ended after the final response.</dd>
+<dt>Assessment rationale</dt><dd>Mandatory connection closure was observed.</dd>
+<dt>Open question</dt><dd>None for ordinary completed responses.</dd>
+<dt>V2 traceability</dt><dd>V2-X039</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-037">
+<h2><code>V3-9112-037</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-9.6">RFC 9112 §9.6</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>A server that receives Connection: close SHOULD send close in its final response.</dd>
+<dt>Conditions</dt><dd>Received close option.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP server/socket</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>Many raw tests send Connection: close. Runtime probe: Responses to ordinary Connection: close requests included Connection: close.</dd>
+<dt>Assessment rationale</dt><dd>The recommended response signal was observed.</dd>
+<dt>Open question</dt><dd>The pipelined-close malformed case returned 400/close, also signaling closure.</dd>
+<dt>V2 traceability</dt><dd>V2-X040</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-038">
+<h2><code>V3-9112-038</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-9.6">RFC 9112 §9.6</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>After receiving or sending Connection: close, a server MUST NOT process further requests on that connection.</dd>
+<dt>Conditions</dt><dd>Close option received or sent.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP server/socket</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
+<dt>Test evidence</dt><dd>No pre-existing pipelined-after-close assertion. Runtime probe: A request containing Connection: close followed by another pipelined request yielded one 400/close response; no second request was processed.</dd>
+<dt>Assessment rationale</dt><dd>The server did not process a request following the close signal.</dd>
+<dt>Open question</dt><dd>A clean first-response variant could improve diagnostic specificity.</dd>
+<dt>V2 traceability</dt><dd>V2-X041</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-039">
+<h2><code>V3-9112-039</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-9.8">RFC 9112 §9.8</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST attempt to initiate an exchange of TLS closure alerts with the client before closing the connection.</dd>
+<dt>Conditions</dt><dd>Orderly TLS shutdown is possible.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js TLS/OpenSSL</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1515-1556 creates https.Server and delegates orderly TLS shutdown to Node/OpenSSL.</dd>
+<dt>Test evidence</dt><dd>In Batch D, OpenSSL 3.5.7 requested Connection: close from Achieve HTTPS and captured the server's TLS close notify alert after the complete response; the process exited normally. The same record-level observation succeeded against standalone Node. Existing HTTPS response-completion tests cover application-level completion.</dd>
+<dt>Assessment rationale</dt><dd>The TLS record observation directly establishes that the assessed server attempted the required alert exchange before its transport closure. Matching standalone behavior assigns implementation to Node/OpenSSL.</dd>
+<dt>Open question</dt><dd>Observed with Node.js 22.15.0 linked to OpenSSL 3.0.16 and an OpenSSL 3.5.7 client on Windows; other runtime/TLS stacks require reassessment.</dd>
+<dt>V2 traceability</dt><dd>V2-X042</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-040">
+<h2><code>V3-9112-040</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-9.8">RFC 9112 §9.8</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>A server SHOULD be prepared to receive an incomplete TLS close from the client.</dd>
+<dt>Conditions</dt><dd>Client closes without completing the TLS closure-alert exchange.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js TLS/OpenSSL</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1515-1556 creates https.Server and delegates TLS lifecycle handling to Node/OpenSSL.</dd>
+<dt>Test evidence</dt><dd>Batch D completed a keep-alive HTTPS response and then terminated the client without an orderly TLS close in two controls: TLSSocket.destroy and forced termination of an OpenSSL client. Achieve remained operational and a subsequent HTTPS health request returned the complete 200 representation after each abort; standalone Node matched. No uncaught server failure occurred.</dd>
+<dt>Assessment rationale</dt><dd>The endpoint tolerated the RFC-described incomplete client close after the client had located the end of server data and continued serving requests, satisfying the SHOULD for the observed configuration.</dd>
+<dt>Open question</dt><dd>The probe establishes graceful operational handling, not an exhaustive resource-leak proof under repeated hostile abort load.</dd>
+<dt>V2 traceability</dt><dd>V2-X042</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-041">
+<h2><code>V3-9112-041</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-9.8">RFC 9112 §9.8</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>A client encountering an incomplete TLS close SHOULD treat requests as completed when it received the stated Content-Length or terminal zero-length chunk and SHOULD recover gracefully.</dd>
+<dt>Conditions</dt><dd>Client receives an incomplete TLS close after a response with explicit HTTP message framing.</dd>
+<dt>Applicable role</dt><dd>client</dd>
+<dt>Responsible layer</dt><dd>External HTTPS client</dd>
+<dt>Implementation evidence</dt><dd>Achieve is assessed as an origin server and does not implement an HTTPS response client.</dd>
+<dt>Test evidence</dt><dd>No runtime probe is needed for the origin-server applicability decision; server-side TLS closure obligations are assessed separately in V3-9112-039 and V3-9112-040.</dd>
+<dt>Assessment rationale</dt><dd>The two explicit client SHOULD recommendations are outside Achieve's supported origin-server role.</dd>
+<dt>Open question</dt><dd>None for Achieve origin-server scope.</dd>
+<dt>V2 traceability</dt><dd>V2-X043</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9112-042">
+<h2><code>V3-9112-042</code> — <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-9.8">RFC 9112 §9.8</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>A response with neither chunked transfer coding nor Content-Length is complete only if a valid TLS closure alert has been received.</dd>
+<dt>Conditions</dt><dd>Client receives a close-delimited response over TLS.</dd>
+<dt>Applicable role</dt><dd>client</dd>
+<dt>Responsible layer</dt><dd>External HTTPS client</dd>
+<dt>Implementation evidence</dt><dd>Achieve is assessed as an origin server and does not implement an HTTPS response client.</dd>
+<dt>Test evidence</dt><dd>No runtime probe is needed for the origin-server applicability decision.</dd>
+<dt>Assessment rationale</dt><dd>This declarative completeness rule applies to an HTTP client receiving responses, not the Achieve origin server.</dd>
+<dt>Open question</dt><dd>None for Achieve origin-server scope.</dd>
+<dt>V2 traceability</dt><dd>V2-X043</dd>
+</dl>
+</article>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a>
+</footer>
+</body>
+</html>

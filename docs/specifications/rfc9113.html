@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Complete Achieve 3.1.0 conformance register for RFC 9113 HTTP/2.">
+<meta name="dcterms.created" content="2026-11-05">
+<meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve 3.1.0 RFC 9113 Conformance Register</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; color:#18283b; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,160,32); border-bottom:solid blue thick; padding:.2em; margin:0; }
+nav { padding:.7em 5%; background:#dceff8; border-bottom:1px solid #8ab3d0; }
+nav a,.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; margin-right:1.1em; }
+nav a:hover,.packageLink:hover { color:blue; text-decoration:underline; }
+main { margin:2% 5% 5%; max-width:105em; }
+h1,h2,h3 { color:#153d70; }
+.metadata,.notice { background:#eaf6fb; border-left:.35em solid #326fa8; padding:.7em 1em; margin:1em 0; }
+.notice { border-left-color:#8a6500; background:#fff7da; }
+.counts { border-collapse:collapse; margin:1em 0; }
+.counts th,.counts td { border:1px solid #7fa5bd; padding:.45em .7em; text-align:left; }
+.counts th { background:#d5eaf5; }
+.requirement { background:#edf8fc; border:1px solid #8eb3c9; border-radius:.35em; padding:.8em 1em; margin:1em 0; }
+.requirement h2 { font-size:1.15em; margin:.1em 0 .6em; }
+.requirement dl { display:grid; grid-template-columns:minmax(10em,15em) 1fr; gap:.35em .8em; margin:.5em 0; }
+.requirement dt { font-weight:bold; }
+.requirement dd { margin:0; overflow-wrap:anywhere; }
+.badge { display:inline-block; border-radius:.3em; padding:.15em .45em; font-weight:bold; }
+.conformant { background:#ccebd2; color:#174e24; }
+.nonconformant { background:#ffd2d2; color:#791b1b; }
+.unverified { background:#fff0b8; color:#684e00; }
+.not-applicable { background:#e0e0e0; color:#3d3d3d; }
+.optional-not-implemented { background:#dfd5f5; color:#4b2d72; }
+code { padding:.08em .35em; border-radius:.3em; background:#dcebf4; color:blue; font-family:Consolas,"Courier New",monospace; }
+.compact li { margin:.4em 0; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+@media (max-width:700px) { .requirement dl { display:block; } .requirement dt { margin-top:.5em; } nav a { display:inline-block; margin-bottom:.4em; } }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern.">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<nav aria-label="Specification navigation">
+<a href="index.htm">Specifications index</a>
+<a href="methodology.html">Methodology</a>
+<a href="conformance.html">Conformance summary</a>
+<a href="rfc9110.html">RFC 9110</a>
+<a href="rfc9111.html">RFC 9111</a>
+<a href="rfc9112.html">RFC 9112</a>
+<a href="rfc9113.html">RFC 9113</a>
+<a href="evidence.html">Evidence</a>
+<a href="../index.htm">Documentation home</a>
+</nav>
+<main>
+
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9113.html">RFC 9113 HTTP/2</a></h1>
+<div class="metadata"><strong>Achieve:</strong> 3.1.0<br><strong>Evaluated runtime:</strong> Node.js 24.22.2<br><strong>Assessment baseline:</strong> November 5, 2026<br><strong>Document status:</strong> Qualified release assessment</div>
+<p>This register presents all 62 authoritative V3 requirements for RFC 9113. Requirement text is a traceable summary; the linked RFC Editor section supplies the controlling normative text and conditions.</p>
+<table class="counts"><thead><tr><th>Classification</th><th>Count</th></tr></thead><tbody><tr><td><span class="badge conformant">Conformant</span></td><td>49</td></tr><tr><td><span class="badge nonconformant">Nonconformant</span></td><td>6</td></tr><tr><td><span class="badge unverified">Unverified</span></td><td>3</td></tr><tr><td><span class="badge not-applicable">Not applicable</span></td><td>3</td></tr><tr><td><span class="badge optional-not-implemented">Optional not implemented</span></td><td>1</td></tr><tr><th>Total</th><th>62</th></tr></tbody></table>
+<p><a href="conformance.html">Review the overall findings</a> · <a href="methodology.html">Read the methodology</a> · <a href="evidence.html">Inspect evidence sources</a></p>
+<article class="requirement" id="V3-9113-001">
+<h2><code>V3-9113-001</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-3.4">RFC 9113 §3.4</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>The first server frame after the connection preface must be a non-ACK SETTINGS frame.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>Successful h2c and h2 sessions in tests/http2_authority/verify.js require preface/SETTINGS exchange and acknowledgement; suite passed locally.</dd>
+<dt>Assessment rationale</dt><dd>Successful standard Node HTTP/2 connections establish that the first server frame is acceptable as the required non-ACK SETTINGS frame on both transports.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-049</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-002">
+<h2><code>V3-9113-002</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-4.2">RFC 9113 §4.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MUST treat frames larger than the advertised maximum as FRAME_SIZE_ERROR.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P08 sent a 16,385-byte DATA frame when the advertised/default maximum was 16,384; Node 22.15.0 returned GOAWAY FRAME_SIZE_ERROR.</dd>
+<dt>Assessment rationale</dt><dd>P08 directly exercised a frame exceeding SETTINGS_MAX_FRAME_SIZE and observed the exact RFC 9113 section 4.2 error code and connection scope.</dd>
+<dt>Open question</dt><dd>No material uncertainty for the exercised recipient obligation; behavior is qualified to the assessed Node.js 22.15.0 endpoint.</dd>
+<dt>V2 traceability</dt><dd>V2-H202</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-003">
+<h2><code>V3-9113-003</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-4.1">RFC 9113 §4.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>Recipients must ignore the reserved frame-header bit when receiving and leave it unset when sending.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>P01 in http2-frame-hpack-probes.md directly verifies receiver handling. Batch F observed the sender bit clear on the representative SETTINGS, SETTINGS ACK, HEADERS, RST_STREAM, and GOAWAY frames captured by that campaign.</dd>
+<dt>Assessment rationale</dt><dd>The direct receiver probe and bounded sender captures establish the behavior for the tested Node/nghttp2 endpoint and observed frame families; they do not constitute an exhaustive capture of every frame type.</dd>
+<dt>Open question</dt><dd>Additional sender frame families would require further capture if universal frame-type coverage were desired.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-050</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-004">
+<h2><code>V3-9113-004</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-4.1">RFC 9113 §4.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>Implementations must ignore unknown frame types.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P02 sent unknown frame type 0xfe and then a valid request; the unknown frame was discarded and the request succeeded.</dd>
+<dt>Assessment rationale</dt><dd>P02 directly exercised the section 4.1 recipient obligation to ignore and discard an unknown frame type while preserving connection usability.</dd>
+<dt>Open question</dt><dd>No material uncertainty for the recipient obligation on the assessed Node.js 22.15.0 endpoint.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-051</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-005">
+<h2><code>V3-9113-005</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-4.3">RFC 9113 §4.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>Field blocks MUST be transmitted as a contiguous sequence of HEADERS or PUSH_PROMISE followed by CONTINUATION frames, without interleaving frames of another type or stream.</dd>
+<dt>Conditions</dt><dd>The endpoint sends a field block spanning more than one frame.</dd>
+<dt>Applicable role</dt><dd>HTTP/2 sender</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 and nghttp2 field-block serializer</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; Node/nghttp2 owns response field-block framing.</dd>
+<dt>Test evidence</dt><dd>The final-unverified probe made Achieve send a 40,000-octet response field. Raw h2c capture showed HEADERS length 16,384 without END_HEADERS immediately followed on the same stream by one CONTINUATION length 8,679 with END_HEADERS; DATA followed only after the field block completed.</dd>
+<dt>Assessment rationale</dt><dd>The exact multi-frame sender condition was exercised, and no frame of another type or stream was interleaved. Existing P04-P07 separately establish receiver behavior.</dd>
+<dt>Open question</dt><dd>The capture is version-specific to Node.js 22.15.0/nghttp2 1.64.0; PUSH_PROMISE is not generated by this origin server, but the centralized serializer produced the required sequence for the applicable response field block.</dd>
+<dt>V2 traceability</dt><dd>V2-X044</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-006">
+<h2><code>V3-9113-006</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-4.3">RFC 9113 §4.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A decoding failure in a field block is a connection error of type COMPRESSION_ERROR.</dd>
+<dt>Conditions</dt><dd>HPACK decoding fails.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 and nghttp2 HPACK implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P25-P28 and P30 exercised invalid index zero, a truncated integer, oversized and misplaced table-size updates, and an unavailable dynamic index; each produced connection COMPRESSION_ERROR.</dd>
+<dt>Assessment rationale</dt><dd>Representative, structurally distinct HPACK decoding failures all produced the exact mandatory connection error; conformance does not require enumerating every invalid octet string.</dd>
+<dt>Open question</dt><dd>No material uncertainty for the decoding-failure obligation on the assessed Node.js 22.15.0 endpoint.</dd>
+<dt>V2 traceability</dt><dd>V2-X045</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-007">
+<h2><code>V3-9113-007</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.1">RFC 9113 §5.1</a></h2>
+<p><span class="badge nonconformant">Nonconformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An endpoint MUST enforce the state-dependent permitted frame types and apply the specified stream or connection error for violations.</dd>
+<dt>Conditions</dt><dd>Composite summary record covering the section 5.1 state-dependent frame and error obligations; individual rules remain separately traceable where the inventory contains them.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing. The focused investigation shows the malformed frames are rejected by Node/nghttp2 before Achieve request dispatch; standalone Node reproduces the wire result.</dd>
+<dt>Test evidence</dt><dd>Historical raw-frame investigations established the error families and removed fragmentation artifacts. Final Node.js 24.22.2 Windows and Linux qualification repeated the remaining stream WINDOW_UPDATE(0) and excess-concurrency counterexamples.</dd>
+<dt>Assessment rationale</dt><dd>This record is intentionally retained as a composite summary for V2 traceability. Node.js 24.22.2 corrects the earlier tested connection-level error-code substitutions, but stream WINDOW_UPDATE(0) and excess-concurrency cases still have incorrect connection scope. One applicable counterexample establishes the composite MUST as Nonconformant for the qualified configuration.</dd>
+<dt>Open question</dt><dd>Untested state transitions remain unverified independently of the demonstrated failures; consult the narrower records rather than treating this composite as exhaustive verification.</dd>
+<dt>V2 traceability</dt><dd>V2-X046</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-008">
+<h2><code>V3-9113-008</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.1.1">RFC 9113 §5.1.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>Newly established client-initiated streams use odd identifiers; invalid parity is a connection error.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>client</dd>
+<dt>Responsible layer</dt><dd>Node.js 24.22.2/nghttp2 1.70.0 HTTP/2 session and framing implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing. Node/nghttp2 owns the parity check before Achieve request dispatch.</dd>
+<dt>Test evidence</dt><dd>http2-five-findings-investigation.md preserves the historical Node 22.15.0 GOAWAY(INTERNAL_ERROR) result. node24-adoption-decision.md and final Linux qualification run 42049611849 repeat a client HEADERS opening even stream 2 on Node 24.22.2 and observe connection GOAWAY(PROTOCOL_ERROR).</dd>
+<dt>Assessment rationale</dt><dd>The released Achieve 3.1.0 / Node.js 24.22.2 endpoint uses the required connection error for the directly exercised invalid client-stream parity case. The prior Node 22 failure remains historical evidence and is attributed below Achieve application logic.</dd>
+<dt>Open question</dt><dd>The evidence establishes the previously failing parity case on the qualified runtime; other stream-state obligations remain independently classified.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-052</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-009">
+<h2><code>V3-9113-009</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.1.1">RFC 9113 §5.1.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>New stream identifiers must increase monotonically; reuse or invalid ordering has defined error handling.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P17; batch-e-evidence-review.md E02.</dd>
+<dt>Assessment rationale</dt><dd>A lower new identifier receives connection PROTOCOL_ERROR; a repeated HEADERS block on the closed identifier is discarded rather than opening a second request, consistent with the closed-stream exceptions. Achieve initiates no push streams.</dd>
+<dt>Open question</dt><dd>None for the supported origin-server scope.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-053</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-010">
+<h2><code>V3-9113-010</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.1.2">RFC 9113 §5.1.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An endpoint must not exceed the peer's advertised maximum concurrent streams.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>Achieve never calls pushStream or initiates request streams; no repository test exercises server-initiated streams.</dd>
+<dt>Assessment rationale</dt><dd>Achieve initiates no request streams and performs no server push, so it cannot exceed a peer limit for server-initiated streams.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-054</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-011">
+<h2><code>V3-9113-011</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.1.2">RFC 9113 §5.1.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>An endpoint reducing its advertised maximum below the current number of open streams can close excess streams or allow them to complete.</dd>
+<dt>Conditions</dt><dd>The endpoint reduces SETTINGS_MAX_CONCURRENT_STREAMS below the current number of open streams.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session and dynamic SETTINGS handling</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers and delegates dynamic SETTINGS behavior to Node/nghttp2.</dd>
+<dt>Test evidence</dt><dd>A focused Node.js 22.15.0 control held streams 1 and 3 open, reduced advertised SETTINGS_MAX_CONCURRENT_STREAMS from unlimited to 1, observed the client receive the new value, and then allowed both pre-existing streams to complete normally.</dd>
+<dt>Assessment rationale</dt><dd>The exact dynamic-reduction condition was exercised and the endpoint selected one of the two behavior alternatives RFC 9113 permits: allowing excess existing streams to complete.</dd>
+<dt>Open question</dt><dd>The probe used standalone Node because Achieve adds no protocol-layer handling here; application code does not ordinarily change the server's advertised limit.</dd>
+<dt>V2 traceability</dt><dd>V2-X047A</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-012">
+<h2><code>V3-9113-012</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.1.2">RFC 9113 §5.1.2</a></h2>
+<p><span class="badge nonconformant">Nonconformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A receiver MUST treat a newly opened stream that exceeds its advertised maximum-concurrent-streams limit as the specified stream error.</dd>
+<dt>Conditions</dt><dd>A peer opens a new stream beyond the advertised limit outside the permitted concurrency race.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js 24.22.2/nghttp2 1.70.0 HTTP/2 stream-concurrency handling</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers and delegates the frame state machine to Node/nghttp2.</dd>
+<dt>Test evidence</dt><dd>Batch E established the controlled stream lifetime and fragmentation result. Final Node.js 24.22.2 Windows and Linux qualification repeated the case with MAX_CONCURRENT_STREAMS=1 and stream 1 held open.</dd>
+<dt>Assessment rationale</dt><dd>Opening stream 3 produces connection GOAWAY(PROTOCOL_ERROR) rather than the required stream PROTOCOL_ERROR or REFUSED_STREAM. Node 24 corrects the earlier error code but not the error scope.</dd>
+<dt>Open question</dt><dd>The upstream stream-scope defect remains; repeat when the supported Node/nghttp2 baseline changes.</dd>
+<dt>V2 traceability</dt><dd>V2-X047B</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-013">
+<h2><code>V3-9113-013</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.2">RFC 9113 §5.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>HTTP/2 flow control applies only to DATA frames and counts padding in the controlled octets.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js/nghttp2 flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 delegates HTTP/2 framing and flow control to Node/nghttp2.</dd>
+<dt>Test evidence</dt><dd>batch-e-evidence-review.md E05-E10.</dd>
+<dt>Assessment rationale</dt><dd>HEADERS and SETTINGS acknowledgements remain transmissible at zero DATA credit; isolated DATA windows are enforced; a padded DATA payload exceeding the stream window by one produces FLOW_CONTROL_ERROR in contiguous and fragmented delivery.</dd>
+<dt>Open question</dt><dd>None for the tested flow-control accounting scope.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-055</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-014">
+<h2><code>V3-9113-014</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.4.1">RFC 9113 §5.4.1</a></h2>
+<p><span class="badge unverified">Unverified</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>An endpoint detecting a connection error SHOULD send GOAWAY with the applicable error code before closing when possible.</dd>
+<dt>Conditions</dt><dd>The endpoint can close immediately when sending GOAWAY is not possible.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 delegates HTTP/2 connection-error framing to Node/nghttp2.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P05-P24 and batch-e-evidence-review.md E03 show GOAWAY before closure for all observed connection-error categories.</dd>
+<dt>Assessment rationale</dt><dd>The representative corpus is strong evidence but does not establish the record's universal every-connection-error and when-possible conditions; no counterexample to the GOAWAY-before-close recommendation was found.</dd>
+<dt>Open question</dt><dd>Either split the broad record into bounded error families or obtain authoritative version-specific coverage for the remaining conditions.</dd>
+<dt>V2 traceability</dt><dd>V2-H207</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-015">
+<h2><code>V3-9113-015</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.4.2">RFC 9113 §5.4.2</a></h2>
+<p><span class="badge nonconformant">Nonconformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An endpoint detecting a stream error MUST send RST_STREAM with the applicable error code, subject to the closed-stream exceptions.</dd>
+<dt>Conditions</dt><dd>Connection errors and already-closed streams have separate handling.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js 24.22.2/nghttp2 1.70.0 stream-error handling</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 delegates HTTP/2 error framing to Node/nghttp2.</dd>
+<dt>Test evidence</dt><dd>The five-findings investigation and Batch E removed the application-response race. Final Node.js 24.22.2 Windows and Linux qualification repeated open-stream WINDOW_UPDATE(0) and observed connection GOAWAY(PROTOCOL_ERROR).</dd>
+<dt>Assessment rationale</dt><dd>Many malformed-message stream errors correctly receive RST_STREAM, but an open nonzero stream receiving WINDOW_UPDATE(0) gets a connection error instead of its required stream reset. This is the same underlying cause recorded by V3-9113-026.</dd>
+<dt>Open question</dt><dd>Repeat the known counterexample when the supported Node/nghttp2 baseline changes.</dd>
+<dt>V2 traceability</dt><dd>V2-H208</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-016">
+<h2><code>V3-9113-016</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.5">RFC 9113 §6.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A SETTINGS recipient must acknowledge applied settings.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender/recipient</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>Successful h2c and h2 sessions in tests/http2_authority/verify.js require preface/SETTINGS exchange and acknowledgement; suite passed locally.</dd>
+<dt>Assessment rationale</dt><dd>Successful sessions and requests require the SETTINGS exchange and acknowledgement to complete; observed on h2c and h2.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-057</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-017">
+<h2><code>V3-9113-017</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.5">RFC 9113 §6.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A SETTINGS frame with ACK must have an empty payload; otherwise FRAME_SIZE_ERROR.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P09 sent SETTINGS with ACK and a six-byte payload; Node 22.15.0 returned GOAWAY FRAME_SIZE_ERROR.</dd>
+<dt>Assessment rationale</dt><dd>P09 directly exercised the exact section 6.5 ACK-payload condition and observed the mandatory error code and connection scope.</dd>
+<dt>Open question</dt><dd>No material uncertainty for this exact obligation.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-058</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-018">
+<h2><code>V3-9113-018</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.5.2">RFC 9113 §6.5.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A server must not push when the client has disabled push; violation is a connection error.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>client</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>No pushStream call exists in achieve.js; achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>Achieve never calls pushStream or initiates request streams; no repository test exercises server-initiated streams.</dd>
+<dt>Assessment rationale</dt><dd>Achieve never invokes server push, so it does not push when the peer disables push.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-072</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-019">
+<h2><code>V3-9113-019</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.5.2">RFC 9113 §6.5.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient MUST treat a SETTINGS value outside its defined range as the specified connection error.</dd>
+<dt>Conditions</dt><dd>Defined setting-specific range violated.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js 24.22.2/nghttp2 1.70.0 HTTP/2 SETTINGS implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing. Node/nghttp2 validates SETTINGS before Achieve request dispatch.</dd>
+<dt>Test evidence</dt><dd>http2-five-findings-investigation.md preserves the historical Node 22.15.0 GOAWAY(INTERNAL_ERROR) results. node24-adoption-decision.md and final Linux qualification run 42049611849 send SETTINGS_ENABLE_PUSH=2 and SETTINGS_MAX_FRAME_SIZE=16383 on Node 24.22.2; both receive the required connection GOAWAY(PROTOCOL_ERROR).</dd>
+<dt>Assessment rationale</dt><dd>The two defined out-of-range SETTINGS cases that previously demonstrated nonconformance now produce the specified connection error on the released Achieve 3.1.0 / Node.js 24.22.2 endpoint. The correction belongs to the runtime protocol layer, not Achieve application logic.</dd>
+<dt>Open question</dt><dd>The bounded probes establish the formerly failing defined-range cases; they do not imply exhaustive coverage of every setting-specific range.</dd>
+<dt>V2 traceability</dt><dd>V2-X048</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-020">
+<h2><code>V3-9113-020</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.6">RFC 9113 §6.6</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server receiving PUSH_PROMISE MUST treat it as a connection error of type PROTOCOL_ERROR.</dd>
+<dt>Conditions</dt><dd>Servers cannot be pushed to.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js 24.22.2/nghttp2 1.70.0 HTTP/2 framing implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing. Node/nghttp2 rejects client PUSH_PROMISE before Achieve request dispatch.</dd>
+<dt>Test evidence</dt><dd>http2-five-findings-investigation.md preserves the historical Node 22.15.0 GOAWAY(INTERNAL_ERROR) result. node24-adoption-decision.md and final Linux qualification run 42049611849 send client PUSH_PROMISE on Node 24.22.2 and observe the required connection GOAWAY(PROTOCOL_ERROR).</dd>
+<dt>Assessment rationale</dt><dd>The released Achieve 3.1.0 / Node.js 24.22.2 endpoint applies the exact mandatory connection error when a client sends PUSH_PROMISE. The correction is in the runtime protocol layer; the malformed frame never reaches Achieve application logic.</dd>
+<dt>Open question</dt><dd>The classification is specific to the qualified runtime profile and the direct receiving obligation.</dd>
+<dt>V2 traceability</dt><dd>V2-H209</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-021">
+<h2><code>V3-9113-021</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.7">RFC 9113 §6.7</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A recipient of a PING frame without ACK MUST send a PING response with ACK and identical opaque data.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section.</dd>
+<dt>Applicable role</dt><dd>HTTP/2 recipient</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P03 sent non-ACK PING payload 3132333435363738 with an unknown extra flag; the server returned ACK PING with identical data and then served a valid request.</dd>
+<dt>Assessment rationale</dt><dd>P03 directly established acknowledgment, byte-for-byte opaque-data identity, ignored unknown flag, and connection continuity.</dd>
+<dt>Open question</dt><dd>No material uncertainty for this exact obligation.</dd>
+<dt>V2 traceability</dt><dd>V2-H211;V2-NEW-060</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-022">
+<h2><code>V3-9113-022</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.8">RFC 9113 §6.8</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>After sending GOAWAY, an endpoint MUST NOT initiate new streams beyond the identified last stream and receivers apply the specified retry rules.</dd>
+<dt>Conditions</dt><dd>GOAWAY direction, last-stream identifier, and retry conditions apply.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>No Achieve path initiates HTTP/2 streams; Node owns GOAWAY/session state. achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>Achieve never calls pushStream or initiates request streams; no repository test exercises server-initiated streams.</dd>
+<dt>Assessment rationale</dt><dd>The Achieve server never initiates request streams; Node owns GOAWAY and prevents new stream creation through its session API.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-H205</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-023">
+<h2><code>V3-9113-023</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.8">RFC 9113 §6.8</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A GOAWAY receiver MUST NOT initiate new streams with identifiers greater than the last-stream identifier.</dd>
+<dt>Conditions</dt><dd>GOAWAY received.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>No Achieve path initiates HTTP/2 streams after any GOAWAY; Node owns session state. achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>Achieve never calls pushStream or initiates request streams; no repository test exercises server-initiated streams.</dd>
+<dt>Assessment rationale</dt><dd>As an origin server Achieve does not initiate request streams after receiving GOAWAY; no server push is used.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-X065</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-024">
+<h2><code>V3-9113-024</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.8">RFC 9113 §6.8</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MAY</p>
+<dl>
+<dt>Requirement</dt><dd>Requests on streams greater than GOAWAY's last-stream identifier MAY be retried because they are known not to have been processed.</dd>
+<dt>Conditions</dt><dd>Retry safety still follows HTTP method semantics.</dd>
+<dt>Applicable role</dt><dd>client</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>This retry permission concerns a request-initiating recipient; Achieve exposes an origin server, not an HTTP/2 client.</dd>
+<dt>Test evidence</dt><dd>No focused repository test or raw-frame probe establishes this complete requirement.</dd>
+<dt>Assessment rationale</dt><dd>The row describes retry permission for a request-initiating GOAWAY recipient. Achieve is assessed as an origin server and does not provide an HTTP/2 client.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-X066</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-025">
+<h2><code>V3-9113-025</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.9">RFC 9113 §6.9</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>Flow-control windows must not exceed 2^31−1; overflow is the specified stream or connection error.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js/nghttp2 flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 delegates HTTP/2 framing and flow control to Node/nghttp2.</dd>
+<dt>Test evidence</dt><dd>batch-e-evidence-review.md E03-E04.</dd>
+<dt>Assessment rationale</dt><dd>Crossing the maximum on the connection produces GOAWAY FLOW_CONTROL_ERROR; crossing it on an open stream produces RST_STREAM FLOW_CONTROL_ERROR and preserves connection scope. Fragmented stream delivery agrees.</dd>
+<dt>Open question</dt><dd>None for the tested overflow boundaries.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-056</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-026">
+<h2><code>V3-9113-026</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.9">RFC 9113 §6.9</a></h2>
+<p><span class="badge nonconformant">Nonconformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>WINDOW_UPDATE with increment zero is a PROTOCOL_ERROR at the applicable scope.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing. The focused investigation shows the malformed frames are rejected by Node/nghttp2 before Achieve request dispatch; standalone Node reproduces the wire result.</dd>
+<dt>Test evidence</dt><dd>The focused investigation established both scopes. Final Node.js 24.22.2 Windows and Linux qualification observed the correct connection GOAWAY(PROTOCOL_ERROR), but a deliberately open nonzero stream still received GOAWAY(PROTOCOL_ERROR) instead of RST_STREAM(PROTOCOL_ERROR).</dd>
+<dt>Assessment rationale</dt><dd>The qualified endpoint has corrected the connection-level code, but the remaining nonzero-stream scope defect persists in Node.js 24.22.2/nghttp2 1.70.0. RFC 9113 requires a stream error for a valid nonzero stream.</dd>
+<dt>Open question</dt><dd>The Achieve immediate-response race can close a fragmented request stream before the invalid frame arrives; the standalone open-stream reproduction removes that artifact. Upstream nghttp2 correction remains unresolved.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-062</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-027">
+<h2><code>V3-9113-027</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.9">RFC 9113 §6.9</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A sender MUST NOT send a flow-controlled frame whose payload exceeds the available connection or stream window.</dd>
+<dt>Conditions</dt><dd>DATA frame subject to both windows.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js/nghttp2 HTTP/2 sender</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 delegates HTTP/2 framing and flow control to Node/nghttp2.</dd>
+<dt>Test evidence</dt><dd>batch-e-evidence-review.md E05-E07.</dd>
+<dt>Assessment rationale</dt><dd>A 100000-octet response stops at 65535 with both default windows, at 10 with an isolated stream window, and at 65535 with an isolated connection window; it resumes only after corresponding credit.</dd>
+<dt>Open question</dt><dd>None for the tested independent send-window controls.</dd>
+<dt>V2 traceability</dt><dd>V2-X049</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-028">
+<h2><code>V3-9113-028</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.9">RFC 9113 §6.9</a></h2>
+<p><span class="badge unverified">Unverified</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A receiver MUST treat flow-control window exceedance as FLOW_CONTROL_ERROR at the applicable scope.</dd>
+<dt>Conditions</dt><dd>Peer exceeds connection or stream window.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js/nghttp2 HTTP/2 receiver</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 delegates HTTP/2 framing and flow control to Node/nghttp2.</dd>
+<dt>Test evidence</dt><dd>batch-e-evidence-review.md E08 establishes stream exceedance as RST_STREAM FLOW_CONTROL_ERROR. The final probe raised the stream window to 100,000, paused application consumption, and sent 65,535 and 65,536 DATA octets in contiguous and fragmented forms; Node emitted connection WINDOW_UPDATE credit and acknowledged a following PING in every case.</dd>
+<dt>Assessment rationale</dt><dd>The stream branch conforms. A peer can violate a connection window in protocol terms, but the tested Node/nghttp2 receiver replenishes connection credit before exhaustion even when the application stream is paused. The attempted sends therefore remained within credit actually advertised on the wire and did not trigger the connection branch.</dd>
+<dt>Open question</dt><dd>A conclusive connection-scope test needs a supported manual-flow-control mode or authoritative Node/nghttp2 evidence. Ignoring WINDOW_UPDATE credit or lowering unadvertised internal state would not be valid wire-conformance evidence.</dd>
+<dt>V2 traceability</dt><dd>V2-X050</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-029">
+<h2><code>V3-9113-029</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.9.2">RFC 9113 §6.9.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A SETTINGS_INITIAL_WINDOW_SIZE change must adjust all active stream windows and handle overflow.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js 24.22.2/nghttp2 1.70.0 SETTINGS flow-control handling</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 delegates HTTP/2 SETTINGS and flow control to Node/nghttp2.</dd>
+<dt>Test evidence</dt><dd>batch-e-evidence-review.md E10-E11 preserves the historical Node 22.15.0 wrong-scope result. node24-adoption-decision.md and final Linux qualification run 42049611849 adjust an active stream window through SETTINGS_INITIAL_WINDOW_SIZE to overflow and observe connection GOAWAY(FLOW_CONTROL_ERROR).</dd>
+<dt>Assessment rationale</dt><dd>The released Achieve 3.1.0 / Node.js 24.22.2 endpoint correctly adjusts the active stream window and uses the required connection-scoped FLOW_CONTROL_ERROR for the previously failing overflow case.</dd>
+<dt>Open question</dt><dd>The bounded probe establishes the demonstrated overflow boundary and valid controls, not every possible flow-control sequence.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-059</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-030">
+<h2><code>V3-9113-030</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.1">RFC 9113 §8.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>A message whose Content-Length does not equal the sum of DATA payload lengths is malformed.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 parser; Achieve handles requests after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>batch-e-evidence-review.md E12-E13.</dd>
+<dt>Assessment rationale</dt><dd>Exact length succeeds. Declared lengths both below and above four DATA octets receive RST_STREAM PROTOCOL_ERROR, and a later health stream succeeds; fragmented delivery agrees.</dd>
+<dt>Open question</dt><dd>None for the tested request-message length conditions.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-070</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-031">
+<h2><code>V3-9113-031</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.1.1">RFC 9113 §8.1.1</a></h2>
+<p><span class="badge unverified">Unverified</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A detected malformed HTTP/2 request MUST be treated as a stream error of type PROTOCOL_ERROR.</dd>
+<dt>Conditions</dt><dd>The server MAY send an HTTP response before closing or resetting the stream; that permission is not part of the mandatory obligation classified here.</dd>
+<dt>Applicable role</dt><dd>HTTP/2 server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 parser; Achieve handles requests after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1414-1424 resets malformed HTTP/2 target streams with NGHTTP2_PROTOCOL_ERROR; other malformed-message handling remains Node-owned.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P31-P47; batch-e-evidence-review.md E12-E14; tests/request_target_syntax/verify.js:55-90.</dd>
+<dt>Assessment rationale</dt><dd>The corpus establishes PROTOCOL_ERROR and connection continuity for many malformed-field, pseudo-header, trailer, target, and Content-Length families, but the broad record still quantifies over every detected malformed request condition. The optional response permission is recorded only as a condition, not combined into the MUST.</dd>
+<dt>Open question</dt><dd>Split the broad record into defined malformed-message families or add authoritative coverage for remaining detected conditions.</dd>
+<dt>V2 traceability</dt><dd>V2-H215</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-032">
+<h2><code>V3-9113-032</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.1.1">RFC 9113 §8.1.1</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A client MUST NOT accept a malformed HTTP/2 response, and a detected malformed response MUST be treated as a stream error of type PROTOCOL_ERROR.</dd>
+<dt>Conditions</dt><dd>Requests can receive an HTTP error response or stream error; malformed responses require stream error.</dd>
+<dt>Applicable role</dt><dd>HTTP/2 client/response recipient</dd>
+<dt>Responsible layer</dt><dd>External HTTP/2 client</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1414-1424 resets malformed HTTP/2 target streams with NGHTTP2_PROTOCOL_ERROR; other malformed-message handling remains Node-owned.</dd>
+<dt>Test evidence</dt><dd>tests/request_target_syntax/verify.js:55-90 verifies protocol-error resets for malformed targets on h2c and h2, but not this complete malformed-field condition.</dd>
+<dt>Assessment rationale</dt><dd>Achieve is assessed as an origin server, not an HTTP/2 response recipient.</dd>
+<dt>Open question</dt><dd>None for Achieve origin-server scope.</dd>
+<dt>V2 traceability</dt><dd>V2-H215</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-033">
+<h2><code>V3-9113-033</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.2.1">RFC 9113 §8.2.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>HTTP/2 field names must be lowercase; uppercase names make the message malformed.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 parser; Achieve handles requests after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P31 sent uppercase field name X-Test; Node 22.15.0 returned stream PROTOCOL_ERROR and served a following request.</dd>
+<dt>Assessment rationale</dt><dd>P31 directly exercised the uppercase-name prohibition and mandatory malformed-message handling with correct stream scope.</dd>
+<dt>Open question</dt><dd>Other invalid field octets are separate ledger obligations; no material uncertainty remains for uppercase names.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-067</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-034">
+<h2><code>V3-9113-034</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.2.2">RFC 9113 §8.2.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>An endpoint MUST NOT generate an HTTP/2 message containing connection-specific fields.</dd>
+<dt>Conditions</dt><dd>Applies when the endpoint constructs an HTTP/2 message; includes Connection, Proxy-Connection, Keep-Alive, Transfer-Encoding, and Upgrade.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint sender</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 response serializer and Achieve/application response logic</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates Node HTTP/2 servers and uses the compatibility response API; Node serializes response fields selected by Achieve or servlet applications.</dd>
+<dt>Test evidence</dt><dd>The final-unverified probe attempted Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, and Upgrade through an Achieve servlet. Node dropped Connection with an UnsupportedWarning and emitted a normal response without it; the other attempts produced no response field section containing the prohibited field. A subsequent request on the session succeeded. Batch F independently established Transfer-Encoding serializer rejection.</dd>
+<dt>Assessment rationale</dt><dd>Every connection-specific field named by section 8.2.2 was attempted through the supported response API, and none appeared on the wire. The serializer, not Achieve application logic, enforces the prohibition.</dd>
+<dt>Open question</dt><dd>Rejected fields other than Connection prevent a normal application response; that operational behavior is outside this sender prohibition.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-063</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-035">
+<h2><code>V3-9113-035</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.2.2">RFC 9113 §8.2.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An HTTP/2 message containing connection-specific fields is malformed and MUST be handled using the malformed-message rules.</dd>
+<dt>Conditions</dt><dd>Includes Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, and Upgrade.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 parser; Achieve handles requests after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P32-P36 sent Connection, Keep-Alive, Proxy-Connection, Transfer-Encoding, and Upgrade individually; every request received stream PROTOCOL_ERROR and every connection remained usable.</dd>
+<dt>Assessment rationale</dt><dd>The probe set covers every field named by section 8.2.2 and observes the mandatory malformed-message handling at stream scope.</dd>
+<dt>Open question</dt><dd>No material uncertainty for the named receiving cases on the assessed Node.js 22.15.0 endpoint.</dd>
+<dt>V2 traceability</dt><dd>V2-S009</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-036">
+<h2><code>V3-9113-036</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.2.2">RFC 9113 §8.2.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>An HTTP/2 sender MUST NOT generate Transfer-Encoding, including chunked.</dd>
+<dt>Conditions</dt><dd>HTTP/2 messages use frames, not transfer codings.</dd>
+<dt>Applicable role</dt><dd>sender</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 response serializer and Achieve/application response logic</dd>
+<dt>Implementation evidence</dt><dd>Node HTTP/2 serializes response frames; Achieve sets semantic headers/body but does not generate Transfer-Encoding. achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>tests/static_length/verify.js:100-180 verifies omission on h2c and h2; Batch F application attempts were rejected by the serializer with ERR_HTTP2_INVALID_CONNECTION_HEADERS and emitted no Transfer-Encoding field.</dd>
+<dt>Assessment rationale</dt><dd>Ordinary output and an attempted prohibited application field establish that the centralized serializer does not generate Transfer-Encoding.</dd>
+<dt>Open question</dt><dd>The rejected application attempt did not receive a normal response; this does not cause prohibited wire output.</dd>
+<dt>V2 traceability</dt><dd>V2-X059</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-037">
+<h2><code>V3-9113-037</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.2.2">RFC 9113 §8.2.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>`TE` is permitted only with the value `trailers`; other values make the message malformed.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 parser; Achieve handles requests after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P37 sent TE: gzip and received stream PROTOCOL_ERROR; P38 sent TE: trailers and received a normal response.</dd>
+<dt>Assessment rationale</dt><dd>The negative and positive controls directly establish the section 8.2.2 TE restriction and its sole permitted value.</dd>
+<dt>Open question</dt><dd>No material uncertainty for the tested restriction; comma-combined alternatives would still contain a value other than trailers and are not needed to establish the rule.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-068</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-038">
+<h2><code>V3-9113-038</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3">RFC 9113 §8.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>All pseudo-header fields must precede regular fields; a later pseudo-header makes the message malformed.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 parser; Achieve handles requests after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P39 placed :path after a regular field; Node 22.15.0 returned stream PROTOCOL_ERROR and served a following request.</dd>
+<dt>Assessment rationale</dt><dd>P39 directly exercises the ordering prohibition and mandatory malformed-message treatment.</dd>
+<dt>Open question</dt><dd>No material uncertainty for this exact obligation.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-064</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-039">
+<h2><code>V3-9113-039</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3">RFC 9113 §8.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>Pseudo-header fields must appear only in their defined message context.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js/nghttp2 HTTP/2 field parser and sender</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates HTTP/2 servers; achieve.js:1407-1441 receives requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P47; batch-e-evidence-review.md E14.</dd>
+<dt>Assessment rationale</dt><dd>A response pseudo-header in a request, an undefined pseudo-header, and a request pseudo-header in trailers each receive stream PROTOCOL_ERROR while the connection remains usable. Normal server responses use the defined :status context.</dd>
+<dt>Open question</dt><dd>None for the defined request, response, undefined, and trailer contexts.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-065</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-040">
+<h2><code>V3-9113-040</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3">RFC 9113 §8.3</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A message must not contain duplicate pseudo-header fields.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 parser; Achieve handles requests after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P40, P43, and P45 duplicated :method, :scheme, and :path respectively; each received stream PROTOCOL_ERROR and left the connection usable.</dd>
+<dt>Assessment rationale</dt><dd>Three different pseudo-header names establish generic duplicate-pseudo-header enforcement and the required malformed-message handling.</dd>
+<dt>Open question</dt><dd>A separate :authority duplicate is not necessary to establish the generic parser rule.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-066</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-041">
+<h2><code>V3-9113-041</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3.1">RFC 9113 §8.3.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>For http or https URIs, :path MUST NOT be empty; OPTIONS in asterisk form uses '*' and classic CONNECT omits :path.</dd>
+<dt>Conditions</dt><dd>HTTP or HTTPS requests, with the defined OPTIONS asterisk-form and classic CONNECT rules.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 parser; Achieve handles requests after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P46 sent an empty :path on GET; Node 22.15.0 returned stream PROTOCOL_ERROR and served a following request. Existing tests/connect/verify.js exercises valid classic CONNECT.</dd>
+<dt>Assessment rationale</dt><dd>P46 directly establishes rejection of the prohibited empty value. The RFC does not permit an empty OPTIONS value; it requires '*' for the asterisk form, while CONNECT omits :path.</dd>
+<dt>Open question</dt><dd>No material uncertainty for the empty-path prohibition.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-069</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-042">
+<h2><code>V3-9113-042</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3.1">RFC 9113 §8.3.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A request MUST contain exactly one :method pseudo-header.</dd>
+<dt>Conditions</dt><dd>All HTTP/2 requests.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 parser; Achieve handles requests after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P40 and P41 sent duplicate and missing :method respectively; each received stream PROTOCOL_ERROR. Existing tests/connect/verify.js exercises a valid classic CONNECT request.</dd>
+<dt>Assessment rationale</dt><dd>The absence and duplication controls directly establish the exactly-one :method requirement and malformed-message handling.</dd>
+<dt>Open question</dt><dd>No material uncertainty for this exact obligation.</dd>
+<dt>V2 traceability</dt><dd>V2-X051</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-043">
+<h2><code>V3-9113-043</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3.1">RFC 9113 §8.3.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A non-CONNECT request MUST contain exactly one :scheme pseudo-header.</dd>
+<dt>Conditions</dt><dd>Requests other than classic CONNECT.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 parser; Achieve handles requests after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P42 and P43 sent missing and duplicate :scheme on non-CONNECT requests; each received stream PROTOCOL_ERROR.</dd>
+<dt>Assessment rationale</dt><dd>Both failure modes directly establish exactly-one :scheme for the applicable non-CONNECT request class.</dd>
+<dt>Open question</dt><dd>Classic CONNECT is excluded by the requirement condition.</dd>
+<dt>V2 traceability</dt><dd>V2-X052</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-044">
+<h2><code>V3-9113-044</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3.1">RFC 9113 §8.3.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A non-CONNECT request MUST contain exactly one :path pseudo-header with the defined nonempty/OPTIONS exception.</dd>
+<dt>Conditions</dt><dd>Requests other than classic CONNECT.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 parser; Achieve handles requests after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P44-P46 sent missing, duplicate, and empty :path on non-CONNECT requests; each received stream PROTOCOL_ERROR.</dd>
+<dt>Assessment rationale</dt><dd>The probes directly establish the mandatory presence, uniqueness, and nonempty value for applicable non-CONNECT requests.</dd>
+<dt>Open question</dt><dd>Classic CONNECT is excluded; the OPTIONS asterisk form is a required nonempty value, not an empty-path exception.</dd>
+<dt>V2 traceability</dt><dd>V2-X053</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-045">
+<h2><code>V3-9113-045</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3.1">RFC 9113 §8.3.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> </p>
+<dl>
+<dt>Requirement</dt><dd>A request that omits :authority must carry equivalent authority information where required by the target URI and Host semantics.</dd>
+<dt>Conditions</dt><dd>Authority can come from :authority or Host subject to consistency and URI rules.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Shared: Node.js pseudo-header parsing and Achieve authority validation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1167-1253 validates HTTP/2 :authority and Host after Node pseudo-header parsing; achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>tests/http2_authority/verify.js:110-187 exercises :authority/Host combinations on h2c and h2; passed locally.</dd>
+<dt>Assessment rationale</dt><dd>The authority suite demonstrates accepted authority-only and Host-only requests and rejects conflicts on h2c and h2.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-X054</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-046">
+<h2><code>V3-9113-046</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3.2">RFC 9113 §8.3.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A response must contain exactly one `:status` value with a valid three-digit status code.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP participant</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 response serializer and Achieve/application response logic</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:79-105,133-278 verifies final responses and stream completion on h2c and h2.</dd>
+<dt>Assessment rationale</dt><dd>Node serializes the single status selected by Achieve; ordinary and error response suites demonstrate valid final status fields on both transports.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-071</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-047">
+<h2><code>V3-9113-047</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3.2">RFC 9113 §8.3.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MAY</p>
+<dl>
+<dt>Requirement</dt><dd>A server MAY send one or more informational responses before exactly one final response.</dd>
+<dt>Conditions</dt><dd>Before exactly one final response.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 response serializer and Achieve/application response logic</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>Batch F sent 100 and 103 HEADERS without END_STREAM followed by exactly one final 200 and DATA; tests/response_completion/verify.js separately verifies final response completion.</dd>
+<dt>Assessment rationale</dt><dd>The optional capability is implemented and the observed sequence follows section 8.3.2.</dd>
+<dt>Open question</dt><dd>The observation covers the supported compatibility response API, not arbitrary socket manipulation by applications.</dd>
+<dt>V2 traceability</dt><dd>V2-X057;V2-H223</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-048">
+<h2><code>V3-9113-048</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3.2">RFC 9113 §8.3.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server MUST send exactly one final response containing exactly one :status pseudo-header.</dd>
+<dt>Conditions</dt><dd>Every accepted HTTP/2 request not terminated by connection/stream error.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 response serializer and Achieve/application response logic</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>tests/response_completion/verify.js:79-105,133-278 verifies final responses and stream completion on h2c and h2.</dd>
+<dt>Assessment rationale</dt><dd>Response-completion tests demonstrate exactly one final response for exercised accepted requests on h2c and h2, including failure paths and subsequent health checks.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-X058</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-049">
+<h2><code>V3-9113-049</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.5">RFC 9113 §8.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>Classic CONNECT MUST include :method CONNECT and :authority.</dd>
+<dt>Conditions</dt><dd>Classic CONNECT only.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 parser; Achieve handles requests after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>tests/connect/verify.js:153-172 exercises a valid classic CONNECT; Batch F raw HPACK controls reached the handler when valid and received stream PROTOCOL_ERROR when :authority was omitted.</dd>
+<dt>Assessment rationale</dt><dd>Positive and malformed controls directly establish required classic CONNECT fields on the tested endpoint.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to Node.js 22.15.0/nghttp2 1.64.0.</dd>
+<dt>V2 traceability</dt><dd>V2-X055</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-050">
+<h2><code>V3-9113-050</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.5">RFC 9113 §8.5</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>Classic CONNECT MUST NOT include :scheme or :path.</dd>
+<dt>Conditions</dt><dd>Classic CONNECT only.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2 parser; Achieve handles requests after parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>Batch F raw HPACK probes containing :scheme or :path each received stream RST_STREAM PROTOCOL_ERROR; the valid omission control reached the handler.</dd>
+<dt>Assessment rationale</dt><dd>Both prohibited classic CONNECT pseudo-fields are directly rejected at the required stream scope.</dd>
+<dt>Open question</dt><dd>Evidence is bounded to Node.js 22.15.0/nghttp2 1.64.0.</dd>
+<dt>V2 traceability</dt><dd>V2-X056</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-051">
+<h2><code>V3-9113-051</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-9.2">RFC 9113 §9.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>HTTP/2 over TLS must use TLS 1.2 or later, subject to the section's deployment requirements.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>TLS/OpenSSL and Node.js HTTP/2; Achieve supplies server options</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>Existing h2 tests establish successful TLS/ALPN h2 connections; no focused TLS-version, compression, renegotiation, or prohibited-cipher probe exists.</dd>
+<dt>Assessment rationale</dt><dd>Node 22 defaults to TLS 1.2 minimum, and the secure HTTP/2 suites establish successful supported h2 operation without an older TLS mode configured by Achieve.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-073</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-052">
+<h2><code>V3-9113-052</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-9.2">RFC 9113 §9.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>TLS compression must be disabled for HTTP/2.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>TLS/OpenSSL and Node.js HTTP/2; Achieve supplies server options</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>Existing h2 tests establish successful TLS/ALPN h2 connections; no focused TLS-version, compression, renegotiation, or prohibited-cipher probe exists.</dd>
+<dt>Assessment rationale</dt><dd>The Node/OpenSSL stack used by the supported endpoint has TLS compression disabled; Achieve exposes no option that enables it.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-074</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-053">
+<h2><code>V3-9113-053</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-9.2.1">RFC 9113 §9.2.1</a></h2>
+<p><span class="badge nonconformant">Nonconformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>After the client connection preface, a TLS 1.2 renegotiation attempt MUST be treated as a connection error of type PROTOCOL_ERROR; the narrow client-certificate exception is available only before the preface.</dd>
+<dt>Conditions</dt><dd>TLS 1.2 HTTP/2; renegotiation after the client connection preface.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>TLS/OpenSSL and Node.js HTTP/2; Achieve supplies server options</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates TLS Node HTTP/2 servers and passes the supplied TLS options to Node.</dd>
+<dt>Test evidence</dt><dd>Final Node.js 24.22.2 Windows and Linux qualification forced TLS 1.2, negotiated ALPN h2, completed the client preface, and initiated renegotiation. Node rejected it with ERR_TLS_RENEGOTIATION_DISABLED, but no GOAWAY(PROTOCOL_ERROR) was observed; a subsequent PING was not acknowledged.</dd>
+<dt>Assessment rationale</dt><dd>Renegotiation is disabled, but the qualified endpoint does not emit the mandatory HTTP/2 connection error of type PROTOCOL_ERROR.</dd>
+<dt>Open question</dt><dd>The pre-preface client-certificate exception was not exercised and does not apply to the tested sequence.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-075</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-054">
+<h2><code>V3-9113-054</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-9.2.1">RFC 9113 §9.2.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A TLS implementation for HTTP/2 MUST support ALPN negotiation of the h2 protocol identifier.</dd>
+<dt>Conditions</dt><dd>HTTP/2 over TLS.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>TLS/OpenSSL and Node.js HTTP/2; Achieve supplies server options</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>Existing h2 tests establish successful TLS/ALPN h2 connections; no focused TLS-version, compression, renegotiation, or prohibited-cipher probe exists.</dd>
+<dt>Assessment rationale</dt><dd>Secure HTTP/2 connections made by Node clients negotiate h2 successfully, establishing ALPN h2 support.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-X060</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-055">
+<h2><code>V3-9113-055</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-9.2.1">RFC 9113 §9.2.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A server that selects HTTP/2 over TLS MUST select the h2 ALPN identifier before using HTTP/2.</dd>
+<dt>Conditions</dt><dd>TLS negotiation chooses HTTP/2.</dd>
+<dt>Applicable role</dt><dd>server</dd>
+<dt>Responsible layer</dt><dd>TLS/OpenSSL and Node.js HTTP/2; Achieve supplies server options</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>Existing h2 tests establish successful TLS/ALPN h2 connections; no focused TLS-version, compression, renegotiation, or prohibited-cipher probe exists.</dd>
+<dt>Assessment rationale</dt><dd>The secure suites reach HTTP/2 request handling only after Node selects h2 by ALPN.</dd>
+<dt>Open question</dt><dd>None for the established scope.</dd>
+<dt>V2 traceability</dt><dd>V2-X061</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-056">
+<h2><code>V3-9113-056</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-9.2.2">RFC 9113 §9.2.2</a></h2>
+<p><span class="badge nonconformant">Nonconformant</span> <strong>Normative level:</strong> SHOULD NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A TLS 1.2 HTTP/2 endpoint SHOULD NOT negotiate a cipher suite on the prohibited list.</dd>
+<dt>Conditions</dt><dd>TLS 1.2 only.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>TLS/OpenSSL and Node.js HTTP/2; Achieve supplies server options</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 passes secure-server TLS options to Node without applying the RFC 9113 prohibited-cipher list.</dd>
+<dt>Test evidence</dt><dd>Final Node.js 24.22.2/OpenSSL 3.5.9 Windows and Linux qualification explicitly configured TLS_RSA_WITH_AES_128_CBC_SHA with security level 0; TLS 1.2 and ALPN h2 negotiated and the endpoint sent HTTP/2 SETTINGS. The mandatory-cipher control also negotiated h2.</dd>
+<dt>Assessment rationale</dt><dd>The qualified endpoint permits an explicitly configured cipher on RFC 9113's prohibited list, missing the SHOULD NOT recommendation.</dd>
+<dt>Open question</dt><dd>The prohibited case requires explicit opt-in and lowered OpenSSL security policy; default cipher selection was not implicated.</dd>
+<dt>V2 traceability</dt><dd>V2-X067</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-057">
+<h2><code>V3-9113-057</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-9.2.2">RFC 9113 §9.2.2</a></h2>
+<p><span class="badge optional-not-implemented">Optional not implemented</span> <strong>Normative level:</strong> MAY</p>
+<dl>
+<dt>Requirement</dt><dd>An endpoint MAY treat negotiation of a prohibited TLS 1.2 cipher suite as a connection error of type INADEQUATE_SECURITY.</dd>
+<dt>Conditions</dt><dd>Prohibited TLS 1.2 cipher negotiated.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>TLS/OpenSSL and Node.js HTTP/2; Achieve supplies server options</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 passes secure-server TLS options to Node and does not add a prohibited-cipher detector.</dd>
+<dt>Test evidence</dt><dd>Batch F negotiated a prohibited TLS 1.2 suite with ALPN h2 and received server SETTINGS rather than GOAWAY INADEQUATE_SECURITY.</dd>
+<dt>Assessment rationale</dt><dd>RFC 9113 permits but does not require this error; absence of the optional behavior is not nonconformance.</dd>
+<dt>Open question</dt><dd>The later GOAWAY in the combined TLS probe was caused by a separate renegotiation attempt, not cipher detection.</dd>
+<dt>V2 traceability</dt><dd>V2-X068</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-058">
+<h2><code>V3-9113-058</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-10.3">RFC 9113 §10.3</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An intermediary translating an HTTP/2 request or response to another HTTP version MUST validate fields according to RFC 9113 section 8.2 before translation.</dd>
+<dt>Conditions</dt><dd>The implementation acts as an intermediary and translates an HTTP/2 message to another HTTP version.</dd>
+<dt>Applicable role</dt><dd>HTTP intermediary</dd>
+<dt>Responsible layer</dt><dd>Not Achieve in its supported origin-server role</dd>
+<dt>Implementation evidence</dt><dd>Achieve operates as an origin server and does not translate or forward HTTP/2 messages to another HTTP version.</dd>
+<dt>Test evidence</dt><dd>P25-P30 concern HPACK decoding errors and compression-context isolation; they do not exercise intermediary protocol translation and are not evidence for this corrected requirement.</dd>
+<dt>Assessment rationale</dt><dd>RFC 9113 section 10.3 contains this intermediary validation obligation, not the former HPACK-context requirement. Achieve does not perform the conditional intermediary translation role.</dd>
+<dt>Open question</dt><dd>None for Achieve's supported origin-server role. HPACK decoding errors remain covered by V3-9113-006; descriptive per-connection compression state does not create a separate section 10.3 endpoint obligation.</dd>
+<dt>V2 traceability</dt><dd>V2-X064</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-059">
+<h2><code>V3-9113-059</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-10.5.1">RFC 9113 §10.5.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>An implementation MUST process a field block sufficiently to maintain a consistent connection state unless the connection is closed.</dd>
+<dt>Conditions</dt><dd>Applies when an implementation declines to retain or otherwise use an excessive field section; closing the connection is the alternative permitted by the requirement.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2/nghttp2 field-block processing; Achieve receives requests only after protocol parsing</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing.</dd>
+<dt>Test evidence</dt><dd>A raw HPACK probe sent 130 incrementally indexed fields, ending with x-marker, in an excessive request block. Node reset stream 1 with ENHANCE_YOUR_CALM, kept the connection open, then decoded stream 3 using dynamic index 62 for that newest marker and returned 200 without COMPRESSION_ERROR.</dd>
+<dt>Assessment rationale</dt><dd>The dependent second block could be decoded only if the rejected first block had still been processed sufficiently to update the shared HPACK state. The continuing connection therefore remained consistent after the excessive field section.</dd>
+<dt>Open question</dt><dd>This establishes the required state behavior for the tested excessive-field path on Node.js 22.15.0/nghttp2 1.64.0, not every resource-exhaustion strategy.</dd>
+<dt>V2 traceability</dt><dd>V2-X062</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-060">
+<h2><code>V3-9113-060</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-10.5.2">RFC 9113 §10.5.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> SHOULD</p>
+<dl>
+<dt>Requirement</dt><dd>An implementation SHOULD track use of features that expose work and resource commitments and set limits on their use.</dd>
+<dt>Conditions</dt><dd>Features that expose implementation work or resource commitment.</dd>
+<dt>Applicable role</dt><dd>HTTP endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js HTTP/2/nghttp2 resource controls; Achieve uses defaults</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates Node HTTP/2 servers without disabling the runtime's finite session-memory, header-pair, settings, invalid-frame, rejected-stream, and outstanding-operation defaults.</dd>
+<dt>Test evidence</dt><dd>Node 22 HTTP/2 documentation specifies finite server-side defaults including 10 MiB session memory, 128 header pairs, 32 settings entries, 100 rejected streams, and 1000 invalid frames. Batch F's bounded request exercise established continued service but is not treated as proof for every resource-exposure feature.</dd>
+<dt>Assessment rationale</dt><dd>Documented finite server-side controls establish the section's recommendation for the assessed runtime configuration. The prior client-side outstanding-ping observation is not used as evidence of server-side resistance.</dd>
+<dt>Open question</dt><dd>This classification is not a claim of universal denial-of-service immunity or proof for every possible feature interaction.</dd>
+<dt>V2 traceability</dt><dd>V2-X063</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-061">
+<h2><code>V3-9113-061</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-9.2.2">RFC 9113 §9.2.2</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A deployment of HTTP/2 over TLS 1.2 MUST support TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 with the P-256 elliptic curve.</dd>
+<dt>Conditions</dt><dd>Applies when HTTP/2 is deployed over TLS 1.2.</dd>
+<dt>Applicable role</dt><dd>HTTP/2 TLS deployment</dd>
+<dt>Responsible layer</dt><dd>Node.js/OpenSSL TLS configuration used by Achieve secure HTTP/2 servers</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 passes secure-server TLS options to Node.</dd>
+<dt>Test evidence</dt><dd>A focused Achieve secure-HTTP/2 control constrained both peers to TLS 1.2, TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, P-256 only, and ALPN h2. The handshake succeeded; getEphemeralKeyInfo reported ECDH prime256v1, 256 bits.</dd>
+<dt>Assessment rationale</dt><dd>Successful negotiation with both the mandatory cipher and an exclusively P-256 ephemeral-key configuration directly establishes support on the tested Node.js 22.15.0/OpenSSL 3.0.16 deployment.</dd>
+<dt>Open question</dt><dd>Deployment options can select other policies; this classification establishes the required supported combination, not conformance of every operator-supplied TLS configuration.</dd>
+<dt>V2 traceability</dt><dd>No V2 predecessor recorded.</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9113-062">
+<h2><code>V3-9113-062</code> — <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-9.2.1">RFC 9113 §9.2.1</a></h2>
+<p><span class="badge conformant">Conformant</span> <strong>Normative level:</strong> MUST</p>
+<dl>
+<dt>Requirement</dt><dd>A deployment of HTTP/2 over TLS 1.2 MUST disable renegotiation.</dd>
+<dt>Conditions</dt><dd>Applies to HTTP/2 over TLS 1.2. The distinct post-preface PROTOCOL_ERROR response obligation remains in V3-9113-053.</dd>
+<dt>Applicable role</dt><dd>HTTP/2 TLS endpoint</dd>
+<dt>Responsible layer</dt><dd>Node.js/OpenSSL secure HTTP/2 implementation</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1463-1512 delegates TLS and HTTP/2 protocol handling to Node/OpenSSL/nghttp2; Achieve contains no server-initiated renegotiation path.</dd>
+<dt>Test evidence</dt><dd>Final Node.js 24.22.2 Windows and Linux qualification forced TLS 1.2, completed ALPN h2 and the connection preface, then initiated TLS renegotiation. Node rejected the attempt with ERR_TLS_RENEGOTIATION_DISABLED. The missing compliant HTTP/2 error handling remains separately Nonconformant under V3-9113-053.</dd>
+<dt>Assessment rationale</dt><dd>Implementation inspection excludes an Achieve server-initiated renegotiation path, and the focused client-initiated attempt was rejected. Together these establish disablement for the assessed deployment while keeping the distinct error-code defect separate.</dd>
+<dt>Open question</dt><dd>The result is specific to Node.js 24.22.2/OpenSSL 3.5.9 and should be repeated when that runtime baseline changes.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-075</dd>
+</dl>
+</article>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a>
+</footer>
+</body>
+</html>

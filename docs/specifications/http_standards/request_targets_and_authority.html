@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dcterms.created" content="2026-11-06"><meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve RFC 9110, 9112, and 9113 Request Targets and Authority</title>
+<meta name="description" content="Achieve 3.1.0 request-target and authority processing on Node.js 24.22.2 across HTTP/1.1 and HTTP/2, including target forms, Host, authority, validation, and routing boundaries.">
+<style>body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}header img{width:100%;display:block}#friend{text-align:center;font-style:italic;font-weight:bold;color:rgb(40,200,32);border-bottom:solid blue thick;padding:0;margin:0}.navLink{display:inline-block;margin:.6em 5% .2em;color:rgb(30,80,150);font-weight:bold;text-decoration:none}.navLink:hover,.packageLink:hover{color:blue}.backArrow{margin-right:.4em}.packageLink{color:rgb(30,80,150);font-weight:bold;text-decoration:none}main{margin:2% 5% 5%}.documentInfo{color:rgb(50,70,90);font-size:.9em}code{padding:.08em .35em;border-radius:.3em;background-color:rgb(220,235,245);color:blue;font-family:Consolas,"Courier New",monospace}footer{padding:1.5% 5%;box-sizing:border-box;border-top:solid blue thick}</style>
+</head><body>
+<header><img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern."><h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3></header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to technical specifications</a>
+<main>
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3">RFC 9112 §3 Request Targets</a> and <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-7.2">RFC 9110 §7.2 Authority</a></h1>
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+<p><strong>Requirement levels:</strong> The applicable HTTP/1.1 and HTTP/2 rules include MUST and MUST NOT requirements for target forms, Host or authority information, and malformed input.</p>
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> validates the target and authority information exposed by Node before it performs method dispatch or filesystem routing. This keeps malformed syntax, ambiguous authority, and application-path resolution separate concerns.</p>
+
+<h2>Applicable requirements</h2>
+<ul>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3">RFC 9112 §3</a>, a server must parse the request-target according to the method-specific target form and must respond with 414 when the target exceeds the URI length it accepts. The qualified Node parser returns 431 for the demonstrated excessive target, as noted below.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3.2">§3.2</a>, origin-form is used for ordinary origin requests, absolute-form is accepted by origin servers, authority-form is used only for CONNECT, and asterisk-form is used only for server-wide OPTIONS.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3.2.2">§3.2.2</a>, an HTTP/1.1 origin server must accept absolute-form and use its host information for the request's target URI.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-7.2">RFC 9110 §7.2</a>, authority information is reconstructed from the request target and Host information according to the protocol version; invalid or conflicting authority is rejected.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3.1">RFC 9113 §8.3.1</a>, HTTP/2 requests carry the required method, scheme, path, and authority information with the defined CONNECT and OPTIONS exceptions.</li>
+</ul>
+
+<h2>HTTP/1.1 target forms</h2>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3.2">RFC 9112 §3.2</a> defines origin-form, absolute-form, authority-form, and asterisk-form. Achieve accepts origin-form for ordinary requests and recognizes absolute-form HTTP or HTTPS targets, using their path and query for resource selection. Authority-form is valid only for CONNECT, while <code>*</code> is valid only with OPTIONS.</p>
+<p>An HTTP/1.1 request must contain exactly one syntactically valid Host field. Achieve rejects missing, duplicate, or invalid Host values. Absolute-form authority is parsed independently; request processing still validates the Host information supplied by the client.</p>
+
+<h2>HTTP/2 authority</h2>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3.1">RFC 9113 §8.3.1</a> defines request pseudo-header fields. Node and nghttp2 validate the HTTP/2 field block. Achieve additionally requires authority information from <code>:authority</code> or <code>host</code>, validates each value, and requires the normalized values to agree when both are present. Normalization accounts for case, default ports, IPv6 notation, and safe percent-encoding equivalence.</p>
+
+<h2>From target to resource</h2>
+<p>After validation, Achieve passes the origin-form resource target into method dispatch. Query information is available for request input; the path is decoded and resolved inside the configured application space. A fragment is not valid in an HTTP request target. Invalid percent encodings, backslash path forms, unsuitable target forms, and authority conflicts are rejected before routing.</p>
+
+<h2>Runtime boundary and known limitation</h2>
+<p>Node's HTTP parser decides whether an HTTP/1.1 request line and field section can be parsed at all. <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3">RFC 9112 §3</a> says a server receiving a request-target longer than any URI it wishes to parse <strong>MUST</strong> respond with 414. Node 24.22.2 reports request-target and header-field overflow through the same parser condition and returns 431 for an excessive target. Standalone Node reproduces the result, and Achieve receives no parsed request to distinguish it. This remains a runtime-owned nonconformance of the complete endpoint.</p>
+
+<h2>Verification</h2>
+<p>Request-target, syntax, path, authority, CONNECT, OPTIONS, and HTTP/2 authority tests cover valid forms and rejection controls. Raw-TCP boundary probes distinguish long request targets from oversized fields and record actual status and connection closure. HTTP/2 frame probes cover pseudo-header ordering, duplication, malformed values, authority agreement, and stream-versus-connection error behavior.</p>
+<p>See <a href="https://github.com/highlevellogic/achieve/blob/master/tests/README_TESTS.txt">Achieve HTTP conformance testing</a> and the <a href="../evidence.html">assessment evidence index</a>.</p>
+
+<h2>Limits</h2>
+<p>Achieve does not implement successful CONNECT tunnels. Its accepted public routes are origin-server paths, not a general forward-proxy interface. Parser failures that occur before Node constructs a request object can only be handled through the limited parser-error information exposed by the runtime.</p>
+</main>
+<footer><a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a></footer>
+</body></html>

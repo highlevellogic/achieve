@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dcterms.created" content="2026-11-06"><meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve RFC 9112 HTTP/1.1 Message Framing on Node.js</title>
+<meta name="description" content="Achieve 3.1.0 HTTP/1.1 message framing on Node.js 24.22.2: Content-Length, Transfer-Encoding, chunked coding, trailers, connection closure, responsibility, and limitations.">
+<style>body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}header img{width:100%;display:block}#friend{text-align:center;font-style:italic;font-weight:bold;color:rgb(40,200,32);border-bottom:solid blue thick;padding:0;margin:0}.navLink{display:inline-block;margin:.6em 5% .2em;color:rgb(30,80,150);font-weight:bold;text-decoration:none}.navLink:hover,.packageLink:hover{color:blue}.backArrow{margin-right:.4em}.packageLink{color:rgb(30,80,150);font-weight:bold;text-decoration:none}main{margin:2% 5% 5%}.documentInfo{color:rgb(50,70,90);font-size:.9em}code{padding:.08em .35em;border-radius:.3em;background-color:rgb(220,235,245);color:blue;font-family:Consolas,"Courier New",monospace}footer{padding:1.5% 5%;box-sizing:border-box;border-top:solid blue thick}</style>
+</head><body>
+<header><img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern."><h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3></header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to technical specifications</a>
+<main>
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6">RFC 9112 HTTP/1.1 Message Framing</a></h1>
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+<p><strong>Requirement levels:</strong> HTTP/1.1 framing contains mandatory MUST and MUST NOT rules, error-handling requirements, and a SHOULD response for unrecognized transfer codings.</p>
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> uses Node.js's HTTP/1.1 server and llhttp parser. Those components recognize the wire message, determine its body framing, decode chunked transfer coding, and expose an accepted request stream. Achieve then applies request handling and servlet input policy.</p>
+
+<h2>Applicable requirements</h2>
+<ul>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-5.2">RFC 9112 §5.2</a>, field lines are parsed without whitespace between the field name and colon; obsolete line folding received outside <code>message/http</code> must be rejected or replaced as specified.</li>
+<li><strong>MUST / MUST NOT:</strong> <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6">§6</a> defines the precedence for message-body length and prohibits treating ambiguous or invalid Content-Length and Transfer-Encoding combinations as ordinary framing.</li>
+<li><strong>SHOULD:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.1">§6.1</a>, a server receiving an unrecognized request transfer coding should respond with 501. The qualified runtime does not satisfy this for an unknown coding followed by final chunked, as noted below.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.3">§6.3</a>, a request whose final transfer coding is not chunked is rejected with 400 and the connection is closed.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-7.1">§7.1</a>, a recipient must parse and decode chunked transfer coding and account for its terminating chunk and trailer section.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-8">§8</a>, an incomplete request message caused by premature closure is not treated as complete.</li>
+</ul>
+
+<h2>Determining message length</h2>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6">RFC 9112 §6</a> defines the precedence of response status, method, Transfer-Encoding, Content-Length, and connection closure when determining message length. Conflicting or invalid framing must not be treated as an ordinary request. Node's parser performs these checks before Achieve receives the request.</p>
+<p>For accepted requests, Node exposes decoded request content. Achieve buffers and parses supported GET and POST input only within its configured limit; otherwise application code can consume the stream. For responses, Achieve selects content and relevant fields while Node produces the HTTP/1.1 framing.</p>
+
+<h2>Chunked coding and trailers</h2>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-7.1">RFC 9112 §7.1</a> defines chunked transfer coding. Node removes chunk framing before the body reaches Achieve. Trailer fields remain distinct from the ordinary header section and are exposed through Node's request API. Premature closure of a request body is not treated as successful completion.</p>
+<p>Persistent connection reuse depends on an unambiguous message boundary. Raw-wire tests verify that valid controls can carry a subsequent request and that malformed framing is rejected or the connection is closed rather than reinterpreted as another request.</p>
+
+<h2>Responsibility boundary</h2>
+<p>Node.js and llhttp own request-line and field parsing, Transfer-Encoding and Content-Length conflict detection, chunk syntax, and low-level connection errors. Achieve owns its buffering limit, parameter parsing, application dispatch, and generated response decisions. Because the complete Achieve endpoint includes the runtime parser, runtime behavior remains part of the conformance assessment even when Achieve cannot intercept it.</p>
+
+<h2>Known limitation</h2>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.1">RFC 9112 §6.1</a> says a server that receives an unrecognized request transfer coding <strong>SHOULD</strong> respond with 501. In the qualified endpoint, a request using an unknown coding followed by final <code>chunked</code> is accepted by Node, chunk framing is removed, and the undecoded representation reaches the application. The same behavior occurs in standalone Node. No documented justification for departing from the recommendation has been established, so this remains a runtime-owned SHOULD-level nonconformance.</p>
+
+<h2>Automated and wire verification</h2>
+<p>Existing input, response-completion, request-method, and HTTP/1.1 tests cover accepted streams and response framing. Focused raw-TCP investigations add positive and negative controls for duplicate or conflicting lengths, transfer-coding order, chunk syntax, trailers, incomplete bodies, connection reuse, and TLS closure. These observations are bounded to the tested Node.js 24.22.2 endpoint; they do not prove every possible byte sequence.</p>
+<p>See <a href="https://github.com/highlevellogic/achieve/blob/master/tests/README_TESTS.txt">Achieve HTTP conformance testing</a> and the <a href="../evidence.html">assessment evidence index</a>.</p>
+</main>
+<footer><a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a></footer>
+</body></html>

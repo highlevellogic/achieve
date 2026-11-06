@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dcterms.created" content="2026-11-06"><meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve 3.1.0 Application-Space Routing for Node.js</title>
+<meta name="description" content="Achieve 3.1.0 routing for Node.js applications: required application space, automatic routing, exact routes, subtree mappings, precedence, containment, and processing behavior.">
+<style>body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}header img{width:100%;display:block}#friend{text-align:center;font-style:italic;font-weight:bold;color:rgb(40,200,32);border-bottom:solid blue thick;padding:0;margin:0}.navLink{display:inline-block;margin:.6em 5% .2em;color:rgb(30,80,150);font-weight:bold;text-decoration:none}.navLink:hover,.packageLink:hover{color:blue}.backArrow{margin-right:.4em}.packageLink{color:rgb(30,80,150);font-weight:bold;text-decoration:none}main{margin:2% 5% 5%}.documentInfo{color:rgb(50,70,90);font-size:.9em}code{padding:.08em .35em;border-radius:.3em;background-color:rgb(220,235,245);color:blue;font-family:Consolas,"Courier New",monospace}pre{margin:1em 0 1.4em}pre code{display:block;padding:1em;overflow:auto;white-space:pre}footer{padding:1.5% 5%;box-sizing:border-box;border-top:solid blue thick}</style>
+</head><body>
+<header><img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern."><h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3></header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to technical specifications</a>
+<main>
+<h1>Achieve Application-Space Routing</h1>
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> maps public request paths to static resources and JavaScript Servlets inside a configured application space. The application space is both the default routing root and the containment boundary for resources exposed through Achieve's HTTP routing.</p>
+
+<h2>Required application space</h2>
+<p><code>setAppPath()</code> is required before a listener starts; Achieve does not select a default application directory. The path can be absolute or resolved from the startup process, but after configuration Achieve stores a canonical application root and refuses to start without it.</p>
+<pre><code>const achieve = require("achieve");
+const path = require("node:path");
+
+achieve.setAppPath(path.join(__dirname, "application"));
+achieve.listen(8989);</code></pre>
+<p>With no custom mapping, a request path corresponds to the same relative path beneath that root. Directory handling, default documents, MIME selection, servlet execution, and media processing occur after the resource has been resolved.</p>
+
+<h2>Exact and subtree mappings</h2>
+<p><code>setRouteMap()</code> maps one complete public path to one target path in the application space:</p>
+<pre><code>achieve.setRouteMap({
+  "/products": "/services/catalog/list.jss"
+});</code></pre>
+<p><code>setPathMap()</code> maps a public directory prefix to a directory subtree and preserves the remaining path:</p>
+<pre><code>achieve.setPathMap({
+  "/docs/": "/internal/documentation/"
+});</code></pre>
+<p>When subtree mappings overlap, the longest matching public prefix wins. Definition order does not decide the result.</p>
+
+<h2>Precedence and processing</h2>
+<ol><li>exact route mapping;</li><li>longest matching subtree mapping;</li><li>automatic path routing.</li></ol>
+<p>A mapping changes location, not resource type. After translation, the target is processed normally according to its file type and configuration. A mapped servlet remains a servlet; a mapped static file remains static. The Node request object continues to expose the original public URL.</p>
+
+<h2>Containment and safety</h2>
+<p>Public paths and mapped targets are validated when configuration is supplied and again during resolution. Targets must remain beneath the application root. Achieve rejects traversal, invalid mapping forms, and resolved filesystem paths that escape through links or other physical path changes. The internal compression-cache area is not publicly routable, including through custom maps.</p>
+<p>This HTTP boundary does not sandbox servlet code. A servlet is ordinary server-side Node.js code and can intentionally access other server resources using Node APIs and the permissions of the process.</p>
+
+<h2>Verification and limits</h2>
+<p>Routing, route-map, path-map, static lookup, servlet, compression-cache, request-path, and symlink cases verify precedence, longest-prefix behavior, file-type preservation, traversal rejection, and lexical and physical containment. Some symlink cases can be environmentally skipped on Windows where creating the required link is not permitted; Linux qualification runs them without those skips.</p>
+<p>Routing maps are configured before listeners start and are not a dynamic middleware chain. Registered additional HTTP methods use their method-wide servlet handlers rather than normal URL routing.</p>
+<p>For the complete public reference, see <a href="../../reference/routing.htm">Routing</a> and <a href="../../reference/config.htm">Configuration</a>.</p>
+</main>
+<footer><a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a></footer>
+</body></html>

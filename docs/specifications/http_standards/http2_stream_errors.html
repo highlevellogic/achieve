@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dcterms.created" content="2026-11-06">
+<meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve RFC 9113 §5.4 HTTP/2 Connection and Stream Errors</title>
+<meta name="description" content="Achieve 3.1.0 HTTP/2 connection and stream error behavior on Node.js 24.22.2, including GOAWAY, RST_STREAM, verified behavior, and known nghttp2 limitations.">
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+.navLink { display:inline-block; margin:.6em 5% .2em; color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.navLink:hover,.packageLink:hover { color:blue; }
+.backArrow { margin-right:.4em; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+main { margin:2% 5% 5%; }
+.documentInfo { color:rgb(50,70,90); font-size:.9em; }
+code { padding:.08em .35em; border-radius:.3em; background-color:rgb(220,235,245); color:blue; font-family:Consolas,"Courier New",monospace; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+</style>
+</head>
+<body>
+<header>
+<img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern.">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<a class="navLink" href="../../index.htm"><span class="backArrow">←</span> Back to documentation index</a>
+<main>
+
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.4">RFC 9113 §5.4 HTTP/2 Connection and Stream Errors</a></h1>
+
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+
+<p><strong>Requirement levels:</strong> Multiple — applicable <strong>MUST</strong> and <strong>SHOULD</strong> requirements are identified below.</p>
+
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> 3.1.0 uses Node.js HTTP/2 facilities to provide cleartext and secure HTTP/2 application servers. HTTP/2 multiplexes independent streams on one connection, so an error's scope is significant: a stream error ends one exchange, while a connection error affects every stream using that connection.</p>
+
+<h2>Applicable requirements</h2>
+
+<ul>
+<li><strong>SHOULD:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.4.1">RFC 9113 §5.4.1</a>, an endpoint detecting a connection error should send <code>GOAWAY</code> with the applicable error code before closing when possible.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.4.2">§5.4.2</a>, an endpoint detecting a stream error must send <code>RST_STREAM</code> with the applicable error code, subject to the closed-stream exceptions.</li>
+<li><strong>MUST:</strong> <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.1">§5.1</a> requires endpoints to enforce frame types permitted by stream state and apply the error scope assigned to a violation.</li>
+<li><strong>MUST:</strong> <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.1.2">§5.1.2</a> requires a newly opened stream beyond the advertised concurrent-stream limit to receive the specified stream error.</li>
+<li><strong>MUST:</strong> <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.9">§6.9</a> assigns <code>PROTOCOL_ERROR</code> to a zero-increment <code>WINDOW_UPDATE</code>: connection scope for stream 0 and stream scope for a valid nonzero stream.</li>
+</ul>
+
+<h2>Connection errors</h2>
+
+<p>A connection error makes the HTTP/2 connection unusable. <code>GOAWAY</code> communicates the error code and the last stream that might have been processed, allowing a peer to determine which later requests can be retried. Closing the connection necessarily affects otherwise independent streams.</p>
+
+<p>On the qualified Node.js 24.22.2 runtime, verified connection-level violations produce the error codes required by RFC 9113. These include an even-numbered client-initiated stream, invalid SETTINGS values, a client <code>PUSH_PROMISE</code> sent to the server, a connection-level <code>WINDOW_UPDATE(0)</code>, and active flow-control-window overflow. The observed response is a connection <code>GOAWAY</code> with <code>PROTOCOL_ERROR</code> or <code>FLOW_CONTROL_ERROR</code> as applicable.</p>
+
+<h2>Stream errors</h2>
+
+<p>A stream error is confined to one stream. <code>RST_STREAM</code> terminates that stream while preserving unrelated work on the connection. This distinction prevents a malformed or failed request from unnecessarily disrupting other concurrent requests.</p>
+
+<p>Node.js correctly applies stream-scoped <code>PROTOCOL_ERROR</code> to many malformed request conditions, including tested pseudo-header, field, request-target, trailer, and content-length errors. Achieve also closes an accepted request stream with <code>PROTOCOL_ERROR</code> when request-target syntax visible to the application layer is invalid.</p>
+
+<h2>Achieve and the Node.js protocol boundary</h2>
+
+<p>Achieve creates Node.js HTTP/2 servers and handles requests through Node's compatibility request and response interface. Node.js and its bundled nghttp2 library parse frames, decode HPACK field blocks, maintain stream state, enforce flow control, and select most protocol error frames before an accepted request reaches Achieve.</p>
+
+<p>Achieve controls application routing and response behavior after that boundary. It does not implement a second HTTP/2 frame parser and cannot replace a <code>GOAWAY</code> or <code>RST_STREAM</code> already selected by Node.js or nghttp2. Raw-frame comparisons against standalone Node.js reproduce the relevant protocol results and identify the responsible layer.</p>
+
+<h2>Automated verification</h2>
+
+<p>Focused probes send exact HTTP/2 frames, maintain stream state deliberately, and decode returned <code>GOAWAY</code> and <code>RST_STREAM</code> payloads. Valid controls confirm that the connection and application callback work before the intentional violation. Contiguous and fragmented TCP delivery are compared where timing could otherwise produce a misleading result.</p>
+
+<p>The final Node.js 24.22.2 Linux qualification reproduced the corrected connection-level results and the remaining known limitations without unexpected protocol failures. See <a href="https://github.com/highlevellogic/achieve/blob/master/tests/README_TESTS.txt">Achieve HTTP conformance testing</a> for the stable verifier entry point. Detailed evidence is retained in the <a href="../review/http2-five-findings-investigation.md">HTTP/2 findings investigation</a> and <a href="../review/batch-e-evidence-review.md">stream-state and flow-control review</a>.</p>
+
+<h2>Known limitations</h2>
+
+<p>A zero-increment <code>WINDOW_UPDATE</code> on a valid open nonzero stream produces connection <code>GOAWAY(PROTOCOL_ERROR)</code> on the qualified runtime. The error code is correct, but RFC 9113 requires stream-scoped <code>RST_STREAM(PROTOCOL_ERROR)</code>. The observed behavior is owned by the Node.js/nghttp2 protocol layer and unnecessarily terminates unrelated streams.</p>
+
+<p>Opening a stream beyond the advertised concurrent-stream limit also produces a connection error instead of the specified stream treatment. This is likewise a Node.js/nghttp2 behavior rather than an Achieve application-routing decision.</p>
+
+<p>Node.js 24.22.2 rejects a post-preface TLS 1.2 renegotiation attempt, but the verified secure HTTP/2 endpoint does not produce the <code>GOAWAY(PROTOCOL_ERROR)</code> required by <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-9.2.1">RFC 9113 §9.2.1</a>. Renegotiation remains disabled, but the TLS-to-HTTP/2 error signaling is an upstream Node.js/OpenSSL integration limitation.</p>
+
+<p>The tested connection-error families normally produced <code>GOAWAY</code> before closure, but the broad §5.4.1 recommendation covers every detectable connection error and its “when possible” condition. The bounded evidence does not establish that universal claim. Similarly, many malformed-request families have correct stream treatment, but untested malformed conditions are not inferred to conform.</p>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a>
+</footer>
+</body>
+</html>

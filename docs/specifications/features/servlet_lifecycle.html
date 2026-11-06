@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dcterms.created" content="2026-11-06"><meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve 3.1.0 JavaScript Servlet Lifecycle for Node.js</title>
+<meta name="description" content="Achieve 3.1.0 JavaScript Servlet lifecycle for Node.js: module loading, session creation, synchronous and asynchronous results, response ownership, errors, reloading, and caching.">
+<style>body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}header img{width:100%;display:block}#friend{text-align:center;font-style:italic;font-weight:bold;color:rgb(40,200,32);border-bottom:solid blue thick;padding:0;margin:0}.navLink{display:inline-block;margin:.6em 5% .2em;color:rgb(30,80,150);font-weight:bold;text-decoration:none}.navLink:hover,.packageLink:hover{color:blue}.backArrow{margin-right:.4em}.packageLink{color:rgb(30,80,150);font-weight:bold;text-decoration:none}main{margin:2% 5% 5%}.documentInfo{color:rgb(50,70,90);font-size:.9em}code{padding:.08em .35em;border-radius:.3em;background-color:rgb(220,235,245);color:blue;font-family:Consolas,"Courier New",monospace}pre{margin:1em 0 1.4em}pre code{display:block;padding:1em;overflow:auto;white-space:pre}footer{padding:1.5% 5%;box-sizing:border-box;border-top:solid blue thick}</style>
+</head><body>
+<header><img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern."><h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3></header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to technical specifications</a>
+<main>
+<h1>Achieve JavaScript Servlet Lifecycle</h1>
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> invokes an exported <code>servlet(session)</code> function when routing selects a JavaScript Servlet. The lifecycle connects module loading, request state, returned values, asynchronous settlement, response completion, diagnostics, and development reloading without requiring an additional HTTP framework.</p>
+
+<h2>Discovery and loading</h2>
+<p>CommonJS servlets use <code>.jss</code> or <code>.jss.cjs</code>; ECMAScript modules use <code>.jss.mjs</code>. These markers identify executable backend resources that are invoked rather than served as source. The module must export a function named <code>servlet</code>.</p>
+<pre><code>export async function servlet(session) {
+  const result = await findResult(session.params);
+  return JSON.stringify(result);
+}</code></pre>
+<p>In development mode, Achieve checks servlet and <code>session.load()</code> module changes and reloads changed code. In production mode, modules and resolution results are cached for repeated use until the process restarts.</p>
+
+<h2>The session boundary</h2>
+<p>The session supplies parsed <code>params</code>, the original Node <code>request</code> and <code>response</code>, <code>appPath</code>, the current servlet <code>dirPath</code>, and <code>load()</code> for backend modules. GET query parameters and supported POST form or JSON data are made available through <code>params</code>; other input remains on the request stream.</p>
+<p><code>session.load()</code> resolves a backend module relative to the current servlet directory. CommonJS loading returns the module synchronously; ESM loading returns a Promise and is awaited.</p>
+
+<h2>Managed completion</h2>
+<p>With the default <code>session.autoEnd = true</code>, Achieve inspects the returned value. A direct value becomes response content. A Promise or thenable is awaited and its resolved value follows the same rules. If the result is <code>null</code> or <code>undefined</code> while the status remains 200, Achieve selects 204; an empty string remains a valid response body.</p>
+<p>For HEAD, Achieve runs the same servlet but suppresses content. Status-specific rules such as 204 and 205 are enforced at the managed response boundary. If the application has already completed or destroyed the response, Achieve does not attempt a second completion.</p>
+
+<h2>Application-owned completion</h2>
+<p>Set <code>session.autoEnd = false</code> only when application code will complete the response itself:</p>
+<pre><code>exports.servlet = function(session) {
+  session.autoEnd = false;
+  session.response.write("Hello ");
+  session.response.end("World!");
+};</code></pre>
+<p>Achieve then does not inspect the returned value or Promise for normal completion. Ordinary <code>async</code>/<code>await</code> does not require this setting; returning the Promise is the simpler managed form.</p>
+
+<h2>Errors and diagnostics</h2>
+<p>Achieve catches synchronous load or invocation errors and rejection of the returned Promise. Before headers are sent, it can generate its managed 500 response and record the server-side diagnostic. After headers are sent, it reports the error and terminates an incomplete response rather than attempting to replace it with a new 500. Detached asynchronous errors that occur after the servlet contract has ended are the application's responsibility.</p>
+
+<h2>Verification and limits</h2>
+<p>Servlet, module, startup-error, Promise, response-completion, request-input, and logging suites cover CommonJS and ESM loading, exports, reload and caching behavior, direct and asynchronous results, empty results, application-owned responses, HEAD, status-specific suppression, errors before and after headers, and subsequent request health across all four transports.</p>
+<p>Achieve manages servlet errors; it is not a process sandbox. Servlet code and npm modules execute with the Node.js process's permissions. When <code>autoEnd</code> is false, eventual successful completion and detached asynchronous work remain application responsibilities.</p>
+<p>See <a href="../../reference/servlets.htm">JavaScript Servlets</a> and the <a href="../../reference/session.htm">Servlet Session Object</a>.</p>
+</main>
+<footer><a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a></footer>
+</body></html>
