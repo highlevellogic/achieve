@@ -1525,9 +1525,9 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <dt>Applicable role</dt><dd>origin server</dd>
 <dt>Responsible layer</dt><dd>Node.js HTTP/2 compatibility layer; complete Achieve endpoint</dd>
 <dt>Implementation evidence</dt><dd>Achieve listen2() uses Node's HTTP/2 compatibility server. Node handles classic CONNECT before invoking the compatibility request handler and generates the 405 response.</dd>
-<dt>Test evidence</dt><dd>The focused quality-review reproduction on Node.js 22.15.0/nghttp2 1.64.0 sent valid classic CONNECT to standalone Node and Achieve. Both returned :status 405 and date with no Allow field; the standalone request handler was not invoked.</dd>
-<dt>Assessment rationale</dt><dd>The supported Achieve HTTP/2 endpoint generates 405 without the mandatory Allow field. Standalone Node reproduces the behavior, assigning it to Node's compatibility layer rather than Achieve application logic.</dd>
-<dt>Open question</dt><dd>A later Node runtime was not tested; normal Achieve request handling cannot add the field because Node does not dispatch this CONNECT request to it.</dd>
+<dt>Test evidence</dt><dd>The original focused reproduction assigned the behavior to Node's compatibility layer. Final Node.js 24.22.2 Windows and Linux qualification sent valid classic CONNECT and again observed :status 405 and date with no Allow field; the compatibility request handler was not invoked.</dd>
+<dt>Assessment rationale</dt><dd>The qualified Achieve HTTP/2 endpoint generates 405 without the mandatory Allow field. Standalone Node reproduces the behavior, assigning it to Node's compatibility layer rather than Achieve application logic.</dd>
+<dt>Open question</dt><dd>Normal Achieve request handling cannot add the field because Node does not dispatch this CONNECT request to it; reassess when the supported Node baseline changes.</dd>
 <dt>V2 traceability</dt><dd>V2-S062</dd>
 </dl>
 </article>

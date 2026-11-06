@@ -160,8 +160,8 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <dt>Applicable role</dt><dd>HTTP endpoint</dd>
 <dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
 <dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing. The focused investigation shows the malformed frames are rejected by Node/nghttp2 before Achieve request dispatch; standalone Node reproduces the wire result.</dd>
-<dt>Test evidence</dt><dd>http2-frame-hpack-probes.md P05-P24 first identified incorrect errors; http2-five-findings-investigation.md independently repeated SETTINGS/HEADERS/PING stream-ID cases and WINDOW_UPDATE on standalone Node and Achieve, with whole and fragmented delivery.</dd>
-<dt>Assessment rationale</dt><dd>This record is intentionally retained as a composite summary for V2 traceability. On the assessed Node.js 22.15.0 endpoint, multiple frame/state violations that require PROTOCOL_ERROR produced GOAWAY(INTERNAL_ERROR). Node 24.22.1 corrects the tested connection-level codes, but nonzero-stream WINDOW_UPDATE(0) still has incorrect connection scope. One applicable counterexample establishes the composite MUST as Nonconformant for the tested configuration.</dd>
+<dt>Test evidence</dt><dd>Historical raw-frame investigations established the error families and removed fragmentation artifacts. Final Node.js 24.22.2 Windows and Linux qualification repeated the remaining stream WINDOW_UPDATE(0) and excess-concurrency counterexamples.</dd>
+<dt>Assessment rationale</dt><dd>This record is intentionally retained as a composite summary for V2 traceability. Node.js 24.22.2 corrects the earlier tested connection-level error-code substitutions, but stream WINDOW_UPDATE(0) and excess-concurrency cases still have incorrect connection scope. One applicable counterexample establishes the composite MUST as Nonconformant for the qualified configuration.</dd>
 <dt>Open question</dt><dd>Untested state transitions remain unverified independently of the demonstrated failures; consult the narrower records rather than treating this composite as exhaustive verification.</dd>
 <dt>V2 traceability</dt><dd>V2-X046</dd>
 </dl>
@@ -233,11 +233,11 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <dt>Requirement</dt><dd>A receiver MUST treat a newly opened stream that exceeds its advertised maximum-concurrent-streams limit as the specified stream error.</dd>
 <dt>Conditions</dt><dd>A peer opens a new stream beyond the advertised limit outside the permitted concurrency race.</dd>
 <dt>Applicable role</dt><dd>HTTP endpoint</dd>
-<dt>Responsible layer</dt><dd>Node.js 22.15.0/nghttp2 HTTP/2 stream-concurrency handling</dd>
+<dt>Responsible layer</dt><dd>Node.js 24.22.2/nghttp2 1.70.0 HTTP/2 stream-concurrency handling</dd>
 <dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers and delegates the frame state machine to Node/nghttp2.</dd>
-<dt>Test evidence</dt><dd>batch-e-evidence-review.md E01 and E01-F.</dd>
-<dt>Assessment rationale</dt><dd>With MAX_CONCURRENT_STREAMS=1 and stream 1 deliberately held open, opening stream 3 produces connection GOAWAY INTERNAL_ERROR rather than stream PROTOCOL_ERROR or REFUSED_STREAM. Contiguous and fragmented delivery agree.</dd>
-<dt>Open question</dt><dd>Repeat when the supported Node/nghttp2 baseline changes.</dd>
+<dt>Test evidence</dt><dd>Batch E established the controlled stream lifetime and fragmentation result. Final Node.js 24.22.2 Windows and Linux qualification repeated the case with MAX_CONCURRENT_STREAMS=1 and stream 1 held open.</dd>
+<dt>Assessment rationale</dt><dd>Opening stream 3 produces connection GOAWAY(PROTOCOL_ERROR) rather than the required stream PROTOCOL_ERROR or REFUSED_STREAM. Node 24 corrects the earlier error code but not the error scope.</dd>
+<dt>Open question</dt><dd>The upstream stream-scope defect remains; repeat when the supported Node/nghttp2 baseline changes.</dd>
 <dt>V2 traceability</dt><dd>V2-X047B</dd>
 </dl>
 </article>
@@ -278,10 +278,10 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <dt>Requirement</dt><dd>An endpoint detecting a stream error MUST send RST_STREAM with the applicable error code, subject to the closed-stream exceptions.</dd>
 <dt>Conditions</dt><dd>Connection errors and already-closed streams have separate handling.</dd>
 <dt>Applicable role</dt><dd>HTTP endpoint</dd>
-<dt>Responsible layer</dt><dd>Node.js 22.15.0/nghttp2 stream-error handling</dd>
+<dt>Responsible layer</dt><dd>Node.js 24.22.2/nghttp2 1.70.0 stream-error handling</dd>
 <dt>Implementation evidence</dt><dd>achieve.js:1463-1512 delegates HTTP/2 error framing to Node/nghttp2.</dd>
-<dt>Test evidence</dt><dd>http2-five-findings-investigation.md stream WINDOW_UPDATE(0); batch-e-evidence-review.md E13-E14 controls.</dd>
-<dt>Assessment rationale</dt><dd>Many malformed-message stream errors correctly receive RST_STREAM, but an open nonzero stream receiving WINDOW_UPDATE(0) gets connection GOAWAY INTERNAL_ERROR instead of its required stream reset. This is the same underlying cause recorded by V3-9113-026.</dd>
+<dt>Test evidence</dt><dd>The five-findings investigation and Batch E removed the application-response race. Final Node.js 24.22.2 Windows and Linux qualification repeated open-stream WINDOW_UPDATE(0) and observed connection GOAWAY(PROTOCOL_ERROR).</dd>
+<dt>Assessment rationale</dt><dd>Many malformed-message stream errors correctly receive RST_STREAM, but an open nonzero stream receiving WINDOW_UPDATE(0) gets a connection error instead of its required stream reset. This is the same underlying cause recorded by V3-9113-026.</dd>
 <dt>Open question</dt><dd>Repeat the known counterexample when the supported Node/nghttp2 baseline changes.</dd>
 <dt>V2 traceability</dt><dd>V2-H208</dd>
 </dl>
@@ -445,8 +445,8 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <dt>Applicable role</dt><dd>HTTP participant</dd>
 <dt>Responsible layer</dt><dd>Node.js HTTP/2 session, stream, framing, and flow-control implementation</dd>
 <dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates cleartext or TLS Node HTTP/2 servers; achieve.js:1407-1441 receives compatibility-API requests only after Node protocol parsing. The focused investigation shows the malformed frames are rejected by Node/nghttp2 before Achieve request dispatch; standalone Node reproduces the wire result.</dd>
-<dt>Test evidence</dt><dd>http2-five-findings-investigation.md repeats zero-increment WINDOW_UPDATE at connection and stream scope. Node 22.15.0 emits GOAWAY(INTERNAL_ERROR). Node 24.22.1 corrects the connection-level code but, with stream 1 deliberately held open, still emits GOAWAY(PROTOCOL_ERROR) instead of RST_STREAM(PROTOCOL_ERROR).</dd>
-<dt>Assessment rationale</dt><dd>The assessed Node 22.15.0 endpoint has wrong code and scope. The remaining nonzero-stream scope defect also persists on Node 24.22.1 and is traced to nghttp2 routing increment zero through connection-error handling. RFC 9113 requires a stream error for a valid nonzero stream.</dd>
+<dt>Test evidence</dt><dd>The focused investigation established both scopes. Final Node.js 24.22.2 Windows and Linux qualification observed the correct connection GOAWAY(PROTOCOL_ERROR), but a deliberately open nonzero stream still received GOAWAY(PROTOCOL_ERROR) instead of RST_STREAM(PROTOCOL_ERROR).</dd>
+<dt>Assessment rationale</dt><dd>The qualified endpoint has corrected the connection-level code, but the remaining nonzero-stream scope defect persists in Node.js 24.22.2/nghttp2 1.70.0. RFC 9113 requires a stream error for a valid nonzero stream.</dd>
 <dt>Open question</dt><dd>The Achieve immediate-response race can close a fragmented request stream before the invalid frame arrives; the standalone open-stream reproduction removes that artifact. Upstream nghttp2 correction remains unresolved.</dd>
 <dt>V2 traceability</dt><dd>V2-NEW-062</dd>
 </dl>
@@ -850,8 +850,8 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <dt>Applicable role</dt><dd>HTTP endpoint</dd>
 <dt>Responsible layer</dt><dd>TLS/OpenSSL and Node.js HTTP/2; Achieve supplies server options</dd>
 <dt>Implementation evidence</dt><dd>achieve.js:1463-1512 creates TLS Node HTTP/2 servers and passes the supplied TLS options to Node.</dd>
-<dt>Test evidence</dt><dd>Batch F forced TLS 1.2, negotiated ALPN h2, sent the client preface and SETTINGS, then initiated renegotiation; the server sent connection GOAWAY INTERNAL_ERROR rather than PROTOCOL_ERROR.</dd>
-<dt>Assessment rationale</dt><dd>The renegotiation is rejected at connection scope, but the observed mandatory HTTP/2 error code is wrong on Node.js 22.15.0.</dd>
+<dt>Test evidence</dt><dd>Final Node.js 24.22.2 Windows and Linux qualification forced TLS 1.2, negotiated ALPN h2, completed the client preface, and initiated renegotiation. Node rejected it with ERR_TLS_RENEGOTIATION_DISABLED, but no GOAWAY(PROTOCOL_ERROR) was observed; a subsequent PING was not acknowledged.</dd>
+<dt>Assessment rationale</dt><dd>Renegotiation is disabled, but the qualified endpoint does not emit the mandatory HTTP/2 connection error of type PROTOCOL_ERROR.</dd>
 <dt>Open question</dt><dd>The pre-preface client-certificate exception was not exercised and does not apply to the tested sequence.</dd>
 <dt>V2 traceability</dt><dd>V2-NEW-075</dd>
 </dl>
@@ -895,8 +895,8 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <dt>Applicable role</dt><dd>HTTP endpoint</dd>
 <dt>Responsible layer</dt><dd>TLS/OpenSSL and Node.js HTTP/2; Achieve supplies server options</dd>
 <dt>Implementation evidence</dt><dd>achieve.js:1463-1512 passes secure-server TLS options to Node without applying the RFC 9113 prohibited-cipher list.</dd>
-<dt>Test evidence</dt><dd>Batch F explicitly configured TLS_RSA_WITH_AES_128_CBC_SHA with OpenSSL security level 0; TLS 1.2 and ALPN h2 negotiated and the endpoint sent HTTP/2 SETTINGS. The allowed TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 control also negotiated h2.</dd>
-<dt>Assessment rationale</dt><dd>The supported endpoint configuration permits a cipher on RFC 9113's prohibited list, missing the SHOULD NOT recommendation.</dd>
+<dt>Test evidence</dt><dd>Final Node.js 24.22.2/OpenSSL 3.5.9 Windows and Linux qualification explicitly configured TLS_RSA_WITH_AES_128_CBC_SHA with security level 0; TLS 1.2 and ALPN h2 negotiated and the endpoint sent HTTP/2 SETTINGS. The mandatory-cipher control also negotiated h2.</dd>
+<dt>Assessment rationale</dt><dd>The qualified endpoint permits an explicitly configured cipher on RFC 9113's prohibited list, missing the SHOULD NOT recommendation.</dd>
 <dt>Open question</dt><dd>The prohibited case requires explicit opt-in and lowered OpenSSL security policy; default cipher selection was not implicated.</dd>
 <dt>V2 traceability</dt><dd>V2-X067</dd>
 </dl>
@@ -985,9 +985,9 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <dt>Applicable role</dt><dd>HTTP/2 TLS endpoint</dd>
 <dt>Responsible layer</dt><dd>Node.js/OpenSSL secure HTTP/2 implementation</dd>
 <dt>Implementation evidence</dt><dd>achieve.js:1463-1512 delegates TLS and HTTP/2 protocol handling to Node/OpenSSL/nghttp2; Achieve contains no server-initiated renegotiation path.</dd>
-<dt>Test evidence</dt><dd>Batch F forced TLS 1.2, completed ALPN h2 and the connection preface, then initiated TLS renegotiation. Renegotiation did not complete; the endpoint rejected it by closing the HTTP/2 connection. The wrong GOAWAY code remains separately Nonconformant under V3-9113-053.</dd>
+<dt>Test evidence</dt><dd>Final Node.js 24.22.2 Windows and Linux qualification forced TLS 1.2, completed ALPN h2 and the connection preface, then initiated TLS renegotiation. Node rejected the attempt with ERR_TLS_RENEGOTIATION_DISABLED. The missing compliant HTTP/2 error handling remains separately Nonconformant under V3-9113-053.</dd>
 <dt>Assessment rationale</dt><dd>Implementation inspection excludes an Achieve server-initiated renegotiation path, and the focused client-initiated attempt was rejected. Together these establish disablement for the assessed deployment while keeping the distinct error-code defect separate.</dd>
-<dt>Open question</dt><dd>The result is specific to Node.js 22.15.0/OpenSSL 3.0.16 and should be repeated when that runtime baseline changes.</dd>
+<dt>Open question</dt><dd>The result is specific to Node.js 24.22.2/OpenSSL 3.5.9 and should be repeated when that runtime baseline changes.</dd>
 <dt>V2 traceability</dt><dd>V2-NEW-075</dd>
 </dl>
 </article>

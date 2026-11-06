@@ -145,8 +145,8 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <dt>Applicable role</dt><dd>server</dd>
 <dt>Responsible layer</dt><dd>Node.js HTTP/1.1 parser and the complete Achieve endpoint</dd>
 <dt>Implementation evidence</dt><dd>achieve.js:1407-1441, 1559-1591 (Node HTTP server delegates parsed requests to achieveApp)</dd>
-<dt>Test evidence</dt><dd>No existing overlong-target test. Runtime probe: Raw GET with a 20,001-character target produced 431 and Connection: close on Node 22.15.0.</dd>
-<dt>Assessment rationale</dt><dd>Confirmed on Node.js 22.15.0 and 24.22.1: an overlong request-target receives 431 because target and field overflow share HPE_HEADER_OVERFLOW. RFC 9112 requires 414.</dd>
+<dt>Test evidence</dt><dd>Raw probes on the final Node.js 24.22.2 Windows and Linux qualification endpoints sent a 20,001-character request-target and received 431; the Windows parser reported HPE_HEADER_OVERFLOW. Earlier Node 22 and standalone controls produced the same status.</dd>
+<dt>Assessment rationale</dt><dd>On the qualified Node.js 24.22.2 endpoint, an overlong request-target receives 431 because target and field overflow share the parser's overflow handling. RFC 9112 requires 414 for the demonstrated request-target-length condition.</dd>
 <dt>Open question</dt><dd>An upstream Node correction is preferred. Issue nodejs/node#26296 was closed after the generic 431 change in PR #25605, which did not distinguish target overflow.</dd>
 <dt>V2 traceability</dt><dd>V2-H105</dd>
 </dl>
@@ -310,8 +310,8 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <dt>Applicable role</dt><dd>server</dd>
 <dt>Responsible layer</dt><dd>Node.js HTTP parser/Achieve endpoint</dd>
 <dt>Implementation evidence</dt><dd>Node parses Transfer-Encoding before dispatch at achieve.js:1407-1441 and 1559-1591; Achieve has no transfer-coding decoder or registration mechanism.</dd>
-<dt>Test evidence</dt><dd>Batch D sent Transfer-Encoding: frobnicate, chunked with valid chunk framing. Achieve and standalone Node returned 200, removed chunk framing, and delivered the remaining bytes to the application. A chunked-only control returned 200; an unknown final coding control returned 400 under the independent final-chunked framing rule. Neither endpoint returned 501.</dd>
-<dt>Assessment rationale</dt><dd>The final-chunked probe isolates the §6.1 recommendation from §6.3's mandatory final-coding rejection. The supported endpoint does not understand or decode frobnicate and no documented reason for departing from the 501 SHOULD was identified.</dd>
+<dt>Test evidence</dt><dd>Batch D isolated the final-chunked case with standalone and Achieve controls. Final Node.js 24.22.2 Windows and Linux qualification repeated the unknown-coding request: the endpoint returned 200, removed chunk framing, and delivered the remaining bytes rather than returning 501.</dd>
+<dt>Assessment rationale</dt><dd>The final-chunked probe isolates the §6.1 recommendation from §6.3's mandatory final-coding rejection. The qualified endpoint does not understand or decode frobnicate and no documented reason for departing from the 501 SHOULD was identified.</dd>
 <dt>Open question</dt><dd>This is a SHOULD-level Node-inherited endpoint defect, not a malformed-final-framing result. Reassess on a newer Node parser or if Achieve gains explicit transfer-coding support.</dd>
 <dt>V2 traceability</dt><dd>V2-NEW-040</dd>
 </dl>
