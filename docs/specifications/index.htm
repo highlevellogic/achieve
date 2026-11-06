@@ -78,12 +78,16 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <h3>RFC 9112 — HTTP/1.1</h3>
 <ul class="compact">
 <li><a href="http_standards/http1_message_framing.html">HTTP/1.1 Message Framing</a> — message length, transfer coding, chunking, trailers, connections, and the Node parser boundary.</li>
+<li><a href="http_standards/http1_connections.html">HTTP/1.1 Connections</a> — request completion, reuse, pipelining, explicit close behavior, and TLS closure.</li>
 <li><a href="http_standards/request_targets_and_authority.html">Request Targets and Authority</a> — HTTP/1.1 target forms, Host, HTTP/2 authority, validation, and routing handoff.</li>
 </ul>
 
 <h3>RFC 9113 — HTTP/2</h3>
 <ul class="compact">
 <li><a href="http_standards/http2_stream_errors.html">HTTP/2 Stream Errors and Connection Errors</a> — required error scope and codes, Node/nghttp2 behavior, and qualified-runtime limitations.</li>
+<li><a href="http_standards/http2_stream_states.html">HTTP/2 Stream States</a> — lifecycle, identifiers, concurrency limits, permitted frames, and known error-scope limitations.</li>
+<li><a href="http_standards/http2_frames.html">HTTP/2 Frames</a> — binary framing, limits, SETTINGS, PING, field-block sequencing, and the runtime boundary.</li>
+<li><a href="http_standards/http2_header_compression.html">HTTP/2 Header Compression</a> — HPACK state, contiguous field blocks, decoding failures, and compression-context verification.</li>
 <li><a href="http_standards/http2_flow_control.html">HTTP/2 Flow Control</a> — connection and stream windows, DATA accounting, WINDOW_UPDATE, SETTINGS, and runtime limitations.</li>
 <li><a href="http_standards/http2_request_fields.html">HTTP/2 Request Fields</a> — pseudo-header ordering and presence, lowercase names, prohibited fields, and malformed-request handling.</li>
 </ul>
@@ -92,8 +96,10 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <p>Implementation articles describe stable Achieve facilities without forcing them into a standards-audit structure.</p>
 <ul class="compact">
 <li><a href="features/logging.html">Logging in Achieve</a> — startup reporting, development diagnostics, persistent server logs, access logs, and servlet errors.</li>
+<li><a href="features/error_handling.html">Error Handling and Response Recovery</a> — managed failures, incomplete responses, diagnostics, and application-owned work.</li>
 <li><a href="features/routing.html">Application-Space Routing</a> — required application root, automatic routes, exact and subtree mappings, precedence, and containment.</li>
 <li><a href="features/servlet_lifecycle.html">JavaScript Servlet Lifecycle</a> — loading, session state, synchronous and asynchronous results, completion ownership, errors, and caching.</li>
+<li><a href="features/static_resources.html">Static Resources</a> — application-space lookup, media types, descriptor-based delivery, containment, and response behavior.</li>
 <li><a href="features/static_compression.html">Static Compression</a> — asynchronous artifact generation, representation selection, freshness, reuse, and protected cache storage.</li>
 <li><a href="features/request_input.html">Request Input</a> — query parameters, buffered POST parsing, size limits, streaming, and application responsibilities.</li>
 </ul>
