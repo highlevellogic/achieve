@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dcterms.created" content="2026-11-04">
+<meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve RFC 9110 §8.8.3 Strong ETag Validators for Node.js</title>
+<meta name="description" content="Achieve 3.1.0 strong ETag validators for Node.js HTTP applications: filesystem metadata, identity and compressed representations, verification, and limitations.">
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,200,32); border-bottom:solid blue thick; padding:0; margin:0; }
+.navLink { display:inline-block; margin:.6em 5% .2em; color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+.navLink:hover,.packageLink:hover { color:blue; }
+.backArrow { margin-right:.4em; }
+.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; }
+main { margin:2% 5% 5%; }
+.documentInfo { color:rgb(50,70,90); font-size:.9em; }
+code { padding:.08em .35em; border-radius:.3em; background-color:rgb(220,235,245); color:blue; font-family:Consolas,"Courier New",monospace; }
+pre { margin:1em 0 1.4em; }
+pre code { display:block; padding:1em; overflow:auto; white-space:pre; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+</style>
+</head>
+<body>
+<header>
+<img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern.">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<a class="navLink" href="../../index.htm"><span class="backArrow">←</span> Back to documentation index</a>
+<main>
+
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3">RFC 9110 §8.8.3 ETag</a></h1>
+
+<p class="documentInfo">Created November 4, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+
+<p><strong>Requirement Level:</strong> SHOULD</p>
+
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> 3.1.0 is a Node.js HTTP application server that supplies strong entity tags for selected static and media representations when caching is enabled or an entity-tag precondition requires a validator. The tag describes the representation selected for the response, not merely its request URL.</p>
+
+<h2>Applicable requirements</h2>
+
+<p><a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.1">RFC 9110 §8.8.1</a> defines a strong validator as representation metadata that changes whenever an observable change occurs in the representation data. <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3">§8.8.3</a> defines an entity tag as an opaque quoted validator. A tag whose generation does not satisfy strong-validator characteristics must carry the <code>W/</code> weakness indicator.</p>
+
+<p>The RFC says an origin server <strong>SHOULD</strong> send an ETag when representation changes can be determined reasonably and consistently. Its <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3.1">generation guidance in §8.8.3.1</a> recognizes internal revision values, content hashes, combinations of file attributes, and sub-second modification times as possible strategies. Achieve uses file attributes so validation does not require reading or hashing the complete resource on every request.</p>
+
+<p>Content coding changes representation data. The <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.3.3">content-negotiation example in §8.8.3.3</a> explains why a strong tag for a content-encoded representation has to differ from the unencoded form.</p>
+
+<h2>Achieve's strong validator</h2>
+
+<p>Achieve obtains metadata from the open file selected for transmission. It combines these values in order:</p>
+
+<ol>
+<li>modification time in milliseconds;</li>
+<li>filesystem change time in milliseconds;</li>
+<li>representation size;</li>
+<li>filesystem device identifier;</li>
+<li>filesystem file identifier or inode;</li>
+<li>the running Node.js and Achieve versions.</li>
+</ol>
+
+<p>The colon-separated metadata is encoded with base64url. Achieve appends a representation marker and encloses the result in double quotes without a weak-validator prefix.</p>
+
+<pre><code>"base64url(metadata)-i"   identity
+"base64url(metadata)-g"   gzip
+"base64url(metadata)-d"   deflate</code></pre>
+
+<p>The marker keeps identity, gzip, and deflate validators distinct even when they originate from the same source resource. Metadata for a compressed response describes the selected compressed artifact. A Node.js or Achieve version change can also invalidate a tag without a resource-byte change; a strong validator is permitted to change more often than the representation data.</p>
+
+<p>For evaluation of validator preconditions, see <a href="conditionals.html">Achieve RFC 9110 §13 Conditional Requests</a>.</p>
+
+<h2>Automated verification</h2>
+
+<p>The verifier suite checks that an unchanged representation retains its tag; identity, gzip, and deflate have distinct strong tags; and size and sub-second metadata participate in the result. Focused cases cover same-size edits with restored modification times, timestamp-preserving file replacement, changed compressed sources, and reuse of unchanged compressed artifacts.</p>
+
+<p>Descriptor tests verify that metadata and transmission use the same opened representation. Compression tests verify that obsolete gzip or deflate output is rejected when source metadata changes during background generation.</p>
+
+<p>See <a href="https://github.com/highlevellogic/achieve/blob/master/tests/README_TESTS.txt">Achieve HTTP conformance testing</a> for the stable test-suite entry point and execution guidance.</p>
+
+<h2>Limitations</h2>
+
+<p>The validator is metadata-based, not a cryptographic digest of the representation bytes. Its strength depends on the filesystem reporting a distinguishing change in at least one participating attribute. Deliberate restoration or collision of all participating metadata, filesystem behavior that does not expose a relevant change, or reuse of file identity values can theoretically produce the same tag for different bytes.</p>
+
+<p>Change time and file identity materially reduce collisions caused by same-size edits, restored modification times, and file replacement, but do not provide a mathematical content-identity guarantee. The metadata strategy uses information already obtained for the selected open representation and avoids an additional full-file read and hash on each validation request.</p>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a>
+</footer>
+</body>
+</html>

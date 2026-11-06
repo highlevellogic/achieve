@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dcterms.created" content="2026-11-06"><meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve RFC 9110 Range Requests and Partial Responses for Node.js</title>
+<meta name="description" content="Achieve 3.1.0 byte-range requests and partial responses on Node.js 24.22.2, including If-Range, 206, 416, validators, and single-range limitations.">
+<style>body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}header img{width:100%;display:block}#friend{text-align:center;font-style:italic;font-weight:bold;color:rgb(40,200,32);border-bottom:solid blue thick;padding:0;margin:0}.navLink{display:inline-block;margin:.6em 5% .2em;color:rgb(30,80,150);font-weight:bold;text-decoration:none}.navLink:hover,.packageLink:hover{color:blue}.backArrow{margin-right:.4em}.packageLink{color:rgb(30,80,150);font-weight:bold;text-decoration:none}main{margin:2% 5% 5%}.documentInfo{color:rgb(50,70,90);font-size:.9em}code{padding:.08em .35em;border-radius:.3em;background-color:rgb(220,235,245);color:blue;font-family:Consolas,"Courier New",monospace}footer{padding:1.5% 5%;box-sizing:border-box;border-top:solid blue thick}</style>
+</head><body>
+<header><img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern."><h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3></header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to technical specifications</a>
+<main>
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-14">RFC 9110 Range Requests and Partial Responses</a></h1>
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+<p><strong>Requirement levels:</strong> Range support is optional, but RFC 9110 imposes MUST, SHOULD, and SHOULD NOT requirements once a server processes a range request.</p>
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> supports byte ranges for resources selected through its audiovisual MIME table. Range processing lets clients retrieve a useful portion of media while retaining validators and accurate representation length metadata.</p>
+
+<h2>Range selection</h2>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-14.2">RFC 9110 §14.2</a> defines the <code>Range</code> field. Achieve accepts closed, open-ended, and suffix byte ranges. A satisfiable range produces one <code>206 Partial Content</code> response with the selected bytes. A valid unsatisfiable range produces <code>416 Range Not Satisfiable</code> and a <code>Content-Range</code> value containing the complete length. A malformed range is rejected with 400.</p>
+<p>Achieve advertises byte support with <code>Accept-Ranges: bytes</code>. The 206 response carries the selected range in <code>Content-Range</code> and the exact partial byte count in <code>Content-Length</code>. HEAD performs the same representation selection but does not turn a media response into a partial response.</p>
+
+<h2>If-Range</h2>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.5">RFC 9110 §13.1.5</a> makes <code>If-Range</code> conditional on a Range request. A matching strong entity tag permits range processing. A false condition causes the server to ignore Range and send the complete selected representation. A weak entity tag cannot satisfy If-Range.</p>
+<p>Achieve treats date-form If-Range conservatively as false because its current resource model does not establish that a Last-Modified value is a sufficiently strong date validator under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.8.2.2">§8.8.2.2</a>. This is permitted conservative behavior: exact textual equality with Last-Modified alone is not enough to establish strength.</p>
+
+<h2>Partial-response metadata</h2>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.7">RFC 9110 §15.3.7</a> defines 206. For an ordinary single-part 206, Achieve supplies representation metadata including the content type and validator information. For a successful matching If-Range 206, the RFC says the sender <strong>SHOULD NOT</strong> repeat representation fields beyond the required set. Achieve omits <code>Content-Type</code> and <code>Last-Modified</code> in that case while retaining <code>Date</code>, <code>ETag</code>, <code>Content-Range</code>, partial <code>Content-Length</code>, <code>Accept-Ranges</code>, and <code>Server</code>.</p>
+<p>The bytes and entity tag are unchanged by this field selection. A cache combining partial responses remains subject to <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-3.4">RFC 9111 §3.4</a>.</p>
+
+<h2>Automated verification</h2>
+<p>The byte-range verifier covers closed, open-ended, suffix, malformed, and unsatisfiable requests; ordinary 206 responses; matching and nonmatching If-Range entity tags; conservative date-form handling; exact bytes; 200/206/416 status selection; and response fields. The same cases run over HTTP, HTTPS, h2c, and secure HTTP/2. Conditional tests verify that ordinary preconditions are evaluated before range handling.</p>
+<p>See <a href="https://github.com/highlevellogic/achieve/blob/master/tests/README_TESTS.txt">Achieve HTTP conformance testing</a>.</p>
+
+<h2>Limits</h2>
+<p>Achieve does not generate <code>multipart/byteranges</code>. When a request contains multiple members, it serves the first satisfiable range rather than a multipart response; multipart support is optional. Range serving applies to the audiovisual path, not every ordinary static resource. Date-form If-Range cannot currently produce a matching 206 because no strong date validator has been established.</p>
+</main>
+<footer><a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a></footer>
+</body></html>

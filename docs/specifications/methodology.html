@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Methodology for the Achieve 3.1.0 HTTP RFC conformance assessment.">
+<meta name="dcterms.created" content="2026-11-05">
+<meta name="dcterms.modified" content="2026-11-05">
+<title>Achieve 3.1.0 HTTP Conformance Methodology</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; color:#18283b; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,160,32); border-bottom:solid blue thick; padding:.2em; margin:0; }
+nav { padding:.7em 5%; background:#dceff8; border-bottom:1px solid #8ab3d0; }
+nav a,.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; margin-right:1.1em; }
+nav a:hover,.packageLink:hover { color:blue; text-decoration:underline; }
+main { margin:2% 5% 5%; max-width:105em; }
+h1,h2,h3 { color:#153d70; }
+.metadata,.notice { background:#eaf6fb; border-left:.35em solid #326fa8; padding:.7em 1em; margin:1em 0; }
+.notice { border-left-color:#8a6500; background:#fff7da; }
+.counts { border-collapse:collapse; margin:1em 0; }
+.counts th,.counts td { border:1px solid #7fa5bd; padding:.45em .7em; text-align:left; }
+.counts th { background:#d5eaf5; }
+.requirement { background:#edf8fc; border:1px solid #8eb3c9; border-radius:.35em; padding:.8em 1em; margin:1em 0; }
+.requirement h2 { font-size:1.15em; margin:.1em 0 .6em; }
+.requirement dl { display:grid; grid-template-columns:minmax(10em,15em) 1fr; gap:.35em .8em; margin:.5em 0; }
+.requirement dt { font-weight:bold; }
+.requirement dd { margin:0; overflow-wrap:anywhere; }
+.badge { display:inline-block; border-radius:.3em; padding:.15em .45em; font-weight:bold; }
+.conformant { background:#ccebd2; color:#174e24; }
+.nonconformant { background:#ffd2d2; color:#791b1b; }
+.unverified { background:#fff0b8; color:#684e00; }
+.not-applicable { background:#e0e0e0; color:#3d3d3d; }
+.optional-not-implemented { background:#dfd5f5; color:#4b2d72; }
+code { padding:.08em .35em; border-radius:.3em; background:#dcebf4; color:blue; font-family:Consolas,"Courier New",monospace; }
+.compact li { margin:.4em 0; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+@media (max-width:700px) { .requirement dl { display:block; } .requirement dt { margin-top:.5em; } nav a { display:inline-block; margin-bottom:.4em; } }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern.">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<nav aria-label="Specification navigation">
+<a href="index.htm">Specifications index</a>
+<a href="methodology.html">Methodology</a>
+<a href="conformance.html">Conformance summary</a>
+<a href="rfc9110.html">RFC 9110</a>
+<a href="rfc9111.html">RFC 9111</a>
+<a href="rfc9112.html">RFC 9112</a>
+<a href="rfc9113.html">RFC 9113</a>
+<a href="evidence.html">Evidence</a>
+<a href="../index.htm">Documentation home</a>
+</nav>
+<main>
+
+<h1>Achieve HTTP Conformance Methodology</h1>
+<div class="metadata"><strong>Achieve:</strong> 3.1.0<br><strong>Evaluated runtime:</strong> Node.js 24.22.2<br><strong>Assessment baseline:</strong> November 5, 2026<br><strong>Document status:</strong> Draft — technical review</div>
+<h2>Scope</h2>
+<p>The unit of assessment is one normative requirement in <a href="review/requirements-ledger-v3.csv">the V3 requirements ledger</a>. The inventory has 211 stable IDs spanning RFC 9110, RFC 9111, RFC 9112, and RFC 9113. Each ID appears once in the register pages and retains its V2 traceability.</p>
+<p>The assessed endpoint is Achieve 3.1.0 on Node.js 24.22.2. Node.js, llhttp, nghttp2, HPACK, OpenSSL, and application-authored behavior are distinguished in the responsibility and evidence fields. Delegation identifies the responsible layer; it does not by itself establish conformance or make an endpoint obligation inapplicable.</p>
+<h2>Normative language</h2>
+<p>Each register entry preserves the ledger's normative level, including <strong>MUST</strong>, <strong>MUST NOT</strong>, <strong>SHOULD</strong>, <strong>SHOULD NOT</strong>, and <strong>MAY</strong>. Conditions and role limitations remain part of the requirement. The linked RFC Editor section is authoritative if a summary is ambiguous.</p>
+<h2>Classifications</h2>
+<dl>
+<dt><span class="badge conformant">Conformant</span></dt><dd>Sufficient implementation and verification evidence establishes the applicable obligation for the assessed endpoint and runtime.</dd>
+<dt><span class="badge nonconformant">Nonconformant</span></dt><dd>A specific violation of the applicable obligation is demonstrated.</dd>
+<dt><span class="badge unverified">Unverified</span></dt><dd>Available evidence does not establish either conformance or nonconformance. Absence of a failure is not treated as proof.</dd>
+<dt><span class="badge not-applicable">Not applicable</span></dt><dd>The obligation does not apply to Achieve's supported origin-server role or configuration.</dd>
+<dt><span class="badge optional-not-implemented">Optional not implemented</span></dt><dd>An optional capability is absent and the RFC permits that absence.</dd>
+</dl>
+<h2>Evidence rules</h2>
+<ul class="compact">
+<li>Source inspection, existing automated tests, bounded raw-protocol probes, runtime documentation, and qualification artifacts are recorded separately.</li>
+<li>A finite set of successful cases is not generalized beyond the behavior it exercises.</li>
+<li>Wire observations take precedence over API assumptions when the requirement concerns protocol output or error scope.</li>
+<li>Historical Node.js 22 evidence is preserved to explain earlier results; current classifications use the qualified Node.js 24.22.2 baseline.</li>
+<li>Requirements owned by HTTP caches, clients, proxies, or servlet applications are not attributed to Achieve core unless the endpoint has the applicable role.</li>
+</ul>
+<h2>Qualification boundary</h2>
+<p>The final Linux qualification for Achieve 3.1.0 ran all 37 verifier suites successfully with no environmental skips and completed package installation/startup smoke testing. The bounded protocol artifact recorded six corrected observations, seven known limitations, and no unexpected failures. Those observations resolve only the specific requirements identified by the ledger; they are not treated as a blanket conformance result.</p>
+<h2>Traceability</h2>
+<p>The <a href="review/requirements-v2-v3-mapping.csv">V2-to-V3 mapping</a>, <a href="review/requirements-consolidation.md">consolidation report</a>, <a href="review/conformance-summary.md">authoritative summary</a>, batch reviews, and focused investigations are indexed on the <a href="evidence.html">evidence page</a>.</p>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a>
+</footer>
+</body>
+</html>

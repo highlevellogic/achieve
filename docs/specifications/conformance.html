@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Current Achieve 3.1.0 HTTP conformance totals, findings, evidence boundary, and unresolved requirements.">
+<meta name="dcterms.created" content="2026-11-05">
+<meta name="dcterms.modified" content="2026-11-05">
+<title>Achieve 3.1.0 HTTP Conformance Summary</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; color:#18283b; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,160,32); border-bottom:solid blue thick; padding:.2em; margin:0; }
+nav { padding:.7em 5%; background:#dceff8; border-bottom:1px solid #8ab3d0; }
+nav a,.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; margin-right:1.1em; }
+nav a:hover,.packageLink:hover { color:blue; text-decoration:underline; }
+main { margin:2% 5% 5%; max-width:105em; }
+h1,h2,h3 { color:#153d70; }
+.metadata,.notice { background:#eaf6fb; border-left:.35em solid #326fa8; padding:.7em 1em; margin:1em 0; }
+.notice { border-left-color:#8a6500; background:#fff7da; }
+.counts { border-collapse:collapse; margin:1em 0; }
+.counts th,.counts td { border:1px solid #7fa5bd; padding:.45em .7em; text-align:left; }
+.counts th { background:#d5eaf5; }
+.requirement { background:#edf8fc; border:1px solid #8eb3c9; border-radius:.35em; padding:.8em 1em; margin:1em 0; }
+.requirement h2 { font-size:1.15em; margin:.1em 0 .6em; }
+.requirement dl { display:grid; grid-template-columns:minmax(10em,15em) 1fr; gap:.35em .8em; margin:.5em 0; }
+.requirement dt { font-weight:bold; }
+.requirement dd { margin:0; overflow-wrap:anywhere; }
+.badge { display:inline-block; border-radius:.3em; padding:.15em .45em; font-weight:bold; }
+.conformant { background:#ccebd2; color:#174e24; }
+.nonconformant { background:#ffd2d2; color:#791b1b; }
+.unverified { background:#fff0b8; color:#684e00; }
+.not-applicable { background:#e0e0e0; color:#3d3d3d; }
+.optional-not-implemented { background:#dfd5f5; color:#4b2d72; }
+code { padding:.08em .35em; border-radius:.3em; background:#dcebf4; color:blue; font-family:Consolas,"Courier New",monospace; }
+.compact li { margin:.4em 0; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+@media (max-width:700px) { .requirement dl { display:block; } .requirement dt { margin-top:.5em; } nav a { display:inline-block; margin-bottom:.4em; } }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern.">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<nav aria-label="Specification navigation">
+<a href="index.htm">Specifications index</a>
+<a href="methodology.html">Methodology</a>
+<a href="conformance.html">Conformance summary</a>
+<a href="rfc9110.html">RFC 9110</a>
+<a href="rfc9111.html">RFC 9111</a>
+<a href="rfc9112.html">RFC 9112</a>
+<a href="rfc9113.html">RFC 9113</a>
+<a href="evidence.html">Evidence</a>
+<a href="../index.htm">Documentation home</a>
+</nav>
+<main>
+
+<h1>Achieve 3.1.0 HTTP Conformance Summary</h1>
+<div class="metadata"><strong>Achieve:</strong> 3.1.0<br><strong>Evaluated runtime:</strong> Node.js 24.22.2<br><strong>Assessment baseline:</strong> November 5, 2026<br><strong>Document status:</strong> Draft — technical review</div>
+<p>The authoritative inventory contains 211 requirements. Totals describe the available evidence and are not a percentage conformance score.</p>
+<table class="counts"><thead><tr><th>Classification</th><th>Requirements</th></tr></thead><tbody><tr><td><span class="badge conformant">Conformant</span></td><td>163</td></tr><tr><td><span class="badge nonconformant">Nonconformant</span></td><td>9</td></tr><tr><td><span class="badge unverified">Unverified</span></td><td>8</td></tr><tr><td><span class="badge not-applicable">Not applicable</span></td><td>22</td></tr><tr><td><span class="badge optional-not-implemented">Optional not implemented</span></td><td>9</td></tr><tr><th>Total</th><th>211</th></tr></tbody></table>
+<h2>Verified release baseline</h2>
+<p>Release <a href="https://github.com/highlevellogic/achieve/releases/tag/v3.1.0">v3.1.0</a> resolves to merge commit <code>3f0dd82bdc2873c231ac53fd51ceadaa06eef7d0</code>. Final Linux qualification <a href="https://github.com/highlevellogic/achieve/actions/runs/42049611849">run 42049611849</a> evaluated the clean release candidate with Node.js 24.22.2, OpenSSL 3.5.9, nghttp2 1.70.0, and llhttp 9.4.3.</p>
+<p>The qualification passed 37 of 37 verifier suites, with zero failures and zero environmental skips. It also passed package installation and startup smoke testing. Earlier Node.js 22 findings remain historical evidence where a runtime upgrade changed behavior.</p>
+<h2>Nonconformant requirements (9)</h2>
+<p>These are requirement-level findings. Multiple records can share one underlying Node.js, nghttp2, or TLS cause, and a runtime-owned defect is not automatically an Achieve implementation defect.</p>
+<ul class="compact"><li><a href="rfc9110.html#V3-9110-098"><code>V3-9110-098</code></a> — An origin server generating a 405 response MUST generate an Allow field listing the target resource's currently supported methods. <em>(Node.js HTTP/2 compatibility layer; complete Achieve endpoint)</em></li><li><a href="rfc9112.html#V3-9112-006"><code>V3-9112-006</code></a> — A server that receives a request-target longer than any URI it wishes to parse MUST respond with 414 (URI Too Long). <em>(Node.js HTTP/1.1 parser and the complete Achieve endpoint)</em></li><li><a href="rfc9112.html#V3-9112-017"><code>V3-9112-017</code></a> — A server receiving an unrecognized request transfer coding should respond 501. <em>(Node.js HTTP parser/Achieve endpoint)</em></li><li><a href="rfc9113.html#V3-9113-007"><code>V3-9113-007</code></a> — An endpoint MUST enforce the state-dependent permitted frame types and apply the specified stream or connection error for violations. <em>(Node.js HTTP/2 session, stream, framing, and flow-control implementation)</em></li><li><a href="rfc9113.html#V3-9113-012"><code>V3-9113-012</code></a> — A receiver MUST treat a newly opened stream that exceeds its advertised maximum-concurrent-streams limit as the specified stream error. <em>(Node.js 22.15.0/nghttp2 HTTP/2 stream-concurrency handling)</em></li><li><a href="rfc9113.html#V3-9113-015"><code>V3-9113-015</code></a> — An endpoint detecting a stream error MUST send RST_STREAM with the applicable error code, subject to the closed-stream exceptions. <em>(Node.js 22.15.0/nghttp2 stream-error handling)</em></li><li><a href="rfc9113.html#V3-9113-026"><code>V3-9113-026</code></a> — WINDOW_UPDATE with increment zero is a PROTOCOL_ERROR at the applicable scope. <em>(Node.js HTTP/2 session, stream, framing, and flow-control implementation)</em></li><li><a href="rfc9113.html#V3-9113-053"><code>V3-9113-053</code></a> — After the client connection preface, a TLS 1.2 renegotiation attempt MUST be treated as a connection error of type PROTOCOL_ERROR; the narrow client-certificate exception is available only before the preface. <em>(TLS/OpenSSL and Node.js HTTP/2; Achieve supplies server options)</em></li><li><a href="rfc9113.html#V3-9113-056"><code>V3-9113-056</code></a> — A TLS 1.2 HTTP/2 endpoint SHOULD NOT negotiate a cipher suite on the prohibited list. <em>(TLS/OpenSSL and Node.js HTTP/2; Achieve supplies server options)</em></li></ul>
+<h2>Unverified requirements (8)</h2>
+<p>These remain unresolved because the available evidence is incomplete, broad obligations cannot be proven by bounded examples, or a specialized state has not been established reliably.</p>
+<ul class="compact"><li><a href="rfc9110.html#V3-9110-001"><code>V3-9110-001</code></a> — A sender must not generate protocol elements that violate the corresponding ABNF. <em>(Shared/Node/Achieve)</em></li><li><a href="rfc9110.html#V3-9110-002"><code>V3-9110-002</code></a> — A sender must not generate syntax allowed only for a role it does not have. <em>(Shared)</em></li><li><a href="rfc9110.html#V3-9110-003"><code>V3-9110-003</code></a> — Recipients should parse defensively with only marginal assumptions about conformance and size. <em>(Node/shared)</em></li><li><a href="rfc9110.html#V3-9110-004"><code>V3-9110-004</code></a> — A recipient must accept elements at least as long as values it generates for the same elements. <em>(Node/shared)</em></li><li><a href="rfc9110.html#V3-9110-005"><code>V3-9110-005</code></a> — A recipient must interpret received elements according to defined semantics absent a justified compatibility workaround. <em>(Shared)</em></li><li><a href="rfc9113.html#V3-9113-014"><code>V3-9113-014</code></a> — An endpoint detecting a connection error SHOULD send GOAWAY with the applicable error code before closing when possible. <em>(Node.js HTTP/2 session, stream, framing, and flow-control implementation)</em></li><li><a href="rfc9113.html#V3-9113-028"><code>V3-9113-028</code></a> — A receiver MUST treat flow-control window exceedance as FLOW_CONTROL_ERROR at the applicable scope. <em>(Node.js/nghttp2 HTTP/2 receiver)</em></li><li><a href="rfc9113.html#V3-9113-031"><code>V3-9113-031</code></a> — A detected malformed HTTP/2 request MUST be treated as a stream error of type PROTOCOL_ERROR. <em>(Node.js HTTP/2 parser; Achieve handles requests after parsing)</em></li></ul>
+<h2>Interpretation limits</h2>
+<ul class="compact">
+<li>Achieve is an origin server, not an HTTP cache. Cache-only duties are classified by applicability rather than counted as successes.</li>
+<li>Optional unsupported capabilities are separated from failures.</li>
+<li>Application-authored servlet responses remain the application's responsibility where Achieve neither generates nor prevents the relevant field or status.</li>
+<li>The current results are runtime-specific. A later Node.js, nghttp2, llhttp, or OpenSSL baseline requires regression qualification.</li>
+</ul>
+<p>See the <a href="review/conformance-summary.md">authoritative Markdown summary</a> and <a href="review/nonconformity-remediation-plan.md">remediation plan</a> for the detailed evidence narrative.</p>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a>
+</footer>
+</body>
+</html>

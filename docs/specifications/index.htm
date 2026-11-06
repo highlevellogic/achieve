@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Achieve 3.1.0 technical specifications for Node.js 24.22.2, with focused HTTP standards and implementation articles plus complete conformance assessment records.">
+<meta name="dcterms.created" content="2026-11-05">
+<meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve Technical Specifications</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; color:#18283b; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,160,32); border-bottom:solid blue thick; padding:.2em; margin:0; }
+nav { padding:.7em 5%; background:#dceff8; border-bottom:1px solid #8ab3d0; }
+nav a,.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; margin-right:1.1em; }
+nav a:hover,.packageLink:hover { color:blue; text-decoration:underline; }
+main { margin:2% 5% 5%; max-width:105em; }
+h1,h2,h3 { color:#153d70; }
+.metadata,.notice { background:#eaf6fb; border-left:.35em solid #326fa8; padding:.7em 1em; margin:1em 0; }
+.notice { border-left-color:#8a6500; background:#fff7da; }
+.counts { border-collapse:collapse; margin:1em 0; }
+.counts th,.counts td { border:1px solid #7fa5bd; padding:.45em .7em; text-align:left; }
+.counts th { background:#d5eaf5; }
+.requirement { background:#edf8fc; border:1px solid #8eb3c9; border-radius:.35em; padding:.8em 1em; margin:1em 0; }
+.requirement h2 { font-size:1.15em; margin:.1em 0 .6em; }
+.requirement dl { display:grid; grid-template-columns:minmax(10em,15em) 1fr; gap:.35em .8em; margin:.5em 0; }
+.requirement dt { font-weight:bold; }
+.requirement dd { margin:0; overflow-wrap:anywhere; }
+.badge { display:inline-block; border-radius:.3em; padding:.15em .45em; font-weight:bold; }
+.conformant { background:#ccebd2; color:#174e24; }
+.nonconformant { background:#ffd2d2; color:#791b1b; }
+.unverified { background:#fff0b8; color:#684e00; }
+.not-applicable { background:#e0e0e0; color:#3d3d3d; }
+.optional-not-implemented { background:#dfd5f5; color:#4b2d72; }
+code { padding:.08em .35em; border-radius:.3em; background:#dcebf4; color:blue; font-family:Consolas,"Courier New",monospace; }
+.compact li { margin:.4em 0; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+@media (max-width:700px) { .requirement dl { display:block; } .requirement dt { margin-top:.5em; } nav a { display:inline-block; margin-bottom:.4em; } }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern.">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<nav aria-label="Specification navigation">
+<a href="index.htm">Specifications index</a>
+<a href="http_standards/etag.html">ETags</a>
+<a href="http_standards/conditionals.html">Conditional requests</a>
+<a href="features/routing.html">Routing</a>
+<a href="features/servlet_lifecycle.html">Servlet lifecycle</a>
+<a href="conformance.html">Conformance summary</a>
+<a href="rfc9110.html">RFC 9110</a>
+<a href="rfc9111.html">RFC 9111</a>
+<a href="rfc9112.html">RFC 9112</a>
+<a href="rfc9113.html">RFC 9113</a>
+<a href="evidence.html">Evidence</a>
+<a href="../index.htm">Documentation home</a>
+</nav>
+<main>
+
+<h1>Achieve Technical Specifications</h1>
+<div class="metadata"><strong>Achieve:</strong> 3.1.0<br><strong>Evaluated runtime:</strong> Node.js 24.22.2<br><strong>Assessment baseline:</strong> November 5, 2026<br><strong>Document status:</strong> Draft — technical review</div>
+<div class="notice"><strong>Draft notice:</strong> These focused technical specifications and their supporting conformance records are under technical review.</div>
+
+<h2>HTTP Standards</h2>
+<p>Focused specifications explain what a protocol feature requires, how Achieve and its qualified Node.js runtime implement it, how the behavior is verified, and which limitations remain. They are the primary entry point for readers interested in Achieve's HTTP behavior.</p>
+
+<h3>RFC 9110 — HTTP Semantics</h3>
+<ul class="compact">
+<li><a href="http_standards/etag.html">Achieve RFC 9110 §8.8.3 ETag</a> — metadata-based strong validators and representation distinctions.</li>
+<li><a href="http_standards/conditionals.html">Achieve RFC 9110 §13 Conditional Requests</a> — validator preconditions, precedence, and response behavior.</li>
+<li><a href="http_standards/methods_and_responses.html">HTTP Methods and Responses</a> — built-in and registered methods, completion, content rules, and status-specific behavior.</li>
+<li><a href="http_standards/range_requests.html">Range Requests and Partial Responses</a> — byte ranges, If-Range, 206 and 416 responses, and single-range limits.</li>
+</ul>
+
+<h3>RFC 9111 — HTTP Caching</h3>
+<p>Cache-related validator and partial-response behavior is covered in the <a href="http_standards/etag.html">ETag</a>, <a href="http_standards/conditionals.html">Conditional Requests</a>, and <a href="http_standards/range_requests.html">Range Requests</a> specifications. The complete RFC 9111 assessment remains available in the conformance register below.</p>
+
+<h3>RFC 9112 — HTTP/1.1</h3>
+<ul class="compact">
+<li><a href="http_standards/http1_message_framing.html">HTTP/1.1 Message Framing</a> — message length, transfer coding, chunking, trailers, connections, and the Node parser boundary.</li>
+<li><a href="http_standards/request_targets_and_authority.html">Request Targets and Authority</a> — HTTP/1.1 target forms, Host, HTTP/2 authority, validation, and routing handoff.</li>
+</ul>
+
+<h3>RFC 9113 — HTTP/2</h3>
+<ul class="compact">
+<li><a href="http_standards/http2_stream_errors.html">HTTP/2 Stream Errors and Connection Errors</a> — required error scope and codes, Node/nghttp2 behavior, and qualified-runtime limitations.</li>
+</ul>
+
+<h2>Achieve Features</h2>
+<p>Implementation articles describe stable Achieve facilities without forcing them into a standards-audit structure.</p>
+<ul class="compact">
+<li><a href="features/logging.html">Logging in Achieve</a> — startup reporting, development diagnostics, persistent server logs, access logs, and servlet errors.</li>
+<li><a href="features/routing.html">Application-Space Routing</a> — required application root, automatic routes, exact and subtree mappings, precedence, and containment.</li>
+<li><a href="features/servlet_lifecycle.html">JavaScript Servlet Lifecycle</a> — loading, session state, synchronous and asynchronous results, completion ownership, errors, and caching.</li>
+</ul>
+
+<h2>Conformance Assessment</h2>
+<p>The assessment records Achieve 3.1.0 as an HTTP origin server on the specifically qualified Node.js 24.22.2 runtime. It covers <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>, <a href="https://www.rfc-editor.org/rfc/rfc9111.html">RFC 9111</a>, <a href="https://www.rfc-editor.org/rfc/rfc9112.html">RFC 9112</a>, and <a href="https://www.rfc-editor.org/rfc/rfc9113.html">RFC 9113</a>. Runtime-owned behavior remains part of the assessed endpoint while responsibility is recorded separately.</p>
+<ul class="compact">
+<li><a href="conformance.html">Conformance summary</a> — current results, nine nonconformities, eight unverified requirements, and qualification boundary.</li>
+<li><a href="methodology.html">Methodology and classification model</a> — scope, evidence rules, responsibility, and limitations.</li>
+<li><a href="evidence.html">Evidence and source record index</a> — authoritative ledger, traceability, batch reviews, focused investigations, and qualification records.</li>
+</ul>
+<table class="counts"><thead><tr><th>Classification</th><th>Requirements</th></tr></thead><tbody><tr><td><span class="badge conformant">Conformant</span></td><td>163</td></tr><tr><td><span class="badge nonconformant">Nonconformant</span></td><td>9</td></tr><tr><td><span class="badge unverified">Unverified</span></td><td>8</td></tr><tr><td><span class="badge not-applicable">Not applicable</span></td><td>22</td></tr><tr><td><span class="badge optional-not-implemented">Optional not implemented</span></td><td>9</td></tr><tr><th>Total</th><th>211</th></tr></tbody></table>
+
+<h3>Complete RFC conformance registers</h3>
+<p>The registers provide complete requirements coverage and audit traceability. They support the focused technical specifications but do not determine their subject organization.</p>
+<ul class="compact">
+<li><a href="rfc9110.html">RFC 9110 — HTTP Semantics</a> (100 requirements)</li>
+<li><a href="rfc9111.html">RFC 9111 — HTTP Caching</a> (7 requirements)</li>
+<li><a href="rfc9112.html">RFC 9112 — HTTP/1.1</a> (42 requirements)</li>
+<li><a href="rfc9113.html">RFC 9113 — HTTP/2</a> (62 requirements)</li>
+</ul>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a>
+</footer>
+</body>
+</html>

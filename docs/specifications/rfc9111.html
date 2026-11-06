@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Complete Achieve 3.1.0 conformance register for RFC 9111 HTTP Caching.">
+<meta name="dcterms.created" content="2026-11-05">
+<meta name="dcterms.modified" content="2026-11-05">
+<title>Achieve 3.1.0 RFC 9111 Conformance Register</title>
+<style>
+body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; color:#18283b; }
+header img { width:100%; display:block; }
+#friend { text-align:center; font-style:italic; font-weight:bold; color:rgb(40,160,32); border-bottom:solid blue thick; padding:.2em; margin:0; }
+nav { padding:.7em 5%; background:#dceff8; border-bottom:1px solid #8ab3d0; }
+nav a,.packageLink { color:rgb(30,80,150); font-weight:bold; text-decoration:none; margin-right:1.1em; }
+nav a:hover,.packageLink:hover { color:blue; text-decoration:underline; }
+main { margin:2% 5% 5%; max-width:105em; }
+h1,h2,h3 { color:#153d70; }
+.metadata,.notice { background:#eaf6fb; border-left:.35em solid #326fa8; padding:.7em 1em; margin:1em 0; }
+.notice { border-left-color:#8a6500; background:#fff7da; }
+.counts { border-collapse:collapse; margin:1em 0; }
+.counts th,.counts td { border:1px solid #7fa5bd; padding:.45em .7em; text-align:left; }
+.counts th { background:#d5eaf5; }
+.requirement { background:#edf8fc; border:1px solid #8eb3c9; border-radius:.35em; padding:.8em 1em; margin:1em 0; }
+.requirement h2 { font-size:1.15em; margin:.1em 0 .6em; }
+.requirement dl { display:grid; grid-template-columns:minmax(10em,15em) 1fr; gap:.35em .8em; margin:.5em 0; }
+.requirement dt { font-weight:bold; }
+.requirement dd { margin:0; overflow-wrap:anywhere; }
+.badge { display:inline-block; border-radius:.3em; padding:.15em .45em; font-weight:bold; }
+.conformant { background:#ccebd2; color:#174e24; }
+.nonconformant { background:#ffd2d2; color:#791b1b; }
+.unverified { background:#fff0b8; color:#684e00; }
+.not-applicable { background:#e0e0e0; color:#3d3d3d; }
+.optional-not-implemented { background:#dfd5f5; color:#4b2d72; }
+code { padding:.08em .35em; border-radius:.3em; background:#dcebf4; color:blue; font-family:Consolas,"Courier New",monospace; }
+.compact li { margin:.4em 0; }
+footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
+@media (max-width:700px) { .requirement dl { display:block; } .requirement dt { margin-top:.5em; } nav a { display:inline-block; margin-bottom:.4em; } }
+</style>
+</head>
+<body>
+<header>
+<img src="../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern.">
+<h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
+</header>
+<nav aria-label="Specification navigation">
+<a href="index.htm">Specifications index</a>
+<a href="methodology.html">Methodology</a>
+<a href="conformance.html">Conformance summary</a>
+<a href="rfc9110.html">RFC 9110</a>
+<a href="rfc9111.html">RFC 9111</a>
+<a href="rfc9112.html">RFC 9112</a>
+<a href="rfc9113.html">RFC 9113</a>
+<a href="evidence.html">Evidence</a>
+<a href="../index.htm">Documentation home</a>
+</nav>
+<main>
+
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9111.html">RFC 9111 HTTP Caching</a></h1>
+<div class="metadata"><strong>Achieve:</strong> 3.1.0<br><strong>Evaluated runtime:</strong> Node.js 24.22.2<br><strong>Assessment baseline:</strong> November 5, 2026<br><strong>Document status:</strong> Draft — technical review</div>
+<p>This register presents all 7 authoritative V3 requirements for RFC 9111. Requirement text is a traceable summary; the linked RFC Editor section supplies the controlling normative text and conditions.</p>
+<table class="counts"><thead><tr><th>Classification</th><th>Count</th></tr></thead><tbody><tr><td><span class="badge conformant">Conformant</span></td><td>0</td></tr><tr><td><span class="badge nonconformant">Nonconformant</span></td><td>0</td></tr><tr><td><span class="badge unverified">Unverified</span></td><td>0</td></tr><tr><td><span class="badge not-applicable">Not applicable</span></td><td>3</td></tr><tr><td><span class="badge optional-not-implemented">Optional not implemented</span></td><td>4</td></tr><tr><th>Total</th><th>7</th></tr></tbody></table>
+<p><a href="conformance.html">Review the overall findings</a> · <a href="methodology.html">Read the methodology</a> · <a href="evidence.html">Inspect evidence sources</a></p>
+<article class="requirement" id="V3-9111-001">
+<h2><code>V3-9111-001</code> — <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-3">RFC 9111 §3</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A cache MUST NOT store a response unless every storage condition in §3 is satisfied.</dd>
+<dt>Conditions</dt><dd>Method, status, no-store/private, Authorization, and understood-directive gates all apply.</dd>
+<dt>Applicable role</dt><dd>cache</dd>
+<dt>Responsible layer</dt><dd>external cache</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:430-440 defines representation caching/compression state, but no HTTP cache storage or stored-response reuse component exists; request handling proceeds through achieve.js:944-1049.</dd>
+<dt>Test evidence</dt><dd>No cache storage/reuse tests apply because Achieve does not implement an HTTP cache.</dd>
+<dt>Assessment rationale</dt><dd>Achieve is an origin server and has no HTTP response-storage cache. The section 3 storage gate is imposed on caches.</dd>
+<dt>Open question</dt><dd>No remaining Achieve verification question.</dd>
+<dt>V2 traceability</dt><dd>V2-X029</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9111-002">
+<h2><code>V3-9111-002</code> — <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-4">RFC 9111 §4</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A cache MUST NOT reuse a stored response unless target URI, method, request fields, Vary, freshness/validation, and directive conditions all permit reuse.</dd>
+<dt>Conditions</dt><dd>Every reuse gate in §4 applies.</dd>
+<dt>Applicable role</dt><dd>cache</dd>
+<dt>Responsible layer</dt><dd>external cache</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:430-440 defines representation caching/compression state, but no HTTP cache storage or stored-response reuse component exists; request handling proceeds through achieve.js:944-1049.</dd>
+<dt>Test evidence</dt><dd>No cache storage/reuse tests apply because Achieve does not implement an HTTP cache.</dd>
+<dt>Assessment rationale</dt><dd>Achieve is an origin server and does not reuse stored HTTP responses to satisfy later requests. The section 4 reuse gate is imposed on caches.</dd>
+<dt>Open question</dt><dd>No remaining Achieve verification question.</dd>
+<dt>V2 traceability</dt><dd>V2-X030</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9111-003">
+<h2><code>V3-9111-003</code> — <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-5.2.2.1">RFC 9111 §5.2.2.1</a></h2>
+<p><span class="badge optional-not-implemented">Optional not implemented</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A sender must not quote a response `max-age` delta-seconds value.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender</dd>
+<dt>Responsible layer</dt><dd>Achieve/application</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:554-557 toggles validator/browser-caching behavior; achieve.js:1711-1777 generates ETag/Last-Modified, and no Cache-Control directive generation exists. Servlet applications receive the Node response object at achieve.js:1857-1919.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195 verify validators and conditional requests, not Cache-Control directive syntax; no focused directive-generation test exists.</dd>
+<dt>Assessment rationale</dt><dd>Achieve core does not generate Cache-Control or max-age. Applications can author response fields through Node response APIs and own their syntax.</dd>
+<dt>Open question</dt><dd>If Achieve later generates max-age, add a focused token-versus-quoted-string test.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-031</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9111-004">
+<h2><code>V3-9111-004</code> — <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-5.2.2.10">RFC 9111 §5.2.2.10</a></h2>
+<p><span class="badge optional-not-implemented">Optional not implemented</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A sender must not quote an `s-maxage` delta-seconds value.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender</dd>
+<dt>Responsible layer</dt><dd>Achieve/application</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:554-557 toggles validator/browser-caching behavior; achieve.js:1711-1777 generates ETag/Last-Modified, and no Cache-Control directive generation exists. Servlet applications receive the Node response object at achieve.js:1857-1919.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195 verify validators and conditional requests, not Cache-Control directive syntax; no focused directive-generation test exists.</dd>
+<dt>Assessment rationale</dt><dd>Achieve core does not generate Cache-Control or s-maxage. Applications can author response fields through Node response APIs and own their syntax.</dd>
+<dt>Open question</dt><dd>If Achieve later generates s-maxage, add a focused token-versus-quoted-string test.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-032</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9111-005">
+<h2><code>V3-9111-005</code> — <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-5.2.2.4">RFC 9111 §5.2.2.4</a></h2>
+<p><span class="badge optional-not-implemented">Optional not implemented</span> <strong>Normative level:</strong> SHOULD NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A sender should not use token form for a qualified `no-cache` field-name list.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender</dd>
+<dt>Responsible layer</dt><dd>Achieve/application</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:554-557 toggles validator/browser-caching behavior; achieve.js:1711-1777 generates ETag/Last-Modified, and no Cache-Control directive generation exists. Servlet applications receive the Node response object at achieve.js:1857-1919.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195 verify validators and conditional requests, not Cache-Control directive syntax; no focused directive-generation test exists.</dd>
+<dt>Assessment rationale</dt><dd>Achieve core does not generate a qualified no-cache directive. Applications that choose to generate one own its field-name-list syntax.</dd>
+<dt>Open question</dt><dd>Correct the ledger role/applicability, then test only if Achieve begins generating the directive.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-033</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9111-006">
+<h2><code>V3-9111-006</code> — <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-5.2.2.7">RFC 9111 §5.2.2.7</a></h2>
+<p><span class="badge optional-not-implemented">Optional not implemented</span> <strong>Normative level:</strong> SHOULD NOT</p>
+<dl>
+<dt>Requirement</dt><dd>A sender should not use token form for a qualified `private` field-name list.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>sender</dd>
+<dt>Responsible layer</dt><dd>Achieve/application</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:554-557 toggles validator/browser-caching behavior; achieve.js:1711-1777 generates ETag/Last-Modified, and no Cache-Control directive generation exists. Servlet applications receive the Node response object at achieve.js:1857-1919.</dd>
+<dt>Test evidence</dt><dd>tests/conditional/verify.js:138-343 and tests/static_dates/verify.js:82-195 verify validators and conditional requests, not Cache-Control directive syntax; no focused directive-generation test exists.</dd>
+<dt>Assessment rationale</dt><dd>Achieve core does not generate a qualified private directive. Applications that choose to generate one own its field-name-list syntax.</dd>
+<dt>Open question</dt><dd>If Achieve later generates qualified private, add a quoted-list test.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-034</dd>
+</dl>
+</article>
+<article class="requirement" id="V3-9111-007">
+<h2><code>V3-9111-007</code> — <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-5.3">RFC 9111 §5.3</a></h2>
+<p><span class="badge not-applicable">Not applicable</span> <strong>Normative level:</strong> MUST NOT</p>
+<dl>
+<dt>Requirement</dt><dd>An origin server without a clock must not generate Expires except for a fixed past value or one assigned by a clocked system.</dd>
+<dt>Conditions</dt><dd>Apply only under the conditions and exceptions stated in the cited section and summarized in the requirement.</dd>
+<dt>Applicable role</dt><dd>origin server</dd>
+<dt>Responsible layer</dt><dd>Achieve/application</dd>
+<dt>Implementation evidence</dt><dd>achieve.js:1770-1777 uses Date.now() and emits Date/Last-Modified; no Expires generation exists in achieve.js. package.json:28 requires Node &gt;=22.</dd>
+<dt>Test evidence</dt><dd>tests/static_dates/verify.js:82-195 verifies clock-derived Date and Last-Modified behavior; it does not exercise a clockless server or Expires.</dd>
+<dt>Assessment rationale</dt><dd>The condition is an origin server without a clock. Achieve 3.0.6 requires Node 22, uses Date.now(), and does not generate Expires in core response paths.</dd>
+<dt>Open question</dt><dd>Reassess only if a supported clockless environment or core Expires generation is introduced.</dd>
+<dt>V2 traceability</dt><dd>V2-NEW-035</dd>
+</dl>
+</article>
+
+</main>
+<footer>
+<a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br>
+<a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a>
+</footer>
+</body>
+</html>
