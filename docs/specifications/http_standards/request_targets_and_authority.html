@@ -14,6 +14,15 @@
 <p><strong>Requirement levels:</strong> The applicable HTTP/1.1 and HTTP/2 rules include MUST and MUST NOT requirements for target forms, Host or authority information, and malformed input.</p>
 <p><a href="https://www.npmjs.com/package/achieve">Achieve</a> validates the target and authority information exposed by Node before it performs method dispatch or filesystem routing. This keeps malformed syntax, ambiguous authority, and application-path resolution separate concerns.</p>
 
+<h2>Applicable requirements</h2>
+<ul>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3">RFC 9112 §3</a>, a server must parse the request-target according to the method-specific target form and must respond with 414 when the target exceeds the URI length it accepts. The qualified Node parser returns 431 for the demonstrated excessive target, as noted below.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3.2">§3.2</a>, origin-form is used for ordinary origin requests, absolute-form is accepted by origin servers, authority-form is used only for CONNECT, and asterisk-form is used only for server-wide OPTIONS.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3.2.2">§3.2.2</a>, an HTTP/1.1 origin server must accept absolute-form and use its host information for the request's target URI.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-7.2">RFC 9110 §7.2</a>, authority information is reconstructed from the request target and Host information according to the protocol version; invalid or conflicting authority is rejected.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-8.3.1">RFC 9113 §8.3.1</a>, HTTP/2 requests carry the required method, scheme, path, and authority information with the defined CONNECT and OPTIONS exceptions.</li>
+</ul>
+
 <h2>HTTP/1.1 target forms</h2>
 <p><a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-3.2">RFC 9112 §3.2</a> defines origin-form, absolute-form, authority-form, and asterisk-form. Achieve accepts origin-form for ordinary requests and recognizes absolute-form HTTP or HTTPS targets, using their path and query for resource selection. Authority-form is valid only for CONNECT, while <code>*</code> is valid only with OPTIONS.</p>
 <p>An HTTP/1.1 request must contain exactly one syntactically valid Host field. Achieve rejects missing, duplicate, or invalid Host values. Absolute-form authority is parsed independently; request processing still validates the Host information supplied by the client.</p>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="dcterms.created" content="2026-11-06"><meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve RFC 9111 HTTP Caching for Node.js</title>
+<meta name="description" content="Achieve 3.1.0 origin-server caching behavior on Node.js 24.22.2, including validators, conditional requests, representation selection, and the boundary with HTTP caches.">
+<style>body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}header img{width:100%;display:block}#friend{text-align:center;font-style:italic;font-weight:bold;color:rgb(40,200,32);border-bottom:solid blue thick;padding:0;margin:0}.navLink{display:inline-block;margin:.6em 5% .2em;color:rgb(30,80,150);font-weight:bold;text-decoration:none}.navLink:hover,.packageLink:hover{color:blue}.backArrow{margin-right:.4em}.packageLink{color:rgb(30,80,150);font-weight:bold;text-decoration:none}main{margin:2% 5% 5%}.documentInfo{color:rgb(50,70,90);font-size:.9em}code{padding:.08em .35em;border-radius:.3em;background-color:rgb(220,235,245);color:blue;font-family:Consolas,"Courier New",monospace}footer{padding:1.5% 5%;box-sizing:border-box;border-top:solid blue thick}</style>
+</head><body>
+<header><img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern."><h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3></header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to technical specifications</a>
+<main>
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9111.html">RFC 9111 HTTP Caching</a></h1>
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+<p><strong>Requirement levels:</strong> RFC 9111 primarily governs caches. The origin-server obligations relevant to Achieve arise only when it generates particular cache metadata or directives.</p>
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> is a Node.js HTTP application server, not a shared or private HTTP cache. It supplies representation metadata that browsers and intermediary caches can use, while storage, freshness, reuse, validation, and invalidation decisions remain the cache's responsibility.</p>
+<h2>Applicable requirements</h2>
+<ul>
+<li><strong>MUST NOT:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-5.2.2.1">RFC 9111 §5.2.2.1</a>, a sender that generates response <code>max-age</code> must not quote its delta-seconds value.</li>
+<li><strong>MUST NOT:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-5.2.2.10">§5.2.2.10</a>, a sender that generates <code>s-maxage</code> must not quote its delta-seconds value.</li>
+<li><strong>SHOULD NOT:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-5.2.2.4">§5.2.2.4</a> and <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-5.2.2.7">§5.2.2.7</a>, a sender should not use token form for a qualified field-name list on <code>no-cache</code> or <code>private</code>.</li>
+<li><strong>MUST NOT:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-5.3">§5.3</a>, an origin server without a clock must not generate <code>Expires</code> except for the stated past-value cases.</li>
+</ul>
+<p>Achieve does not automatically generate <code>Cache-Control</code>, <code>Expires</code>, <code>max-age</code>, or <code>s-maxage</code>. The directive-form obligations are optional behavior not implemented by Achieve; application-authored fields remain the application's responsibility. Achieve has a clock through Node.js, so the clockless-origin condition does not apply to its generated responses.</p>
+<h2>Origin-server metadata</h2>
+<p><code>setCaching(true)</code> enables normal advertisement of <code>ETag</code> and <code>Last-Modified</code> for static and media representations. Identity, gzip, and deflate representations receive distinct strong entity tags. Their construction is described in <a href="etag.html">Achieve RFC 9110 §8.8.3 ETag</a>.</p>
+<p>Achieve evaluates <code>If-Match</code>, <code>If-Unmodified-Since</code>, <code>If-None-Match</code>, and <code>If-Modified-Since</code>. A successful GET or HEAD revalidation can produce 304; a failed precondition can produce 412. See <a href="conditionals.html">Conditional Requests</a> for precedence and comparison rules.</p>
+<p>Disabling caching stops normal validator advertisement but does not disable all precondition processing. Client-supplied preconditions can still affect a response when Achieve can determine the relevant representation metadata.</p>
+<h2>Representation selection and reuse</h2>
+<p>When compression negotiation applies, Achieve sends <code>Vary: Accept-Encoding</code> so caches can distinguish the selected representation. A 304 response retains the applicable validator and selection metadata. Partial-response combination is governed by <a href="https://www.rfc-editor.org/rfc/rfc9111.html#section-3.4">RFC 9111 §3.4</a> and is performed by a cache, not by Achieve; see <a href="range_requests.html">Range Requests and Partial Responses</a>.</p>
+<h2>Verification</h2>
+<p>Conditional, static-date, compression, and byte-range suites verify validator advertisement, representation-specific entity tags, 304 and 412 behavior, <code>Vary</code>, changed-source handling, and partial-response metadata across HTTP, HTTPS, h2c, and secure HTTP/2. These tests establish Achieve's origin behavior, not universal behavior of external caches.</p>
+<h2>Limits and responsibility</h2>
+<p>RFC 9111's requirements for storing, reusing, calculating freshness, validating, and invalidating responses apply to external caches and are not Achieve origin-server functions. Applications can add their own cache directives through the Node response object; correctness of application-authored policy is outside Achieve's automatic caching facility.</p>
+</main>
+<footer><a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a></footer>
+</body></html>

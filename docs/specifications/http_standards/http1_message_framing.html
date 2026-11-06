@@ -14,6 +14,16 @@
 <p><strong>Requirement levels:</strong> HTTP/1.1 framing contains mandatory MUST and MUST NOT rules, error-handling requirements, and a SHOULD response for unrecognized transfer codings.</p>
 <p><a href="https://www.npmjs.com/package/achieve">Achieve</a> uses Node.js's HTTP/1.1 server and llhttp parser. Those components recognize the wire message, determine its body framing, decode chunked transfer coding, and expose an accepted request stream. Achieve then applies request handling and servlet input policy.</p>
 
+<h2>Applicable requirements</h2>
+<ul>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-5.2">RFC 9112 §5.2</a>, field lines are parsed without whitespace between the field name and colon; obsolete line folding received outside <code>message/http</code> must be rejected or replaced as specified.</li>
+<li><strong>MUST / MUST NOT:</strong> <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6">§6</a> defines the precedence for message-body length and prohibits treating ambiguous or invalid Content-Length and Transfer-Encoding combinations as ordinary framing.</li>
+<li><strong>SHOULD:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.1">§6.1</a>, a server receiving an unrecognized request transfer coding should respond with 501. The qualified runtime does not satisfy this for an unknown coding followed by final chunked, as noted below.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6.3">§6.3</a>, a request whose final transfer coding is not chunked is rejected with 400 and the connection is closed.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-7.1">§7.1</a>, a recipient must parse and decode chunked transfer coding and account for its terminating chunk and trailer section.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-8">§8</a>, an incomplete request message caused by premature closure is not treated as complete.</li>
+</ul>
+
 <h2>Determining message length</h2>
 <p><a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6">RFC 9112 §6</a> defines the precedence of response status, method, Transfer-Encoding, Content-Length, and connection closure when determining message length. Conflicting or invalid framing must not be treated as an ordinary request. Node's parser performs these checks before Achieve receives the request.</p>
 <p>For accepted requests, Node exposes decoded request content. Achieve buffers and parses supported GET and POST input only within its configured limit; otherwise application code can consume the stream. For responses, Achieve selects content and relevant fields while Node produces the HTTP/1.1 framing.</p>

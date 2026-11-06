@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="dcterms.created" content="2026-11-06"><meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve 3.1.0 Request Input for Node.js Applications</title>
+<meta name="description" content="Achieve 3.1.0 request input handling for Node.js applications: query parameters, JSON and form POST parsing, buffering limits, streaming, errors, and application responsibilities.">
+<style>body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}header img{width:100%;display:block}#friend{text-align:center;font-style:italic;font-weight:bold;color:rgb(40,200,32);border-bottom:solid blue thick;padding:0;margin:0}.navLink{display:inline-block;margin:.6em 5% .2em;color:rgb(30,80,150);font-weight:bold;text-decoration:none}.navLink:hover,.packageLink:hover{color:blue}.backArrow{margin-right:.4em}.packageLink{color:rgb(30,80,150);font-weight:bold;text-decoration:none}main{margin:2% 5% 5%}.documentInfo{color:rgb(50,70,90);font-size:.9em}code{padding:.08em .35em;border-radius:.3em;background-color:rgb(220,235,245);color:blue;font-family:Consolas,"Courier New",monospace}pre{margin:1em 0 1.4em}pre code{display:block;padding:1em;overflow:auto;white-space:pre}footer{padding:1.5% 5%;box-sizing:border-box;border-top:solid blue thick}</style>
+</head><body><header><img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern."><h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3></header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to technical specifications</a><main>
+<h1>Achieve Request Input</h1>
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> prepares common query and POST input as <code>session.params</code> before invoking a JavaScript Servlet. Applications can instead consume the ordinary Node.js request stream when their content type or scale requires application-owned processing.</p>
+<h2>GET query parameters</h2>
+<p>For GET, Achieve parses the URL query string into <code>session.params</code> with Node's query-string parser. Repeated names become arrays, and percent-encoded names and values are decoded. The query is not part of filesystem resource lookup.</p>
+<pre><code>exports.servlet = function(session) {
+  return "Hello, " + (session.params.name || "visitor") + "!";
+};</code></pre>
+<h2>Buffered POST input</h2>
+<p>Achieve buffers and parses POST bodies whose media type is <code>application/x-www-form-urlencoded</code> or <code>application/json</code>. Media-type matching is case-insensitive and permits parameters such as a charset. For compatibility, a POST without Content-Type is treated as URL-encoded form data and produces a server warning.</p>
+<p>POST parameters come from the body; query parameters are not merged into them. Parsing completes before either a synchronous or asynchronous servlet is invoked.</p>
+<h2>Limits and errors</h2>
+<p>The default buffered-input limit is 1 MiB. <code>setBufferedInputLimit()</code> accepts a positive safe integer within Achieve's process memory-safety bound. If accumulated buffered input exceeds the configured limit, Achieve returns <code>413 Payload Too Large</code> and does not invoke the servlet. Invalid JSON receives <code>400 Bad Request</code> without invoking it.</p>
+<p>Request stream errors, premature aborts, and parsing failures terminate managed input processing. Diagnostics are reported through the applicable development or persistent server logging path without exposing an application filesystem path unnecessarily.</p>
+<h2>Streaming and application responsibility</h2>
+<p>For other content types, Achieve leaves <code>session.params</code> empty and exposes the normal Node request stream as <code>session.request</code>. This avoids Achieve's buffering limit and is suitable for large or specialized input, but the application must implement its own size limits, parsing, error handling, and completion behavior.</p>
+<p>Handlers registered for additional HTTP methods also receive an initially empty <code>session.params</code>; they inspect the URL and consume the stream directly. Achieve's automatic body parsing is limited to its built-in POST path.</p>
+<h2>Verification and limits</h2>
+<p>Request-input tests cover GET queries, form and JSON POSTs, media-type parameters and case, missing Content-Type compatibility, malformed JSON, exact and exceeded limits, chunked delivery, stream errors and aborts, empty unsupported types, asynchronous servlets, and all supported transports.</p>
+<p>Automatic JSON parsing accepts any valid JSON value, so <code>session.params</code> is not necessarily an object. Multipart form data, uploads, and arbitrary media types are application-streaming responsibilities.</p>
+<p>See <a href="../../start/input.htm">Handling Input</a>, <a href="../../reference/config.htm#setBufferedInputLimit">input-limit configuration</a>, and the <a href="servlet_lifecycle.html">JavaScript Servlet Lifecycle</a>.</p>
+</main><footer><a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a></footer></body></html>

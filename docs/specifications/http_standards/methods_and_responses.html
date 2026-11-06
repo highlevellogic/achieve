@@ -20,6 +20,16 @@ body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}
 <p><strong>Requirement levels:</strong> The applicable rules include MUST, MUST NOT, SHOULD, and MAY requirements; each is identified with its context below.</p>
 <p><a href="https://www.npmjs.com/package/achieve">Achieve</a> supplies built-in handling for GET, HEAD, POST, and OPTIONS and can dispatch additional registered methods to JavaScript Servlets. Method semantics matter because they determine whether content is sent, how response metadata is calculated, and who completes the exchange.</p>
 
+<h2>Applicable requirements</h2>
+<ul>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.1">RFC 9110 §9.1</a>, a general-purpose origin server must support GET and HEAD.</li>
+<li><strong>MUST NOT / SHOULD:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.2">§9.3.2</a>, a server must not send content for HEAD and should send the same fields as GET except those determined only while generating content.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-6.2">§6.2</a>, a server must send a final response after interpreting a request unless connection closure or an error prevents completion.</li>
+<li><strong>MUST NOT:</strong> <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-8.6">§8.6</a> restricts Content-Length on HEAD and 304 and prohibits it on 1xx, 204, and successful 2xx CONNECT responses.</li>
+<li><strong>MUST NOT:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.6">§15.3.6</a>, a server must not generate content in a 205 response.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.6">§15.5.6</a>, an origin server generating 405 must generate an <code>Allow</code> field listing currently supported methods. The qualified Node runtime does not satisfy this for its HTTP/2 CONNECT rejection, as noted below.</li>
+</ul>
+
 <h2>Method handling</h2>
 <p><a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.1">GET</a> follows normal resource routing. <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.2">HEAD</a> performs the corresponding GET selection and processing but sends no response content. Achieve still invokes a servlet for HEAD so that its status and headers describe the same operation; the managed completion path suppresses the returned content.</p>
 <p>POST follows normal routing. Achieve parses supported form and JSON input for servlet use; other request content remains available as the Node.js request stream. OPTIONS is handled by Achieve and returns server or resource capabilities with an <code>Allow</code> field. Additional valid method tokens can be registered to one servlet handler per method. An unregistered method receives <code>501 Not Implemented</code>.</p>

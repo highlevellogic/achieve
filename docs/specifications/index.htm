@@ -44,17 +44,10 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3>
 </header>
 <nav aria-label="Specification navigation">
-<a href="index.htm">Specifications index</a>
-<a href="http_standards/etag.html">ETags</a>
-<a href="http_standards/conditionals.html">Conditional requests</a>
-<a href="features/routing.html">Routing</a>
-<a href="features/servlet_lifecycle.html">Servlet lifecycle</a>
-<a href="conformance.html">Conformance summary</a>
-<a href="rfc9110.html">RFC 9110</a>
-<a href="rfc9111.html">RFC 9111</a>
-<a href="rfc9112.html">RFC 9112</a>
-<a href="rfc9113.html">RFC 9113</a>
-<a href="evidence.html">Evidence</a>
+<a href="#technical-specifications">Technical Specifications</a>
+<a href="#http-standards">HTTP Standards</a>
+<a href="#achieve-features">Achieve Features</a>
+<a href="#conformance-assessment">Conformance Assessment</a>
 <a href="../index.htm">Documentation home</a>
 </nav>
 <main>
@@ -63,8 +56,10 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <div class="metadata"><strong>Achieve:</strong> 3.1.0<br><strong>Evaluated runtime:</strong> Node.js 24.22.2<br><strong>Assessment baseline:</strong> November 5, 2026<br><strong>Document status:</strong> Draft — technical review</div>
 <div class="notice"><strong>Draft notice:</strong> These focused technical specifications and their supporting conformance records are under technical review.</div>
 
-<h2>HTTP Standards</h2>
+<h2 id="technical-specifications">Technical Specifications</h2>
 <p>Focused specifications explain what a protocol feature requires, how Achieve and its qualified Node.js runtime implement it, how the behavior is verified, and which limitations remain. They are the primary entry point for readers interested in Achieve's HTTP behavior.</p>
+
+<h2 id="http-standards">HTTP Standards</h2>
 
 <h3>RFC 9110 — HTTP Semantics</h3>
 <ul class="compact">
@@ -72,10 +67,13 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <li><a href="http_standards/conditionals.html">Achieve RFC 9110 §13 Conditional Requests</a> — validator preconditions, precedence, and response behavior.</li>
 <li><a href="http_standards/methods_and_responses.html">HTTP Methods and Responses</a> — built-in and registered methods, completion, content rules, and status-specific behavior.</li>
 <li><a href="http_standards/range_requests.html">Range Requests and Partial Responses</a> — byte ranges, If-Range, 206 and 416 responses, and single-range limits.</li>
+<li><a href="http_standards/content_negotiation.html">Content Negotiation</a> — identity, gzip, and deflate selection, content coding, quality values, and Vary.</li>
 </ul>
 
 <h3>RFC 9111 — HTTP Caching</h3>
-<p>Cache-related validator and partial-response behavior is covered in the <a href="http_standards/etag.html">ETag</a>, <a href="http_standards/conditionals.html">Conditional Requests</a>, and <a href="http_standards/range_requests.html">Range Requests</a> specifications. The complete RFC 9111 assessment remains available in the conformance register below.</p>
+<ul class="compact">
+<li><a href="http_standards/http_caching.html">HTTP Caching</a> — origin-server metadata, validators, revalidation, and the boundary with external caches.</li>
+</ul>
 
 <h3>RFC 9112 — HTTP/1.1</h3>
 <ul class="compact">
@@ -86,17 +84,21 @@ footer { padding:1.5% 5%; box-sizing:border-box; border-top:solid blue thick; }
 <h3>RFC 9113 — HTTP/2</h3>
 <ul class="compact">
 <li><a href="http_standards/http2_stream_errors.html">HTTP/2 Stream Errors and Connection Errors</a> — required error scope and codes, Node/nghttp2 behavior, and qualified-runtime limitations.</li>
+<li><a href="http_standards/http2_flow_control.html">HTTP/2 Flow Control</a> — connection and stream windows, DATA accounting, WINDOW_UPDATE, SETTINGS, and runtime limitations.</li>
+<li><a href="http_standards/http2_request_fields.html">HTTP/2 Request Fields</a> — pseudo-header ordering and presence, lowercase names, prohibited fields, and malformed-request handling.</li>
 </ul>
 
-<h2>Achieve Features</h2>
+<h2 id="achieve-features">Achieve Features</h2>
 <p>Implementation articles describe stable Achieve facilities without forcing them into a standards-audit structure.</p>
 <ul class="compact">
 <li><a href="features/logging.html">Logging in Achieve</a> — startup reporting, development diagnostics, persistent server logs, access logs, and servlet errors.</li>
 <li><a href="features/routing.html">Application-Space Routing</a> — required application root, automatic routes, exact and subtree mappings, precedence, and containment.</li>
 <li><a href="features/servlet_lifecycle.html">JavaScript Servlet Lifecycle</a> — loading, session state, synchronous and asynchronous results, completion ownership, errors, and caching.</li>
+<li><a href="features/static_compression.html">Static Compression</a> — asynchronous artifact generation, representation selection, freshness, reuse, and protected cache storage.</li>
+<li><a href="features/request_input.html">Request Input</a> — query parameters, buffered POST parsing, size limits, streaming, and application responsibilities.</li>
 </ul>
 
-<h2>Conformance Assessment</h2>
+<h2 id="conformance-assessment">Conformance Assessment</h2>
 <p>The assessment records Achieve 3.1.0 as an HTTP origin server on the specifically qualified Node.js 24.22.2 runtime. It covers <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>, <a href="https://www.rfc-editor.org/rfc/rfc9111.html">RFC 9111</a>, <a href="https://www.rfc-editor.org/rfc/rfc9112.html">RFC 9112</a>, and <a href="https://www.rfc-editor.org/rfc/rfc9113.html">RFC 9113</a>. Runtime-owned behavior remains part of the assessed endpoint while responsibility is recorded separately.</p>
 <ul class="compact">
 <li><a href="conformance.html">Conformance summary</a> — current results, nine nonconformities, eight unverified requirements, and qualification boundary.</li>

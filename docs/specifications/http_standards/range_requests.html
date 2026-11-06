@@ -15,6 +15,16 @@
 <p><strong>Requirement levels:</strong> Range support is optional, but RFC 9110 imposes MUST, SHOULD, and SHOULD NOT requirements once a server processes a range request.</p>
 <p><a href="https://www.npmjs.com/package/achieve">Achieve</a> supports byte ranges for resources selected through its audiovisual MIME table. Range processing lets clients retrieve a useful portion of media while retaining validators and accurate representation length metadata.</p>
 
+<h2>Applicable requirements</h2>
+<ul>
+<li><strong>MUST / SHOULD:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.5">RFC 9110 §13.1.5</a>, an origin server receiving If-Range with Range must evaluate it before the method, ignore Range when the condition is false, and should process Range when it is true.</li>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-14.2">§14.2</a>, a server ignores unknown range units and Range on methods without defined range handling.</li>
+<li><strong>SHOULD / MAY:</strong> An origin server supporting the range unit should send 206 for a satisfiable request and 416 for an unsatisfiable request; it may ignore or reject invalid or abusive range sets.</li>
+<li><strong>SHOULD:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-14.4">§14.4</a>, a byte-range 416 response should include <code>Content-Range</code> with the current complete length.</li>
+<li><strong>MUST / SHOULD NOT:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.7">§15.3.7</a>, a single-part 206 must describe its selected range and carry applicable fields; a successful If-Range 206 should not repeat unnecessary representation fields.</li>
+<li><strong>MAY:</strong> Multipart range support is optional. Achieve does not generate multipart responses.</li>
+</ul>
+
 <h2>Range selection</h2>
 <p><a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-14.2">RFC 9110 §14.2</a> defines the <code>Range</code> field. Achieve accepts closed, open-ended, and suffix byte ranges. A satisfiable range produces one <code>206 Partial Content</code> response with the selected bytes. A valid unsatisfiable range produces <code>416 Range Not Satisfiable</code> and a <code>Content-Range</code> value containing the complete length. A malformed range is rejected with 400.</p>
 <p>Achieve advertises byte support with <code>Accept-Ranges: bytes</code>. The 206 response carries the selected range in <code>Content-Range</code> and the exact partial byte count in <code>Content-Length</code>. HEAD performs the same representation selection but does not turn a media response into a partial response.</p>

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="dcterms.created" content="2026-11-06"><meta name="dcterms.modified" content="2026-11-06">
+<title>Achieve RFC 9113 HTTP/2 Flow Control on Node.js</title>
+<meta name="description" content="Achieve 3.1.0 HTTP/2 stream and connection flow control on Node.js 24.22.2, including DATA accounting, windows, WINDOW_UPDATE, SETTINGS, and known nghttp2 limitations.">
+<style>body{margin:0;padding:0;background-color:lightblue;font-family:Arial,sans-serif}header img{width:100%;display:block}#friend{text-align:center;font-style:italic;font-weight:bold;color:rgb(40,200,32);border-bottom:solid blue thick;padding:0;margin:0}.navLink{display:inline-block;margin:.6em 5% .2em;color:rgb(30,80,150);font-weight:bold;text-decoration:none}.navLink:hover,.packageLink:hover{color:blue}.backArrow{margin-right:.4em}.packageLink{color:rgb(30,80,150);font-weight:bold;text-decoration:none}main{margin:2% 5% 5%}.documentInfo{color:rgb(50,70,90);font-size:.9em}code{padding:.08em .35em;border-radius:.3em;background-color:rgb(220,235,245);color:blue;font-family:Consolas,"Courier New",monospace}footer{padding:1.5% 5%;box-sizing:border-box;border-top:solid blue thick}</style>
+</head><body><header><img src="../../images/skyhigh1.jpg" alt="Achieve — High Level Logic Project. Creating a new meta design pattern."><h3 id="friend">Friendly in development. Fast in production. Just build your apps. Let Achieve do the rest.</h3></header>
+<a class="navLink" href="../index.htm"><span class="backArrow">←</span> Back to technical specifications</a><main>
+<h1>Achieve <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.2">RFC 9113 HTTP/2 Flow Control</a></h1>
+<p class="documentInfo">Created November 6, 2026 · Updated November 6, 2026 · Achieve 3.1.0 · Qualified runtime: Node.js 24.22.2</p>
+<p><strong>Requirement levels:</strong> HTTP/2 flow control includes mandatory MUST and MUST NOT rules at both connection and stream scope.</p>
+<p><a href="https://www.npmjs.com/package/achieve">Achieve</a> relies on Node.js and its nghttp2 library for HTTP/2 flow control. Separate connection and stream windows bound DATA transmission without blocking control frames or other streams unnecessarily.</p>
+<h2>Applicable requirements</h2>
+<ul>
+<li><strong>MUST:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-5.2">RFC 9113 §5.2</a>, flow control applies only to DATA frames and counts the entire DATA payload, including padding.</li>
+<li><strong>MUST NOT:</strong> Under <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.9">§6.9</a>, a sender must not send a flow-controlled frame whose payload exceeds the available connection or stream window.</li>
+<li><strong>MUST:</strong> A receiver detecting window exceedance must use <code>FLOW_CONTROL_ERROR</code> at the applicable connection or stream scope.</li>
+<li><strong>MUST:</strong> A zero increment in <code>WINDOW_UPDATE</code> is <code>PROTOCOL_ERROR</code>, at connection scope for stream 0 and stream scope for a nonzero stream.</li>
+<li><strong>MUST:</strong> <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.9.2">§6.9.2</a> requires a change to <code>SETTINGS_INITIAL_WINDOW_SIZE</code> to adjust every active stream window and handle overflow with the specified error.</li>
+</ul>
+<h2>Qualified runtime behavior</h2>
+<p>Bounded raw-frame tests show that Node/nghttp2 limits outbound DATA to both advertised windows, resumes only after corresponding credit, counts padding, rejects window overflow, and applies active initial-window changes. Connection-level <code>WINDOW_UPDATE(0)</code> produces <code>GOAWAY(PROTOCOL_ERROR)</code> as required.</p>
+<h2>Responsibility boundary</h2>
+<p>Node.js and nghttp2 parse WINDOW_UPDATE and SETTINGS, maintain windows, schedule DATA, and select protocol error frames before request content reaches Achieve. Achieve consumes the Node request stream and does not implement a parallel frame or flow-control layer. These runtime results are part of the released endpoint while their upstream ownership remains explicit.</p>
+<h2>Known limitations</h2>
+<p>A zero-increment WINDOW_UPDATE on a valid open nonzero stream produces connection <code>GOAWAY(PROTOCOL_ERROR)</code> on Node.js 24.22.2. The error code is correct, but <a href="https://www.rfc-editor.org/rfc/rfc9113.html#section-6.9">§6.9</a> requires stream <code>RST_STREAM(PROTOCOL_ERROR)</code>; unrelated streams are therefore terminated.</p>
+<p>Stream-scope flow-control-window exceedance has been verified. The connection-scope receiver obligation remains Unverified: a peer can violate the protocol on the wire, but the available Node/nghttp2 interface automatically replenished connection credit, so the bounded probes did not establish a deterministic exceedance without altering internal state.</p>
+<h2>Verification</h2>
+<p>Focused raw-frame probes use controlled stream state, exact DATA lengths, padding, WINDOW_UPDATE, and SETTINGS frames, with contiguous and fragmented delivery. Valid controls confirm application and connection health. See the <a href="../review/batch-e-evidence-review.md">flow-control evidence review</a> and <a href="../review/final-unverified-investigation.md">final Unverified investigation</a>.</p>
+</main><footer><a class="packageLink" href="https://www.npmjs.com/package/achieve">Achieve on npm</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve">Achieve on GitHub</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/discussions">Achieve Discussions</a><br><a class="packageLink" href="https://github.com/highlevellogic/achieve/issues">Report bugs on GitHub Issues</a></footer></body></html>
