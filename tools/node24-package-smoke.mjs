@@ -39,13 +39,22 @@ try {
     const achieve=require("achieve");
     achieve.setAppPath(application);
     let port;
-    while (port === undefined) {
+    for (let attempt=0;port === undefined && attempt<100;attempt++) {
+        const candidate=1024+Math.floor(Math.random()*(49151-1024+1));
         const reservation=net.createServer();
-        await new Promise(resolve=>reservation.listen(0,"127.0.0.1",resolve));
-        const candidate=reservation.address().port;
-        await new Promise(resolve=>reservation.close(resolve));
-        if (candidate >= 1024 && candidate <= 49151) port=candidate;
+        try {
+            await new Promise((resolve,reject)=>{
+                reservation.once("error",reject);
+                reservation.listen(candidate,"127.0.0.1",resolve);
+            });
+            port=candidate;
+        } catch (err) {
+            if (err.code !== "EADDRINUSE" && err.code !== "EACCES") throw err;
+        } finally {
+            if (reservation.listening) await new Promise(resolve=>reservation.close(resolve));
+        }
     }
+    if (port === undefined) throw new Error("Unable to reserve an available application port");
     server=achieve.listen(port);
     await new Promise((resolve,reject)=>{if(server.listening)return resolve();server.once("listening",resolve);server.once("error",reject);});
     await new Promise((resolve,reject)=>{
