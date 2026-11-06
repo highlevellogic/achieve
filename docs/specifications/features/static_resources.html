@@ -18,7 +18,7 @@ achieve.listen(8989);</code></pre>
 <p>Achieve has built-in MIME mappings for common text, application, image, audio, and video types. <code>addMimeType()</code> registers an ordinary static type; <code>addAVMimeType()</code> registers an audiovisual type that uses media streaming and byte-range behavior. Unsupported extensions receive 415 until registered.</p>
 <h2>Descriptor-based delivery</h2>
 <p>For an ordinary static representation, Achieve opens the final selected file, obtains metadata with <code>fstat</code>, and streams from that same descriptor. Content length, validators, and transmitted bytes therefore describe the opened representation rather than a separate pathname lookup. Descriptor cleanup covers normal completion, precondition responses, errors, and aborted transfers.</p>
-<p>Large audiovisual resources use the media path, including byte ranges. Ordinary files also support validators, conditional requests, range responses, and optional gzip or deflate representations through their focused specifications.</p>
+<p>Audiovisual resources use the media path, including automatic byte-range handling. Ordinary static files support validators, conditional requests, and optional gzip or deflate representations, but a Range field does not invoke Achieve's automatic byte-range handling for them.</p>
 <h2>Response behavior</h2>
 <p>Successful responses include the selected content type, exact representation length, and server metadata. Missing resources produce 404; denied cross-origin or protected access produces 403; an unacceptable representation produces 406; and an open or transmission failure produces a controlled error when the response can still be replaced.</p>
 <h2>Related facilities</h2>
