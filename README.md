@@ -4,17 +4,19 @@
 
 <h1><a id="achieve" name="achieve"></a>Achieve</h1>
 
-<p><em><strong>Build apps without frameworks or middleware. Just write your application code. Let Achieve do the server work.</strong></em></p>
+<p><em><strong>Build apps without frameworks or middleware. Just write your application code. Let Achieve do the server work.</strong></em><br>
+Designed to be easy to use. Now with more optional production-oriented features.</p>
 
-<p>Achieve is a standards-compliant, production-ready web and application server implemented on Node.js.</p>
-
-<p>Achieve 3.1 requires Node.js 24 or newer. Node.js 24.22.2 is the specifically qualified release runtime. Node.js 22 is no longer supported.</p>
+<p>Achieve is a production-ready web and application server implemented on Node.js. <i>Friendly in development. Fast in production.</i></p>
 
 <p>The v3 development process was complemented by extensive automated testing, analysis, and review for <ins><em>standards compliance, reliability, security, and performance</em></ins>.</p>
 
-<p>This document provides a quick introduction and overview of Achieve's features. Tutorials, detailed references, and examples are available in the <a href="https://highlevellogic.github.io/achieve/index.htm">project documentation</a>.</p>
+<p>This document provides a quick introduction and overview of Achieve's features. Tutorials, references, and examples are available in the <a href="https://highlevellogic.github.io/achieve/index.htm">project documentation</a>.
+Detailed documentation is also available on <a href="https://highlevellogic.github.io/achieve/specifications/index.htm">technical specifications and HTTP conformance assessment</a>.</p>
 
 <h2><a id="introduction" name="introduction"></a>Introduction</h2>
+
+<p>Achieve version 3.1 <a href="https://nodejs.org/en/download">requires Node.js 24 or newer</a>.</p>
 
 <p>Install Achieve, <code>npm i achieve</code>, and it’s ready to serve.</p>
 

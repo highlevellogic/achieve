@@ -1,5 +1,13 @@
 # Changelog
 
+## Achieve 3.1.1
+
+- Revised the README to emphasize ease of use, optional production-oriented
+  features, and the published technical specifications and HTTP conformance
+  assessment.
+- Corrected Windows port allocation in the package smoke-test utility while
+  preserving Linux qualification compatibility.
+
 ## Achieve 3.1.0
 
 - Corrected HTTP 205 Reset Content responses so application-supplied content
