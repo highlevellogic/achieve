@@ -187,9 +187,11 @@ async function fileLinkChecks(created) {
         let response=await request("/inside-servlet-link.jss");
         check("contained servlet file link is executed",response.status === 200 && response.body === "INSIDE_EXECUTED");
     }
-    if (created.insideSourceAlias) {
-        rejected("contained servlet source cannot use non-servlet alias",
-            await request("/inside-source-alias.txt"),"exports.servlet");
+    for (const sourceAlias of created.insideSourceAliases) {
+        if (sourceAlias.created) {
+            rejected("contained "+sourceAlias.extension+" servlet source cannot use non-servlet alias",
+                await request("/"+sourceAlias.alias),sourceAlias.secret);
+        }
     }
 }
 
@@ -213,6 +215,10 @@ async function fileLinkChecks(created) {
     fs.writeFileSync(path.join(insideTargetPath,"inside-media.mp3"),"INSIDE_MEDIA");
     fs.writeFileSync(path.join(insideTargetPath,"inside-servlet.jss"),
         "exports.servlet=function () { return 'INSIDE_EXECUTED'; };\n");
+    fs.writeFileSync(path.join(insideTargetPath,"inside-servlet.jss.js"),
+        "exports.servlet=function () { return 'INSIDE_JS_SOURCE'; };\n");
+    fs.writeFileSync(path.join(insideTargetPath,"inside-servlet.jss.cjs"),
+        "exports.servlet=function () { return 'INSIDE_CJS_SOURCE'; };\n");
     fs.writeFileSync(path.join(insideTargetPath,"inside-servlet.jss.mjs"),
         "export function servlet() { return 'INSIDE_ESM_EXECUTED'; }\n");
     fs.writeFileSync(path.join(insideTargetPath,"index.html"),"INSIDE_DEFAULT");
@@ -230,7 +236,16 @@ async function fileLinkChecks(created) {
         outsideSourceAlias:makeLink("outside-source-alias.txt",path.join(outsidePath,"outside-servlet.jss"),"file"),
         insideStatic:makeLink("inside-static-link.txt",path.join(insideTargetPath,"inside-static.txt"),"file"),
         insideServlet:makeLink("inside-servlet-link.jss",path.join(insideTargetPath,"inside-servlet.jss"),"file"),
-        insideSourceAlias:makeLink("inside-source-alias.txt",path.join(insideTargetPath,"inside-servlet.jss"),"file")
+        insideSourceAliases:[
+            {extension:".jss",alias:"inside-jss-source-alias.txt",secret:"INSIDE_EXECUTED",
+                created:makeLink("inside-jss-source-alias.txt",path.join(insideTargetPath,"inside-servlet.jss"),"file")},
+            {extension:".jss.js",alias:"inside-js-source-alias.txt",secret:"INSIDE_JS_SOURCE",
+                created:makeLink("inside-js-source-alias.txt",path.join(insideTargetPath,"inside-servlet.jss.js"),"file")},
+            {extension:".jss.cjs",alias:"inside-cjs-source-alias.txt",secret:"INSIDE_CJS_SOURCE",
+                created:makeLink("inside-cjs-source-alias.txt",path.join(insideTargetPath,"inside-servlet.jss.cjs"),"file")},
+            {extension:".jss.mjs",alias:"inside-mjs-source-alias.txt",secret:"INSIDE_ESM_EXECUTED",
+                created:makeLink("inside-mjs-source-alias.txt",path.join(insideTargetPath,"inside-servlet.jss.mjs"),"file")}
+        ]
     };
 
     await start();

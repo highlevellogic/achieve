@@ -1959,6 +1959,9 @@ function checkPath (basePath,relativePath,directoryForm) {
       if (!containedResolvedPhysicalPath(physicalPath)) {
         return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
       }
+      if (protectedServletPath(physicalPath)) {
+        return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
+      }
       let fileDescriptor;
       try {
         fileDescriptor=fs.openSync(physicalPath,"r");
