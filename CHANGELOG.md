@@ -1,5 +1,15 @@
 # Changelog
 
+## Achieve 3.1.2
+
+- Optimized eligible static-file resolution with a descriptor-first path,
+  improving small-file throughput by approximately 10–16% in the project
+  benchmarks while preserving same-handle metadata and content handling.
+- Prevented ordinary static aliases from exposing protected servlet source
+  files after physical-path resolution.
+- Added cross-platform regression coverage for containment, descriptor cleanup,
+  failure handling, and static-file filesystem operation counts.
+
 ## Achieve 3.1.1
 
 - Revised the README to emphasize ease of use, optional production-oriented
