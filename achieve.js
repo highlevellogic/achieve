@@ -1696,11 +1696,7 @@ function closeFileInfoDescriptor (fileInfo) {
   if (fileInfo.fileDescriptor === undefined) return;
   let fileDescriptor=fileInfo.fileDescriptor;
   fileInfo.fileDescriptor=undefined;
-  try {
-    fs.closeSync(fileDescriptor);
-  } catch (err) {
-    serverError("Error closing " + safeSourceIdentity(fileInfo.fullPath) + ": " + rtErrorMsg(err),err);
-  }
+  closeDescriptor(fileDescriptor,fileInfo.fullPath);
 }
 function hasEntityTagPrecondition (req) {
   return (
@@ -1877,11 +1873,19 @@ function Context (req,res,parms,dirPath,appPath,load) {
     }
   });
 }
-function PathInfo (filePath,reload,action,stats) {
+function PathInfo (filePath,reload,action,stats,resolution) {
   this.filePath = filePath;
   this.reload = reload;
   this.action = action;
   this.stats = stats;
+  this.resolution = resolution;
+}
+function closeDescriptor (fileDescriptor,sourcePath) {
+  try {
+    fs.closeSync(fileDescriptor);
+  } catch (err) {
+    serverError("Error closing " + safeSourceIdentity(sourcePath) + ": " + rtErrorMsg(err),err);
+  }
 }
 function containedRequestPath (boundaryPath,requestPath) {
   let boundary = path.resolve(boundaryPath);
@@ -1905,6 +1909,9 @@ function containedPhysicalPath (candidatePath) {
   } catch (err) {
     return false;
   }
+  return containedResolvedPhysicalPath(physicalCandidate);
+}
+function containedResolvedPhysicalPath (physicalCandidate) {
   let relativeCandidate=path.relative(physicalBasePath,physicalCandidate);
   if (
     relativeCandidate === ".." ||
@@ -1935,7 +1942,60 @@ function checkPath (basePath,relativePath,directoryForm) {
     return new PathInfo(relativePath,false,"noSuchFile",stats);
   }
 
+  let suffix=path.extname(fullPath).substring(1);
+  if (
+    !compress &&
+    !directoryForm &&
+    suffix.length !== 0 &&
+    !servletModuleType(fullPath) &&
+    !protectedServletPath(fullPath) &&
+    avMimeList[suffix] === undefined
+  ) {
+    let physicalPath;
     try {
+      physicalPath=fs.realpathSync.native(fullPath);
+    } catch (err) {}
+    if (physicalPath !== undefined) {
+      if (!containedResolvedPhysicalPath(physicalPath)) {
+        return new PathInfo(path.normalize(relativePath),false,"noSuchFile",stats);
+      }
+      let fileDescriptor;
+      try {
+        fileDescriptor=fs.openSync(physicalPath,"r");
+      } catch (err) {
+        let currentStats;
+        try {
+          currentStats=fs.statSync(fullPath,{throwIfNoEntry:false});
+        } catch (statError) {}
+        if (currentStats && currentStats.isDirectory()) {
+          stats=currentStats;
+        } else {
+          return new PathInfo(path.normalize(relativePath),true,"serveFile",stats,{
+            physicalPath:physicalPath,
+            openError:err
+          });
+        }
+      }
+      if (fileDescriptor !== undefined) try {
+        stats=fs.fstatSync(fileDescriptor);
+      } catch (err) {
+        closeDescriptor(fileDescriptor,physicalPath);
+        return new PathInfo(path.normalize(relativePath),true,"serveFile",stats,{
+          physicalPath:physicalPath,
+          openError:err
+        });
+      }
+      if (fileDescriptor !== undefined && stats.isFile()) {
+        return new PathInfo(path.normalize(relativePath),true,"serveFile",stats,{
+          physicalPath:physicalPath,
+          fileDescriptor:fileDescriptor
+        });
+      }
+      if (fileDescriptor !== undefined) closeDescriptor(fileDescriptor,physicalPath);
+    }
+  }
+
+    if (stats === undefined) try {
       // Does fullPath exist?
 	    stats = fs.statSync(fullPath); 
     } catch (err) {
@@ -2025,7 +2085,11 @@ function setFileInfo (req, res, basePath, requestUrl) {
    if (checkedPath.action == "noSuchFile") return new FileInfo(thisBasePath,requestUrl,checkedPath.filePath,dirPath,suffix,headers,contentType,queryString,false,false,true,reload,etag,audioVisual);
    // If null, redirect in FileInfo object is set to true. (Needs redirect to add trailing slash.)
    if (checkedPath.action == "redirect") return new FileInfo(thisBasePath,requestUrl,fullPath,dirPath,suffix,headers,contentType,queryString,false,true,false,reload,etag,audioVisual);
-   let currentPath = checkedPath.filePath;
+    let resolution=checkedPath.resolution;
+    fileDescriptor=resolution === undefined ? undefined : resolution.fileDescriptor;
+    representationStats=fileDescriptor === undefined ? undefined : checkedPath.stats;
+    openError=resolution === undefined ? undefined : resolution.openError;
+    let currentPath = checkedPath.filePath;
    suffix = path.extname(currentPath).substring(1) || "";
    fullPath = path.join(thisBasePath,currentPath);
    dirPath = path.dirname(fullPath);
@@ -2073,7 +2137,7 @@ function setFileInfo (req, res, basePath, requestUrl) {
       }
     }
     if (!notAcceptable && (serveFile || audioVisual)) {
-      let representationPath=path.join(thisBasePath,currentPath);
+      let representationPath=(resolution && resolution.physicalPath) || path.join(thisBasePath,currentPath);
       function openRepresentation() {
         fileDescriptor=fs.openSync(representationPath,"r");
         representationStats=fs.fstatSync(fileDescriptor);
@@ -2084,7 +2148,7 @@ function setFileInfo (req, res, basePath, requestUrl) {
         }
       }
       try {
-        openRepresentation();
+        if (fileDescriptor === undefined && openError === undefined) openRepresentation();
       } catch (err) {
         openError=err;
         if (fileDescriptor !== undefined) {
