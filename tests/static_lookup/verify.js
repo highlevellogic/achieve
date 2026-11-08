@@ -11,11 +11,29 @@ const staticBody="Achieve static lookup verification. ".repeat(4);
 const unknownBody=Buffer.from([0x00,0x41,0x80,0xff,0x0a]);
 fs.writeFileSync(path.join(testRoot,"tiny.txt"),staticBody);
 fs.writeFileSync(path.join(testRoot,"unknown.unregistered"),unknownBody);
+fs.writeFileSync(path.join(testRoot,"open-error.txt"),"open error fixture");
+fs.writeFileSync(path.join(testRoot,"fstat-error.txt"),"fstat error fixture");
+fs.writeFileSync(path.join(testRoot,"secret.jss.js"),"exports.servlet=()=>\"protected\";\n");
 fs.writeFileSync(path.join(directoryPath,"index.html"),"directory index");
+const dottedDirectory=path.join(testRoot,"folder.txt");
+fs.mkdirSync(dottedDirectory);
+fs.writeFileSync(path.join(dottedDirectory,"index.htm"),"dotted directory index");
 fs.writeFileSync(path.join(testRoot,"hello.jss"),
     "exports.servlet=function () { return 'servlet'; };\n");
 fs.writeFileSync(path.join(testRoot,"legacy.js"),
     "exports.servlet=function () { return 'legacy servlet'; };\n");
+const raceOutside=fs.mkdtempSync(path.join(os.tmpdir(),"achieve-static-lookup-outside-"));
+const raceInside=path.join(testRoot,"race-inside");
+const raceLink=path.join(testRoot,"race-link");
+fs.mkdirSync(raceInside);
+fs.writeFileSync(path.join(raceInside,"race.txt"),"INSIDE\n");
+fs.writeFileSync(path.join(raceOutside,"race.txt"),"OUTSIDE\n");
+let raceSkip;
+try {
+    fs.symlinkSync(raceInside,raceLink,process.platform === "win32" ? "junction" : "dir");
+} catch (err) {
+    raceSkip=err.code+" "+err.message;
+}
 
 function assert(condition,message) {
     if (!condition) throw new Error(message);
@@ -70,7 +88,7 @@ function request(target,headers={}) {
 }
 async function command(child,name,event) {
     const result=wait(child,event);
-    child.send({command:name});
+    child.send(typeof name === "string" ? {command:name} : name);
     return result;
 }
 
@@ -95,10 +113,14 @@ async function command(child,name,event) {
         assert(response.headers["content-type"] === "text/plain",
             "Static content type changed.");
         assert(response.headers.etag,"Static ETag is missing.");
-        assert(counts.statSync === 1,
-            "Static request did not perform exactly one statSync: "+JSON.stringify(counts));
+        assert(Number(response.headers["content-length"]) === Buffer.byteLength(staticBody),
+            "Static Content-Length changed: "+JSON.stringify(response.headers));
+        assert(counts.statSync === 0 && counts.discoveryStatSync === 0,
+            "Eligible static request performed a pathname discovery statSync: "+JSON.stringify(counts));
         assert(counts.existsSync === 0,
             "Static request retained existsSync: "+JSON.stringify(counts));
+        assert(counts.realpathSyncNative === 1,
+            "Static request did not resolve physical containment exactly once: "+JSON.stringify(counts));
         assert(counts.openSync === 1,
             "Static request did not open the final representation exactly once: "+JSON.stringify(counts));
         assert(counts.fstatSync === 1,
@@ -122,6 +144,12 @@ async function command(child,name,event) {
         response=await request("/directory/");
         assert(response.status === 200 && response.body === "directory index",
             "Directory index behavior changed.");
+        response=await request("/folder.txt");
+        assert(response.status === 301 && response.headers.location === "/folder.txt/",
+            "Suffix-bearing directory redirect behavior changed.");
+        response=await request("/folder.txt/");
+        assert(response.status === 200 && response.body === "dotted directory index",
+            "Suffix-bearing directory default document behavior changed.");
 
         await command(child,"count-start","count-started");
         response=await request("/missing");
@@ -149,6 +177,39 @@ async function command(child,name,event) {
         assert(legacyCounts.discoveryPaths.filter(value => value.endsWith("legacy.js")).length === 1,
             "Legacy discovery did not perform exactly one .js metadata lookup: "+JSON.stringify(legacyCounts));
 
+        response=await request("/secret.jss.js");
+        assert(response.status === 404,"Protected servlet source became directly accessible.");
+
+        await command(child,"count-start","count-started");
+        await command(child,{command:"fault",mode:"open"},"fault-armed");
+        response=await request("/open-error.txt",{"Accept-Encoding":"identity"});
+        await command(child,{command:"fault"},"fault-armed");
+        const openFailureCounts=(await command(child,"count-stop","counts")).counts;
+        assert(response.status === 500 && openFailureCounts.openSync === 1,
+            "Failed open was retried or returned the wrong status: "+JSON.stringify({response,openFailureCounts}));
+
+        await command(child,"count-start","count-started");
+        await command(child,{command:"fault",mode:"fstat"},"fault-armed");
+        response=await request("/fstat-error.txt",{"Accept-Encoding":"identity"});
+        await command(child,{command:"fault"},"fault-armed");
+        const fstatFailureCounts=(await command(child,"count-stop","counts")).counts;
+        assert(response.status === 500 && fstatFailureCounts.openSync === 1 &&
+            fstatFailureCounts.fstatSync === 1 && fstatFailureCounts.closeSync === 1,
+            "Failed fstat retried or closed the descriptor incorrectly: "+
+            JSON.stringify({response,fstatFailureCounts}));
+
+        if (raceSkip) {
+            console.log("SKIP final-junction retarget: "+raceSkip);
+        } else {
+            await command(child,{command:"retarget",trigger:path.join(raceLink,"race.txt"),
+                junction:raceLink,outside:raceOutside},"retarget-armed");
+            const retargeted=wait(child,"retargeted");
+            response=await request("/race-link/race.txt",{"Accept-Encoding":"identity"});
+            await retargeted;
+            assert(response.status === 200 && response.body === "INSIDE\n",
+                "Final-junction retarget escaped the validated physical file: "+JSON.stringify(response));
+        }
+
         const staticResponse=await request("/tiny.txt");
         const conditional=await request("/tiny.txt",{"If-None-Match":staticResponse.headers.etag});
         assert(conditional.status === 304,
@@ -158,6 +219,8 @@ async function command(child,name,event) {
         console.log("STATIC_LOOKUP_COUNTS "+JSON.stringify(counts));
         console.log("MISSING_LOOKUP_COUNTS "+JSON.stringify(missingCounts));
         console.log("LEGACY_LOOKUP_COUNTS "+JSON.stringify(legacyCounts));
+        console.log("OPEN_FAILURE_COUNTS "+JSON.stringify(openFailureCounts));
+        console.log("FSTAT_FAILURE_COUNTS "+JSON.stringify(fstatFailureCounts));
     } finally {
         if (child.exitCode === null) {
             const exited=new Promise(resolve => child.once("exit",resolve));
@@ -165,6 +228,7 @@ async function command(child,name,event) {
             await exited;
         }
         fs.rmSync(testRoot,{recursive:true,force:true});
+        fs.rmSync(raceOutside,{recursive:true,force:true});
     }
 })().catch(function (err) {
     console.error(err);
