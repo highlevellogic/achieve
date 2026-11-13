@@ -4,19 +4,27 @@
 
 <h1><a id="achieve" name="achieve"></a>Achieve</h1>
 
-<p><em><strong>Build apps without frameworks or middleware. Just write your application code. Let Achieve do the server work.</strong></em><br>
-Designed to be easy to use. Now with more optional production-oriented features.</p>
+<p><em><strong>Build Node.js applications without building the server first.</strong></em></p>
 
-<p>Achieve is a production-ready web and application server implemented on Node.js. <i>Friendly in development. Fast in production.</i></p>
+<p><strong>Achieve is a lightweight web and HTTP application server for Node.js.</strong></p>
 
-<p>The v3 development process was complemented by extensive automated testing, analysis, and review for <ins><em>standards compliance, reliability, security, and performance</em></ins>.</p>
+<p>Backend development often begins with assembling server infrastructure: static-file handling, URL mapping, request and response processing, development reloads, logging, compression, and production configuration. Achieve provides that HTTP application-server environment so you can concentrate on your own application code.</p>
 
-<p>This document provides a quick introduction and overview of Achieve's features. Tutorials, references, and examples are available in the <a href="https://highlevellogic.github.io/achieve/index.htm">project documentation</a>.
-Detailed documentation is also available on <a href="https://highlevellogic.github.io/achieve/specifications/index.htm">technical specifications and HTTP conformance assessment</a>.</p>
+<p>Place HTML, CSS, browser JavaScript, images, and other static resources in an application directory and Achieve serves them automatically. Place backend JavaScript there as a Servlet and the corresponding URL invokes it. JavaScript Servlets are ordinary CommonJS or ES module request handlers exported as <code>servlet(session)</code>; they can use Node.js modules and npm packages normally.</p>
+
+<p>This direct, file-oriented model supports full-stack JavaScript applications with minimal boilerplate and no required middleware layer. It can be a useful Express alternative when an application benefits from automatic resource mapping and built-in server behavior, while remaining a distinct application-server model rather than imitating another framework's routing semantics.</p>
+
+<p>Achieve has zero runtime dependencies. Optional HTTP facilities include cache handling, gzip and deflate compression, persistent logging, custom routing, HTTPS, and HTTP/2. Production mode separately retains loaded application modules until restart, avoiding development-time source checks. Achieve can also run in multiple workers through Node.js clustering. In the default development mode, changed Servlet code is reloaded on subsequent requests without restarting the server.</p>
+
+<p>Achieve is designed for both simple applications and substantial backend work. Its implementation is supported by public automated tests, focused <a href="https://highlevellogic.github.io/achieve/specifications/index.htm">technical specifications and a qualified HTTP conformance assessment</a>, and <a href="https://highlevellogic.github.io/achieve/engineering/benchmarking.md">environment-specific performance investigations</a>. These records document demonstrated behavior and known limitations; they are not claims of universal standards conformance, ecosystem adoption, or guaranteed performance.</p>
+
+<p>This document provides a quick introduction and feature overview. Tutorials, references, and examples are available in the <a href="https://highlevellogic.github.io/achieve/index.htm">project documentation</a>. <i>Friendly in development. Fast in production.</i></p>
 
 <h2><a id="introduction" name="introduction"></a>Introduction</h2>
 
 <p>Achieve version 3.1 <a href="https://nodejs.org/en/download">requires Node.js 24 or newer</a>.</p>
+
+<h3>Start the server</h3>
 
 <p>Install Achieve, <code>npm i achieve</code>, and it’s ready to serve.</p>
 
@@ -29,6 +37,8 @@ achieve.listen(8989);</code></pre>
 <p>In this example, the server is running HTTP. The port has been set to 8989. Application code is stored in <code>c:/myapps/</code>. So, if you have <code>index.html</code> in that directory, it will be served in response to <code>localhost:8989</code>. Content in subdirectories use URLs that follow the directory path, for example: <code>js/main.js</code> will map to <code>c:/myapps/js/main.js</code>.</p>
 
 <p>Achieve also supports <a href="https://highlevellogic.github.io/achieve/start/startup.htm">HTTPS and HTTP/2</a> as well as <a href="https://highlevellogic.github.io/achieve/reference/routing.htm">custom routing options</a>.</p>
+
+<h3>Write a backend handler</h3>
 
 <p>Servlets are entry points into backend applications, written in either CommonJS or ESM, synchronous or asynchronous. See <a href="https://highlevellogic.github.io/achieve/start/servlets.htm">Your first servlet</a> for more details.</p>
 
@@ -191,12 +201,12 @@ exports.servlet = function (session) {
 
 <p>Achieve 3 has undergone technical review and automated testing of functional behavior, reliability and error handling, security boundaries, and HTTP standards-related behavior. Regression coverage includes routing, JavaScript Servlets, static resources, conditional requests, compression, byte ranges, and response completion.</p>
 
-<p>The automated validation comprises 37 verifier suites. All 37 suites passed on Windows and Ubuntu using the specifically qualified Node.js 24.22.2 runtime. The tests, validation workflows, and CI execution results are publicly available:</p>
+<p>The automated validation comprises 39 verifier suites. All 39 suites passed on Windows and Ubuntu using the specifically qualified Node.js 24.22.2 runtime. The tests, validation workflows, and CI execution results are publicly available:</p>
 
 <ul>
 <li><a href="https://github.com/highlevellogic/achieve/tree/master/tests">Automated test source</a></li>
 <li><a href="https://github.com/highlevellogic/achieve/actions/workflows/test.yml">Cross-platform validation workflow and run history</a></li>
-<li><a href="https://github.com/highlevellogic/achieve/actions/runs/42039651485">Successful Node.js 24.22.2 qualification run</a></li>
+<li><a href="https://github.com/highlevellogic/achieve/actions/runs/43212174070">Successful Windows and Ubuntu Node.js 24.22.2 validation run</a></li>
 </ul>
 
 <p>To repeat the automated checks in a development checkout, run <code>npm run validate</code>.</p>
