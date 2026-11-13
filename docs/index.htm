@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Achieve v3 Documentation</title>
 <link rel="canonical" href="https://highlevellogic.github.io/achieve/">
-<meta name="description" content="Build Node.js applications without frameworks or middleware. Achieve is a developer-friendly web and application server for Node.js.">
+<meta name="description" content="Build Node.js applications without building the server first. Achieve provides static-file serving, automatic URL mapping, JavaScript request handlers, and production-oriented HTTP application-server features.">
 <style>
 body { margin:0; padding:0; background-color:lightblue; font-family:Arial,sans-serif; }
 header img { width:100%; display:block; }
@@ -84,7 +84,13 @@ footer {
 
 <h1>Achieve v3 Documentation</h1>
 
-<p>Achieve is a developer-friendly HTTP server for Node.js. It provides the server behavior so you can concentrate on building your application.</p>
+<p><strong>Build Node.js applications without building the server first.</strong></p>
+
+<p><strong>Achieve is a lightweight web and HTTP application server for Node.js.</strong> It automatically serves static resources, maps URLs into your application space, and invokes backend JavaScript request handlers called Servlets. Common request and response processing is already part of the server, so application development can begin with application code instead of framework and middleware assembly.</p>
+
+<p>JavaScript Servlets can use ordinary Node.js modules and npm packages. Development mode reloads changed Servlet code automatically. Configurable HTTP cache handling, compression, logging, routing, HTTPS, and HTTP/2 are available when needed; production mode separately retains loaded application modules until restart. Achieve has zero runtime dependencies and can support anything from a small site to a substantial full-stack JavaScript application.</p>
+
+<p>Start with the short tutorials below, use the references for exact behavior, and consult the technical specifications, tests, and qualified engineering evidence for implementation details and known limitations.</p>
 
 <h2>Getting Started</h2>
 
