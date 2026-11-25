@@ -103,19 +103,37 @@ async function waitForLogs(logRoot,count) {
     while(Date.now()<deadline){records=logLines(logRoot);if(records.length>=count)return records;await delay(25);}
     return records;
 }
+function waitForExit(controller,timeout) {
+    if(controller.exited)return Promise.resolve(true);
+    return new Promise(resolve=>{
+        let done=false,timer;
+        function finish(exited) {
+            if(done)return;
+            done=true;clearTimeout(timer);controller.child.removeListener("exit",onExit);resolve(exited);
+        }
+        function onExit() { finish(true); }
+        controller.child.once("exit",onExit);
+        if(controller.exited)finish(true);
+        else timer=setTimeout(()=>finish(controller.exited),timeout);
+    });
+}
 async function stopCluster(controller) {
-    if(controller.exited)return;
+    if(controller.exited)return {forced:false};
     controller.child.send({type:"shutdown"});
     for(let attempt=0;attempt<50&&!controller.exited;attempt++)await delay(100);
     if(!controller.exited) {
         if(process.platform==="win32") cp.spawnSync("taskkill",["/PID",String(controller.child.pid),"/T","/F"],{windowsHide:true});
         else controller.child.kill("SIGKILL");
+        await waitForExit(controller,5000);
+        return {forced:true};
     }
+    return {forced:false};
 }
 (async()=>{
     const temp=fs.mkdtempSync(path.join(os.tmpdir(),"achieve-cluster-"));
     const logRoot=path.join(temp,"logs"),controller=startCluster(logRoot);
     const expectedTargets=new Set(),responses=[],requestErrors=[];
+    let stopResult;
     try {
         const ready=[];
         while(ready.length<workerCount) {
@@ -169,10 +187,10 @@ async function stopCluster(controller) {
             !controller.messages.some(message=>message.type==="unexpected-worker-exit"));
         check("cluster primary remained active",!controller.exited);
     } finally {
-        await stopCluster(controller);
+        stopResult=await stopCluster(controller);
         fs.rmSync(temp,{recursive:true,force:true});
     }
-    check("cluster process stopped",controller.exited);
+    check("cluster process stopped",controller.exited,stopResult.forced?"forced cleanup":"graceful shutdown");
     check("temporary directory removed",!fs.existsSync(temp));
     if(failures){console.error(failures+" cluster integration assertion(s) failed.");process.exitCode=1;}
     else console.log("All Node.js cluster integration assertions passed.");
