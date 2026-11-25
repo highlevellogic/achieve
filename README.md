@@ -64,7 +64,7 @@ achieve.listen(8989);</code></pre>
 <p>In development mode (default), Achieve detects the change and automatically reloads the servlet. It also handles errors.</p>
 
 <pre><code>exports.servlet = function (session) {
-   let response = “Hello Big   // ERROR!!!
+   let response = "Hello Big   // ERROR!!!
    return response;
 }</code></pre>
 
